@@ -4,13 +4,13 @@ function CreateBuildFolders {
     
     New-Item -Path "build" -ItemType Directory | Out-Null
 
-    New-Item -Path "build/TakePoint" -ItemType Directory | Out-Null
+    New-Item -Path "build/Spotter" -ItemType Directory | Out-Null
     
 }
 
 function BuildMod {
 
-    $target = "build/TakePoint"
+    $target = "build/Spotter"
     Copy-Item -Recurse -Force -Path ".\Main" -Destination $target -Exclude .bak
 }
 
@@ -18,9 +18,9 @@ CreateBuildFolders
 BuildMod
 
 $compress = @{
-    Path = "build/TakePoint" 
+    Path = "build/Spotter" 
     CompressionLevel = "Fastest"
-    DestinationPath = "release/TakePoint.zip"
+    DestinationPath = "release/Spotter.zip"
 }
 Compress-Archive @compress -Force
 

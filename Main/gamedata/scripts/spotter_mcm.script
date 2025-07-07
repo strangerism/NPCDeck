@@ -1,3 +1,30 @@
+function on_mcm_load()
+    op = { id= "spotter", sh=true ,gr =
+			{
+				{ id = "title"						, type = "slide"    , link = "ui_options_slider_gameplay_diff", text = "ui_mcm_spotter_title", size = {512,50}, spacing = 20 },
+                { id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 30, step = 1, def = 5},
+				{ id = "keep_spotting"  	, type = "track"    , val = 2, min = 1, max = 30, step = 1, def = 5},
+			}
+		 }
+    return op
+end
+
+local defaults = {
+	["marker_life"]     = 10,
+	["keep_spotting"]     = false,
+}
+
+function get_config(key)
+    local opt = ui_mcm and ui_mcm.get("spotter/"..key) 
+    if opt ~= nil then return opt else return defaults[key] end
+ end
+
+local marker_life = defaults["marker_life"]
+
+function on_option_change()
+    marker_life = get_config('marker_life')
+end
+
 function is_companions_squad_in_danger()
 	--printf("============================================================================================")
 	local squad_is_peaceful = true
@@ -48,9 +75,6 @@ function actor_on_update()
 			return
 		end
 		tg_update = tg + tg_update_step
-		
-		-- check_tagged_enemy()
-		do_combat_on()
 
         local in_danger_state = is_companions_squad_in_danger()
 		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
@@ -112,93 +136,66 @@ function find_enemy()
 	-- return min_be
 end
 
-local paw     = tasks_placeable_waypoints
-local restore_hud_waypoint_settings
-local restore_current_waypoint
-function init_hud_waypoint()
-	
-    restore_hud_waypoint_settings = paw.wp_hud_icon_enabled or false
-	printf("saving hud_waypoint_settings %s", restore_hud_waypoint_settings)
-	paw.wp_hud_icon_enabled = true
-	paw.show_hud_waypoint()
-	restore_current_waypoint = paw.get_current_waypoint()
+local hmm = utils_catspaw_hudmarks.get_hud_mark_manager()
+
+local function getArgs()
+
+	local args = {
+
+		texture         = "ui_icons_paw_pin_cursor_chevron_e",
+		-- a texture for the icon is required
+		width           = 24,
+		height          = 24,
+		-- the size of the texture	
+		xmlfile         = "ui_hud_marker.xml",
+		-- The marker XML structure
+		bone            = "bip01_head",
+		near_end_dist   = 2,
+		-- marker is automatically destroyed if actor gets this close
+		far_end_dist     = 100,
+		-- marker is automatically destroyed if actor gets this far away
+		show_dist         = true,
+		-- show distance indicator by the marker
+		func_on_update = (
+			function(mark, args)
+				printf("func_on_update")
+				local init_time = mark and mark.init_time or 0
+				if time_global() - init_time > marker_life*1000 then mark:Destroy() end
+			end
+			)
+	}
+
+	return args
 end
 
-local tagged_enemy
-
-function restore_hud_waypoint()
-
-	if restore_current_waypoint then
-		local se_obj = restore_current_waypoint:id() and alife_object(restore_current_waypoint:id())
-		paw.set_current_waypoint(se_obj)
-	end
-
-	printf("restoring hud_waypoint_settings %s", restore_hud_waypoint_settings)
-	paw.wp_hud_icon_enabled = restore_hud_waypoint_settings
-
-	if (paw.wp_hud_icon_enabled) then
-		paw.show_hud_waypoint()
-	else
-		paw.hide_hud_waypoint()
-	end
-end
-
-function tag_enemy(enemy)
-	printf("- Tag enemy %s", enemy and enemy:id())
+local marker
+function tag_spot(enemy)
+    enemy = enemy or level.get_target_obj()
+    printf("- Spot enemy %s", enemy and enemy:id())
     if (enemy and enemy:alive()) then
-		local se_obj = enemy:id() and alife_object(enemy:id())
-		paw.set_current_waypoint(se_obj)
-        tagged_enemy = enemy
-	end
-end
-
-function check_tagged_enemy()
-
-	if tagged_enemy then
-		-- printf("- check_tagged_enemy %s", tagged_enemy and tagged_enemy:id())
-		if not tagged_enemy:alive() then
-			tagged_enemy = nil
-			local enemy = find_enemy()
-			tag_enemy(enemy)
-		end
-	end
+		local args = getArgs()
+        args.id = enemy:id()
+        marker = hmm:AddMarker(args)
+    end
 end
 
 function combat_started()
     printf("- TAKE POINT COMBAT [START]")
-
-	-- setup paw backend
-	init_hud_waypoint()
 	
 	-- do the first spotting
 	local enemy = find_enemy()
-	tag_enemy(enemy)
-end
-
-function do_combat_on()
-	if squad_is_peaceful then return end
-
-	if tagged_enemy then
-		if not tagged_enemy:alive() then
-			tagged_enemy = nil
-		end
-	else
-		printf("- TAKE POINT COMBAT [TAG]")
-		local enemy = find_enemy()
-		tag_enemy(enemy)
-	end
+	tag_spot(enemy)
+	printf("-- marker added %s", marker)
 end
 
 function combat_ended()
     printf("! TAKE POINT COMBAT [END]")
-
-	-- release paw backend
-	restore_hud_waypoint()
 end
 
 function on_game_start()
 	RegisterScriptCallback("actor_on_first_update",actor_on_first_update)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
+	RegisterScriptCallback('on_option_change', on_option_change)
 
     if AddScriptCallback then
         AddScriptCallback("spotter_combat_started")

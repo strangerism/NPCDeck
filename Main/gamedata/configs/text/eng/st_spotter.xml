@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
+<!-- MCM Menu -->
+<string_table>
+    <string id="ui_mcm_spotter_title">
+        <text>Spotter Configuration</text>
+    </string>
+     <string id="ui_mcm_menu_spotter">
+        <text>Spotter</text>
+    </string>
+    <string id="ui_mcm_spotter_marker_life">
+        <text>Marker life</text>
+    </string>
+    <string id="ui_mcm_spotter_marker_life_desc">
+        <text>Time in seconds the marker is shown</text>
+    </string>    
+</string_table>
