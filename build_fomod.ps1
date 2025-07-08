@@ -11,14 +11,14 @@ function CreateBuildFolders {
 function BuildMod {
 
     $target = "build/Spotter"
-    Copy-Item -Recurse -Force -Path ".\Main" -Destination $target -Exclude .bak
+    Copy-Item -Recurse -Force -Path ".\Main\gamedata" -Destination $target -Exclude .bak
 }
 
 CreateBuildFolders
 BuildMod
 
 $compress = @{
-    Path = "build/Spotter" 
+    Path = "build/Spotter/gamedata" 
     CompressionLevel = "Fastest"
     DestinationPath = "release/Spotter.zip"
 }

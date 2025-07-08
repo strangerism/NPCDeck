@@ -2,15 +2,18 @@ function on_mcm_load()
     op = { id= "spotter", sh=true ,gr =
 			{
 				{ id = "title"						, type = "slide"    , link = "ui_options_slider_gameplay_diff", text = "ui_mcm_spotter_title", size = {512,50}, spacing = 20 },
-                { id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 30, step = 1, def = 5},
-				{ id = "keep_spotting"  	, type = "track"    , val = 2, min = 1, max = 30, step = 1, def = 5},
+				{id = "spotter_help1", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help1"},
+				{id = "spotter_help2", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help2"},
+				{id = "spotter_help3", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help3"},
+                { id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 60, step = 1, def = 15},
+				{ id = "keep_spotting"  	, type ="check", val=1,def=false},
 			}
 		 }
     return op
 end
 
 local defaults = {
-	["marker_life"]     = 10,
+	["marker_life"]     = 15,
 	["keep_spotting"]     = false,
 }
 
@@ -20,6 +23,7 @@ function get_config(key)
  end
 
 local marker_life = defaults["marker_life"]
+local keep_spotting = defaults["keep_spotting"]
 
 function on_option_change()
     marker_life = get_config('marker_life')
@@ -76,6 +80,10 @@ function actor_on_update()
 		end
 		tg_update = tg + tg_update_step
 
+		if keep_spotting then
+			do_combat_on()
+		end
+
         local in_danger_state = is_companions_squad_in_danger()
 		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
         if squad_is_peaceful and in_danger_state then
@@ -109,7 +117,7 @@ function find_enemy()
 					local be = npc:best_enemy()
 					if (be and be:alive()) then
 						local distance = be:position():distance_to_sqr(npc:position())
-						printf("! FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
+						-- printf("! FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
 						return be
 						-- -- Add a new element
 						-- table.insert(be_list, {be, distance})
@@ -158,7 +166,7 @@ local function getArgs()
 		-- show distance indicator by the marker
 		func_on_update = (
 			function(mark, args)
-				printf("func_on_update")
+				-- printf("func_on_update")
 				local init_time = mark and mark.init_time or 0
 				if time_global() - init_time > marker_life*1000 then mark:Destroy() end
 			end
@@ -168,28 +176,52 @@ local function getArgs()
 	return args
 end
 
+function playBark()
+
+	file_to_say = xr_sound.get_safe_sound_object( "characters_voice\\player\\command_fireatwill_" .. math.random(3) ) --sets the file to play
+	file_to_say:play(db.actor,0,sound_object.s2d) --plays it
+	file_to_say.volume = 1.0 --sets how loud the sound should be	
+end
+
+local marked_enemy
 local marker
-function tag_spot(enemy)
+function mark_enemy(enemy)
     enemy = enemy or level.get_target_obj()
-    printf("- Spot enemy %s", enemy and enemy:id())
+    printf("- Mark enemy %s", enemy and enemy:id())
     if (enemy and enemy:alive()) then
+		marked_enemy = enemy
 		local args = getArgs()
         args.id = enemy:id()
         marker = hmm:AddMarker(args)
+		playBark()
     end
 end
 
 function combat_started()
-    printf("- TAKE POINT COMBAT [START]")
+    -- printf("- TAKE POINT COMBAT [START]")
 	
 	-- do the first spotting
 	local enemy = find_enemy()
-	tag_spot(enemy)
-	printf("-- marker added %s", marker)
+	mark_enemy(enemy)
+	-- printf("-- marker added %s", marker)
+end
+
+function do_combat_on()
+	if squad_is_peaceful then return end
+
+	if marked_enemy then
+		if not marked_enemy:alive() then
+			marked_enemy = nil
+		end
+	else
+		-- printf("- TAKE POINT COMBAT [TAG]")
+		local enemy = find_enemy()
+		mark_enemy(enemy)
+	end
 end
 
 function combat_ended()
-    printf("! TAKE POINT COMBAT [END]")
+    -- printf("! TAKE POINT COMBAT [END]")
 end
 
 function on_game_start()

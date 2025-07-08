@@ -8,10 +8,25 @@
      <string id="ui_mcm_menu_spotter">
         <text>Spotter</text>
     </string>
+    <string id="ui_mcm_spotter_general_help1">
+        <text>Your squad of companions will mark the first enemy they see whenever they enter in combat. This is followed by a voice cue from the actor</text>
+    </string>
+    <string id="ui_mcm_spotter_general_help2">
+        <text>The marker will stays on the enemy, until dispelled by the life timer or when getting too close or too far away from it</text>
+    </string>
+    <string id="ui_mcm_spotter_general_help3">
+        <text>When multiple spotting, the next spot is done only after the previous spotted enemy is killed</text>
+    </string>            
     <string id="ui_mcm_spotter_marker_life">
         <text>Marker life</text>
     </string>
     <string id="ui_mcm_spotter_marker_life_desc">
         <text>Time in seconds the marker is shown</text>
-    </string>    
+    </string>
+    <string id="ui_mcm_spotter_keep_spotting">
+        <text>Keep spotting</text>
+    </string>
+    <string id="ui_mcm_spotter_keep_spotting_desc">
+        <text>Your squad will keep spotting after the first enemy. Beware!! You are entering skill issue territory</text>
+    </string>          
 </string_table>
