@@ -16,7 +16,10 @@
     </string>
     <string id="ui_mcm_spotter_general_help3">
         <text>When multiple spotting, the next spot is done only after the previous spotted enemy is killed</text>
-    </string>            
+    </string>      
+    <string id="ui_mcm_spotter_general_help4">
+        <text>Hold companion wheel key to call new marks</text>
+    </string>           
     <string id="ui_mcm_spotter_marker_life">
         <text>Marker life</text>
     </string>

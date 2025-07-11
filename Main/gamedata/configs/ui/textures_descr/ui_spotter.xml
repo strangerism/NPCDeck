@@ -1,0 +1,125 @@
+<!--
+**  Personal Adjustable Waypoint
+**  Author: Catspaw (CatspawMods @ ModDB)
+	Contents: Texture definitions. You probably shouldn't 
+	mess with this unless you know what you're doing.
+
+-->
+<w>
+	<file name ="ui\spotter\ui_icons_spotter">
+
+		<texture id = "ui_icons_spotter_pin_stalker32" x="0" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_redround32" x="32" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_redmodern32" x="64" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_redpush32" x="96" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_yelpush32" x="128" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_whtsimple32" x="160" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_skull32" x="192" y="0" width="32" height="32" />
+
+		<texture id = "ui_icons_spotter_pin_stalker64" x="0" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_magnifier32" x="64" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_loot64" x="128" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_warn64" x="192" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_ak64" x="256" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_signal64" x="320" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_death64" x="384" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_ammo64" x="448" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_rad64" x="512" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_bio64" x="576" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_magn64" x="640" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_info64" x="704" y="32" width="64" height="64" />
+		
+		<texture id = "ui_icons_spotter_pin_bwhr_stash64" x="960" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_ping_spot" x="768" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_ping_spot_alpha" x="832" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_bwhr_horizon64" x="896" y="32" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_hud_waypoint" x="0" y="96" width="128" height="128" />
+
+		<texture id = "ui_icons_spotter_btn_icon" x="192" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_btn_set" x="256" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_btn_setemboss" x="192" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_redskull" x="320" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_diamond_f" x="384" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_diamond_n" x="448" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_diamond_e" x="512" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_chevron_f" x="576" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_chevron_n" x="640" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_chevron_e" x="704" y="96" width="64" height="64" />
+		
+		<texture id = "ui_icons_spotter_pin_cursor_flag_f" x="768" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_flag_n" x="832" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_cursor_flag_e" x="896" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_crosshair_gradient" x="320" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_impobj_mechanic" x="384" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_impobj_bed" x="448" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_impobj_trade" x="512" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_impobj_person" x="576" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_impobj_briefcase" x="640" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_impobj_food" x="704" y="160" width="64" height="64" />
+		
+		<texture id = "ui_icons_spotter_pin_impobj_medic" x="768" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_pin_obj_lock" x="832" y="160" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_crosshair_valid" x="128" y="96" width="64" height="64" />
+
+		<texture id = "ui_icons_spotter_crosshair_targetlock" x="896" y="160" width="128" height="128" />
+
+		<texture id = "ui_icons_spotter_crosshair_targetid" x="896" y="288" width="128" height="128" />
+
+		<texture id = "ui_paw_dialog_bg_gray1" x="0" y="702" width="640" height="320" />
+
+    	<texture id="paw_backpack_stash_icon_green" x="257" y="1" width="29" height="29" />
+
+    	<texture id="paw_backpack_stash_icon_green64" x="608" y="224" width="64" height="64" />
+
+    	<texture id="ui_icons_spotter_argb_a" x="289" y="1" width="29" height="29" />
+    	<texture id="ui_icons_spotter_argb_r" x="321" y="1" width="29" height="29" />
+    	<texture id="ui_icons_spotter_argb_g" x="353" y="1" width="29" height="29" />
+    	<texture id="ui_icons_spotter_argb_b" x="385" y="1" width="29" height="29" />
+
+    	<texture id="paw_vanilla_stash_icon_white" x="418" y="2" width="27" height="27" />
+
+	</file>
+
+</w>
+
