@@ -9,7 +9,7 @@
         <text>Spotter</text>
     </string>
     <string id="ui_mcm_spotter_general_help1">
-        <text>Your squad of companions will mark the first enemy they see whenever they enter in combat. This is followed by a voice cue from the actor</text>
+        <text>Your squad of companions will mark the first enemy they see whenever they enter in combat. This is followed by a voice cue (bark) from the squad member</text>
     </string>
     <string id="ui_mcm_spotter_general_help2">
         <text>The marker will stays on the enemy, until dispelled by the life timer or when getting too close or too far away from it</text>
@@ -18,8 +18,14 @@
         <text>When multiple spotting, the next spot is done only after the previous spotted enemy is killed</text>
     </string>      
     <string id="ui_mcm_spotter_general_help4">
-        <text>Hold companion wheel key to call new marks</text>
-    </string>           
+        <text>Hold hotkey (default companion wheel key C) to call new marks. You can change this below</text>
+    </string>      
+    <string id="ui_mcm_spotter_hotkey">
+        <text>Call Mark hotkey</text>
+    </string>
+    <string id="ui_mcm_spotter_hotkey_desc">
+        <text>Hold this key to call a new mark</text>
+    </string>         
     <string id="ui_mcm_spotter_marker_life">
         <text>Marker life</text>
     </string>
@@ -31,5 +37,11 @@
     </string>
     <string id="ui_mcm_spotter_keep_spotting_desc">
         <text>Your squad will keep spotting after the first enemy. Beware!! You are entering skill issue territory</text>
-    </string>          
+    </string>   
+    <string id="ui_mcm_spotter_bark">
+        <text>NPC Bark</text>
+    </string>
+    <string id="ui_mcm_spotter_bark_desc">
+        <text>The squad member that calls the mark, issues a voice bark as well</text>
+    </string>                 
 </string_table>

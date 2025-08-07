@@ -5,9 +5,12 @@ function on_mcm_load()
 				{id = "spotter_help1", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help1"},
 				{id = "spotter_help2", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help2"},
 				{id = "spotter_help3", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help3"},
-				{id = "spotter_help4", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help4"},				
+				{id = "spotter_help4", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help4"},	
+				{ id = "hotkey", type = "key_bind", val = 2, def = DIK_keys.DIK_C },
+				{ id = "divider", type = "line" },
                 { id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 60, step = 1, def = 15},
 				{ id = "keep_spotting"  	, type ="check", val=1,def=false},
+				{ id = "bark"  	, type ="check", val=1,def=true},
 			}
 		 }
     return op
@@ -16,6 +19,8 @@ end
 local defaults = {
 	["marker_life"]     = 15,
 	["keep_spotting"]     = false,
+	["bark"]     = true,
+	["hotkey"]     = DIK_keys.DIK_C
 }
 
 function get_config(key)
@@ -25,8 +30,11 @@ function get_config(key)
 
 local marker_life = defaults["marker_life"]
 local keep_spotting = defaults["keep_spotting"]
-
+local play_bark = defaults["bark"]
+local hotkey_dik = defaults["hotkey"]
 function on_option_change()
+	play_bark = get_config('bark')
+    hotkey_dik = get_config('hotkey')
     marker_life = get_config('marker_life')
 end
 
@@ -132,10 +140,18 @@ local voice_programs = {
 	freedom = 5,
 }
 
+
+local hip_id = 19467
 function bark(npc)
+	if not npc then return end
+	-- printf("-- NPC id %s, name %s ", npc:id(), npc:name())
 	local faction = npc:character_community() or "stalker"
-	printf("faction %s", faction)
-	file_to_say = xr_sound.get_safe_sound_object( "characters_voice\\human\\" .. factions[faction] .. "\\fight\\enemy\\enemy_" .. math.random(voice_programs[faction])) --sets the file to play
+	-- printf("faction %s", faction)
+	if npc:id() == hip_id then
+		file_to_say = xr_sound.get_safe_sound_object( "spotters\\m_command_fireatwill_" .. math.random(3))	
+	else
+		file_to_say = xr_sound.get_safe_sound_object( "characters_voice\\human\\" .. factions[faction] .. "\\fight\\enemy\\enemy_" .. math.random(voice_programs[faction])) --sets the file to play			
+	end
 	file_to_say:play(db.actor,0,sound_object.s2d) --plays it
 	file_to_say.volume = 1.0 --sets how loud the sound should be
 
@@ -183,7 +199,9 @@ function mark_enemy(enemy, npc)
 		local args = getArgs()
         args.id = enemy:id()
         marker = hmm:AddMarker(args)
-		bark(npc)
+		if play_bark then
+			bark(npc)
+		end
     end
 end
 
@@ -258,9 +276,9 @@ end
 local spotter_mark_issued
 function on_key_press(dik)
 	
-	local bind = dik_to_bind(dik)
-	if bind == key_bindings.kCUSTOM18 then
-		printf("- create spotter_mark_keyhold")
+	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
+	if (dik == hotkey_dik) then
+		-- printf("- create spotter_mark_keyhold")
 		CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 			printf("- execute spotter_mark_keyhold")
 			local enemy = find_enemy()
@@ -272,12 +290,12 @@ function on_key_press(dik)
 end
 
 function on_key_release(dik)
-	
-	local bind = dik_to_bind(dik)
-	if bind == key_bindings.kCUSTOM18 then
+
+	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
+	if dik == hotkey_dik then
 		RemoveTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long")
 		if spotter_mark_issued then
-			printf("- consume spotter_mark_keyhold")
+			-- printf("- consume spotter_mark_keyhold")
 			spotter_mark_issued = false
 		else
 			if not zzzz_dynahud then
@@ -306,4 +324,6 @@ function on_game_start()
 
     RegisterScriptCallback("spotter_combat_started",combat_started)
     RegisterScriptCallback("spotter_combat_ended",combat_ended)
+
+	on_option_change()
 end
