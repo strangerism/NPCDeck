@@ -141,14 +141,15 @@ local voice_programs = {
 }
 
 
-local hip_id = 19467
 function bark(npc)
 	if not npc then return end
-	-- printf("-- NPC id %s, name %s ", npc:id(), npc:name())
+	local female_visual = npc:get_visual_name():find("fstalker")
+	local female_voice = npc:sound_prefix():find("woman")
+	-- printf("-- NPC id %s, name %s, section %s, female_voice %s, female_visual %s", npc:id(), npc:name(), npc:section(), female_voice, female_visual)
 	local faction = npc:character_community() or "stalker"
 	-- printf("faction %s", faction)
-	if npc:id() == hip_id then
-		file_to_say = xr_sound.get_safe_sound_object( "spotters\\m_command_fireatwill_" .. math.random(3))	
+	if female_visual or female_voice then
+		file_to_say = xr_sound.get_safe_sound_object( "spotters\\command_fireatwill_" .. math.random(3))
 	else
 		file_to_say = xr_sound.get_safe_sound_object( "characters_voice\\human\\" .. factions[faction] .. "\\fight\\enemy\\enemy_" .. math.random(voice_programs[faction])) --sets the file to play			
 	end
@@ -305,6 +306,15 @@ function on_key_release(dik)
 	end
 
 end
+
+-- female_npc = {}
+-- RegisterScriptCallback("on_specific_character_init", function(character_id, data)
+-- 	printf("%% character_id %s", character_id)
+-- 	if data.snd_config:find("(woman|female)") then
+-- 		printf("% %s is a woman", character_id)
+-- 		female_npc[character_id] = true
+-- 	end
+-- end)
 
 function on_game_start()
 	RegisterScriptCallback("actor_on_first_update",actor_on_first_update)

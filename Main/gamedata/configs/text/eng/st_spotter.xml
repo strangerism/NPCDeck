@@ -3,10 +3,10 @@
 <!-- MCM Menu -->
 <string_table>
     <string id="ui_mcm_spotter_title">
-        <text>Spotter Configuration</text>
+        <text>Spotters Configuration</text>
     </string>
      <string id="ui_mcm_menu_spotter">
-        <text>Spotter</text>
+        <text>Spotters</text>
     </string>
     <string id="ui_mcm_spotter_general_help1">
         <text>Your squad of companions will mark the first enemy they see whenever they enter in combat. This is followed by a voice cue (bark) from the squad member</text>
