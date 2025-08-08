@@ -8,8 +8,14 @@
      <string id="ui_mcm_menu_spotter">
         <text>Spotters</text>
     </string>
+    <string id="ui_mcm_spotter_general_help0">
+        <text>When a squad joins you there is a slim chance that one of its member has the Spotter perk. This stalker will have this perk until he dies, so keep tabs on him</text>
+    </string>
+    <string id="ui_mcm_spotter_general_help0">
+        <text>Upon joining you will be notified if a squad member has the Spotter perk with a news notification on your pda</text>
+    </string>          
     <string id="ui_mcm_spotter_general_help1">
-        <text>Your squad of companions will mark the first enemy they see whenever they enter in combat. This is followed by a voice cue (bark) from the squad member</text>
+        <text>A squad member with the Spotter perk will mark the first enemy he sees whenever he or the squad enters in combat. This is followed by a voice cue (bark) from the squad member</text>
     </string>
     <string id="ui_mcm_spotter_general_help2">
         <text>The marker will stays on the enemy, until dispelled by the life timer or when getting too close or too far away from it</text>
@@ -25,7 +31,16 @@
     </string>
     <string id="ui_mcm_spotter_hotkey_desc">
         <text>Hold this key to call a new mark</text>
-    </string>         
+    </string>    
+	<string id="ui_mcm_spotter_perk_chance">
+		<text>Perk chance</text>
+	</string>    
+	<string id="ui_mcm_spotter_perk_chance_desc">
+		<text>The chance a squad member that joins you has, to spawn with the Spotter perk</text>
+	</string>      
+	<string id="ui_mcm_spotter_has_perk">
+		<text>The squad member %s has the Spotter perk</text>
+	</string>         
     <string id="ui_mcm_spotter_marker_life">
         <text>Marker life</text>
     </string>

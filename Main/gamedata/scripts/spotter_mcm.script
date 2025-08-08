@@ -8,6 +8,7 @@ function on_mcm_load()
 				{id = "spotter_help4", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_spotter_general_help4"},	
 				{ id = "hotkey", type = "key_bind", val = 2, def = DIK_keys.DIK_C },
 				{ id = "divider", type = "line" },
+				{ id = "perk_chance"  	, type = "track"    , val = 2, min = 1, max = 100, step = 1, def = 10},
                 { id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 60, step = 1, def = 15},
 				{ id = "keep_spotting"  	, type ="check", val=1,def=false},
 				{ id = "bark"  	, type ="check", val=1,def=true},
@@ -17,6 +18,7 @@ function on_mcm_load()
 end
 
 local defaults = {
+	["perk_chance"]     = 10,
 	["marker_life"]     = 15,
 	["keep_spotting"]     = false,
 	["bark"]     = true,
@@ -32,11 +34,91 @@ local marker_life = defaults["marker_life"]
 local keep_spotting = defaults["keep_spotting"]
 local play_bark = defaults["bark"]
 local hotkey_dik = defaults["hotkey"]
+local perk_chance = defaults["perk_chance"]
 function on_option_change()
 	play_bark = get_config('bark')
     hotkey_dik = get_config('hotkey')
     marker_life = get_config('marker_life')
+	perk_chance = get_config('perk_chance')
 end
+
+-- notifications
+
+print_tip = function(text,delay, ...)
+
+    -- local enabled = dynavision_mcm.get_config('configuration/notifications/enable')
+	local enabled = true
+    if enabled then
+		local text = tostring(text)
+		printf(text, ...)
+		if not db.actor then
+			return
+		end
+		
+		local ico = "ui_inGame2_Dengi_otdani"
+		local text_color = utils_xml.get_color("pda_white")
+		local arg_color = utils_xml.get_color("d_green")
+		local function colorize(s)
+			return arg_color .. s .. text_color
+		end
+		local i = 0
+		local t = {...}
+		if #t > 0 then
+			local function sr(a)
+				i = i + 1
+				if (type(t[i]) == 'userdata') then
+					if (t[i].x and t[i].y) then
+						return colorize(vec_to_str(t[i]))
+					end
+					return colorize('userdata')
+				end
+				return colorize(tostring(t[i]))
+			end
+			text = string.gsub(game.translate_string(text), "%%s", sr)
+		else
+			text = game.translate_string(text)
+		end
+		text = text_color .. text
+		if delay == nil then
+			delay = 6000
+		end
+		news_manager.send_tip(db.actor, text, nil, ico, delay)
+	end
+end
+
+
+-- PERKS
+
+local stalkers = {}
+local PERKS = "perks"
+local PERK_SPOTTER = "perk_spotter"
+function roll_perks(perk)
+	local roll = false
+	if perk == PERK_SPOTTER then
+		roll = (math.random(100) <= perk_chance)
+	end
+	return roll
+end
+
+function check_npc_perk(npc, perk)
+	if not npc then return end 
+	local id = npc:id()
+	if not stalkers[id] then
+		stalkers[id] = {}
+		stalkers["id"] = id
+		stalkers[id][PERKS] = {}
+		stalkers[id][PERKS][perk] = {}
+		stalkers[id][PERKS][perk]["acquired"] = roll_perks(perk)
+		if stalkers[id][PERKS][perk]["acquired"] then
+			stalkers[id][PERKS][perk]["name"] = perk
+			stalkers[id][PERKS][perk]["rank"] = 1
+			print_tip("ui_mcm_spotter_has_perk", 15000, npc:character_name())
+		end
+	end
+	return stalkers[id][PERKS][perk]["acquired"]
+end
+
+----
 
 function is_companions_squad_in_danger()
 	--printf("============================================================================================")
@@ -145,7 +227,7 @@ function bark(npc)
 	if not npc then return end
 	local female_visual = npc:get_visual_name():find("fstalker")
 	local female_voice = npc:sound_prefix():find("woman")
-	-- printf("-- NPC id %s, name %s, section %s, female_voice %s, female_visual %s", npc:id(), npc:name(), npc:section(), female_voice, female_visual)
+	-- printf("-- NPC id %s, name %s, section %s, sound_prefix %s, female_voice %s, female_visual %s", npc:id(), npc:name(), npc:section(), npc:sound_prefix(), female_voice, female_visual)
 	local faction = npc:character_community() or "stalker"
 	-- printf("faction %s", faction)
 	if female_visual or female_voice then
@@ -192,14 +274,16 @@ end
 
 local marked_enemy
 local marker
+-- local marks = {}
 function mark_enemy(enemy, npc)
     enemy = enemy or level.get_target_obj()
-    printf("- Mark enemy %s", enemy and enemy:id())
+    -- printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
     if (enemy and enemy:alive()) then
 		marked_enemy = enemy
 		local args = getArgs()
         args.id = enemy:id()
         marker = hmm:AddMarker(args)
+		-- marks[enemy:id()] = marker
 		if play_bark then
 			bark(npc)
 		end
@@ -221,8 +305,11 @@ function find_enemy()
 					if (be and be:alive()) then
 						local distance = be:position():distance_to_sqr(npc:position())
 						-- printf("! FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
-						mark_enemy(be, npc)
-						return
+						if check_npc_perk(npc, PERK_SPOTTER) then
+							-- printf("% NPC %s has spotter perk", npc:character_name())
+							mark_enemy(be, npc)
+							return
+						end
 						-- -- Add a new element
 						-- table.insert(be_list, {be, distance})
 					end
