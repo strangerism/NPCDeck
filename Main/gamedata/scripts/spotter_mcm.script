@@ -91,7 +91,20 @@ end
 
 local stalkers = {}
 local PERKS = "perks"
-local PERK_SPOTTER = "perk_spotter"
+local PERK_SPOTTER = "npc_perk_spotter"
+
+function is_archetype_perk(npc, perk)
+	local archetype = false
+	if perk == PERK_SPOTTER then
+		if npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
+			-- printf("/ npc %s archetype perk", npc:section())
+			archetype = true
+		end
+	end	
+
+	return archetype
+end
+
 function roll_perks(perk)
 	local roll = false
 	if perk == PERK_SPOTTER then
@@ -104,13 +117,14 @@ function check_npc_perk(npc, perk)
 	if not npc then return end 
 	local id = npc:id()
 	if not stalkers[id] then
+			-- save this NPC
 		stalkers[id] = {}
-		stalkers["id"] = id
+		stalkers[id]["id"] = id
 		stalkers[id][PERKS] = {}
 		stalkers[id][PERKS][perk] = {}
-		stalkers[id][PERKS][perk]["acquired"] = roll_perks(perk)
+		stalkers[id][PERKS][perk]["acquired"] = is_archetype_perk(npc, perk) or roll_perks(perk)
 		if stalkers[id][PERKS][perk]["acquired"] then
-			stalkers[id][PERKS][perk]["name"] = perk
+			stalkers[id][PERKS][perk]["id"] = perk
 			stalkers[id][PERKS][perk]["rank"] = 1
 			print_tip("ui_mcm_spotter_has_perk", 15000, npc:character_name())
 		end
@@ -119,6 +133,22 @@ function check_npc_perk(npc, perk)
 end
 
 ----
+function update_stalkers_perks()
+	for id,squad in pairs(axr_companions.companion_squads) do 
+		if (squad and squad.commander_id) then
+			local i = 0
+			for k in squad:squad_members() do
+				local npc = db.storage[k.id] and db.storage[k.id].object
+				i = i+1
+				if npc then
+					if (npc and npc:alive()) then
+						check_npc_perk(npc, PERK_SPOTTER)
+					end
+				end
+			end
+		end
+	end
+end
 
 function is_companions_squad_in_danger()
 	--printf("============================================================================================")
@@ -170,6 +200,8 @@ function actor_on_update()
 			return
 		end
 		tg_update = tg + tg_update_step
+
+		update_stalkers_perks()
 
 		if keep_spotting then
 			do_combat_on()
@@ -303,7 +335,7 @@ function find_enemy()
 				if npc then
 					local be = npc:best_enemy()
 					if (be and be:alive()) then
-						local distance = be:position():distance_to_sqr(npc:position())
+						-- local distance = be:position():distance_to_sqr(npc:position())
 						-- printf("! FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
 						if check_npc_perk(npc, PERK_SPOTTER) then
 							-- printf("% NPC %s has spotter perk", npc:character_name())
@@ -402,6 +434,38 @@ end
 -- 		female_npc[character_id] = true
 -- 	end
 -- end)
+local string_format = string.format
+function printlog_table(text, node, ...)
+    
+    text = string_format(text, ...)
+    printf("Spotter: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
+end
+
+function save_state(m_data)
+	printf("$ Spotter Save State")
+    if not m_data.spotter then
+        m_data.spotter = {}
+    end 
+    -- save the state
+    m_data.spotter.stalkers = stalkers
+	printlog_table("Stalkers", m_data.spotter.stalkers)
+end
+
+function load_state(m_data)
+	printf("$ Spotter Load State")
+	if m_data.spotter and m_data.spotter.stalkers then
+        -- cache the state
+		stalkers = m_data.spotter.stalkers
+		printlog_table("Stalkers", stalkers)
+	end
+end
+
+local function squad_on_npc_death(squad,se_npc)
+	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
+	printf("squad_on_npc_death name %s", npc and npc:name())
+	local id = npc and npc:id() or 0
+	stalkers[id] = nil
+end
 
 function on_game_start()
 	RegisterScriptCallback("actor_on_first_update",actor_on_first_update)
@@ -423,4 +487,7 @@ function on_game_start()
     RegisterScriptCallback("spotter_combat_ended",combat_ended)
 
 	on_option_change()
+    RegisterScriptCallback("load_state", load_state)
+    RegisterScriptCallback("save_state", save_state)
+	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
 end
