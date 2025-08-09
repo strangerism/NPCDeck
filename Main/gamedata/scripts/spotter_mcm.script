@@ -133,21 +133,24 @@ function check_npc_perk(npc, perk)
 end
 
 ----
-function update_stalkers_perks()
-	for id,squad in pairs(axr_companions.companion_squads) do 
-		if (squad and squad.commander_id) then
-			local i = 0
-			for k in squad:squad_members() do
-				local npc = db.storage[k.id] and db.storage[k.id].object
-				i = i+1
-				if npc then
-					if (npc and npc:alive()) then
-						check_npc_perk(npc, PERK_SPOTTER)
-					end
-				end
-			end
-		end
+local function npc_joins_actor_squad(npc)
+	if (npc and npc:alive()) then
+		check_npc_perk(npc, PERK_SPOTTER)
 	end
+end
+
+axrc_OG_add_to_actor_squad = axr_companions.add_to_actor_squad
+function axr_companions.add_to_actor_squad(npc)
+	axrc_OG_add_to_actor_squad(npc)
+	SendScriptCallback("npc_joins_actor_squad", npc)
+end
+
+local function squad_on_npc_death(squad,se_npc)
+	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
+	if not npc then return end
+	-- printf("squad_on_npc_death name %s", npc and npc:name())
+	local id = npc:id() or 0
+	stalkers[id] = nil
 end
 
 function is_companions_squad_in_danger()
@@ -201,7 +204,6 @@ function actor_on_update()
 		end
 		tg_update = tg + tg_update_step
 
-		update_stalkers_perks()
 
 		if keep_spotting then
 			do_combat_on()
@@ -460,13 +462,6 @@ function load_state(m_data)
 	end
 end
 
-local function squad_on_npc_death(squad,se_npc)
-	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
-	printf("squad_on_npc_death name %s", npc and npc:name())
-	local id = npc and npc:id() or 0
-	stalkers[id] = nil
-end
-
 function on_game_start()
 	RegisterScriptCallback("actor_on_first_update",actor_on_first_update)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
@@ -475,6 +470,7 @@ function on_game_start()
     if AddScriptCallback then
         AddScriptCallback("spotter_combat_started")
         AddScriptCallback("spotter_combat_ended")
+		AddScriptCallback("npc_joins_actor_squad")
     end
 
 	if not zzzz_dynahud then
@@ -490,4 +486,5 @@ function on_game_start()
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
+	RegisterScriptCallback("npc_joins_actor_squad",npc_joins_actor_squad)
 end
