@@ -52,7 +52,13 @@
     </string>
     <string id="ui_mcm_spotter_keep_spotting_desc">
         <text>Your squad will keep spotting after the first enemy. Beware!! You are entering skill issue territory</text>
-    </string>   
+    </string>
+    <string id="ui_mcm_spotter_max_marks">
+        <text>Max simultaneous marks</text>
+    </string>
+    <string id="ui_mcm_spotter_max_marks_desc">
+        <text>If you enable keep spotting, the Spotter in your squad will keep adding new marks unless this limit of active marks is reached</text>
+    </string>        
     <string id="ui_mcm_spotter_bark">
         <text>NPC Bark</text>
     </string>

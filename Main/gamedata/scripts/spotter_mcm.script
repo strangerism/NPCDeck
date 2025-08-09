@@ -11,6 +11,7 @@ function on_mcm_load()
 				{ id = "perk_chance"  	, type = "track"    , val = 2, min = 1, max = 100, step = 1, def = 10},
                 { id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 60, step = 1, def = 15},
 				{ id = "keep_spotting"  	, type ="check", val=1,def=false},
+				{ id = "max_marks"  	, type = "track"    , val = 2, min = 1, max = 5, step = 1, def = 1},
 				{ id = "bark"  	, type ="check", val=1,def=true},
 			}
 		 }
@@ -21,6 +22,7 @@ local defaults = {
 	["perk_chance"]     = 10,
 	["marker_life"]     = 15,
 	["keep_spotting"]     = false,
+	["max_marks"]     = 1,
 	["bark"]     = true,
 	["hotkey"]     = DIK_keys.DIK_C
 }
@@ -35,13 +37,14 @@ local keep_spotting = defaults["keep_spotting"]
 local play_bark = defaults["bark"]
 local hotkey_dik = defaults["hotkey"]
 local perk_chance = defaults["perk_chance"]
-local max_marks = 1
+local max_marks = defaults["max_marks"]
 function on_option_change()
 	marker_life = get_config('marker_life')
 	keep_spotting = get_config('keep_spotting')
 	play_bark = get_config('bark')
     hotkey_dik = get_config('hotkey')
     perk_chance = get_config('perk_chance')
+	max_marks = get_config('max_marks')
 end
 
 -- notifications
@@ -118,7 +121,7 @@ end
 function check_npc_perk(npc, perk)
 	if not npc then return end 
 	local id = npc:id()
-	if not stalkers[id] then
+	if not stalkers[id] and npc:alive() then
 			-- save this NPC
 		stalkers[id] = {}
 		stalkers[id]["id"] = id
@@ -391,17 +394,18 @@ function combat_started()
 end
 
 function do_combat_on()
-	printf("do_combat_on - active marks %s", tableSize(marks))
+	printf("do_combat_on - active marks %s/%s", tableSize(marks), max_marks)
 	if squad_is_peaceful then return end
 
 	if tableSize(marks) < max_marks then
-		-- printf("- TAKE POINT COMBAT [TAG]")
+		printf("- TAKE POINT COMBAT [TAG]")
 		local enemy = find_enemy()
 	end
 end
 
 function combat_ended()
     -- printf("! TAKE POINT COMBAT [END]")
+	marks = {}
 end
 
 local spotter_mark_issued
