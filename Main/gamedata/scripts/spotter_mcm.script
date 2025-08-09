@@ -151,6 +151,7 @@ local function squad_on_npc_death(squad,se_npc)
 	-- printf("squad_on_npc_death name %s", npc and npc:name())
 	local id = npc:id() or 0
 	stalkers[id] = nil
+	npc_barks_lib[id] = nil
 end
 
 function is_companions_squad_in_danger()
@@ -256,18 +257,35 @@ local voice_programs = {
 	freedom = 5,
 }
 
+npc_barks_lib = {}
+local f = getFS()
+
+function build_npc_barks_lib(npc)
+	local npc_id = npc:id()
+	npc_barks_lib[npc_id] = {}
+	local num = 1
+	while f:exist("$game_sounds$",npc:sound_prefix().."fight\\enemy\\enemy_"..num..".ogg") do
+		-- printf("adding sound ["..npc:sound_prefix().."fight\\enemy\\enemy_"..num.."] to table id = "..num)
+		npc_barks_lib[npc_id][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
+		num = num + 1
+	end
+end
 
 function bark(npc)
 	if not npc then return end
 	local female_visual = npc:get_visual_name():find("fstalker")
 	local female_voice = npc:sound_prefix():find("woman")
-	-- printf("-- NPC id %s, name %s, section %s, sound_prefix %s, female_voice %s, female_visual %s", npc:id(), npc:name(), npc:section(), npc:sound_prefix(), female_voice, female_visual)
+	printf("-- NPC id %s, name %s, section %s, sound_prefix %s, female_voice %s, female_visual %s", npc:id(), npc:name(), npc:section(), npc:sound_prefix(), female_voice, female_visual)
 	local faction = npc:character_community() or "stalker"
+	local npc_id = npc:id()
 	-- printf("faction %s", faction)
 	if female_visual or female_voice then
 		file_to_say = xr_sound.get_safe_sound_object( "spotters\\command_fireatwill_" .. math.random(3))
 	else
-		file_to_say = xr_sound.get_safe_sound_object( "characters_voice\\human\\" .. factions[faction] .. "\\fight\\enemy\\enemy_" .. math.random(voice_programs[faction])) --sets the file to play			
+		if not npc_barks_lib[npc_id] then
+			build_npc_barks_lib(npc)
+		end
+		file_to_say = xr_sound.get_safe_sound_object(npc_barks_lib[npc_id][math.random(#npc_barks_lib[npc_id])]) --sets the file to play			
 	end
 	file_to_say:play(db.actor,0,sound_object.s2d) --plays it
 	file_to_say.volume = 1.0 --sets how loud the sound should be
