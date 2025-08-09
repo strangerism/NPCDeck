@@ -35,11 +35,13 @@ local keep_spotting = defaults["keep_spotting"]
 local play_bark = defaults["bark"]
 local hotkey_dik = defaults["hotkey"]
 local perk_chance = defaults["perk_chance"]
+local max_marks = 1
 function on_option_change()
+	marker_life = get_config('marker_life')
+	keep_spotting = get_config('keep_spotting')
 	play_bark = get_config('bark')
     hotkey_dik = get_config('hotkey')
-    marker_life = get_config('marker_life')
-	perk_chance = get_config('perk_chance')
+    perk_chance = get_config('perk_chance')
 end
 
 -- notifications
@@ -148,7 +150,7 @@ end
 local function squad_on_npc_death(squad,se_npc)
 	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
 	if not npc then return end
-	-- printf("squad_on_npc_death name %s", npc and npc:name())
+	printf("squad_on_npc_death name %s", npc and npc:name())
 	local id = npc:id() or 0
 	stalkers[id] = nil
 end
@@ -206,6 +208,7 @@ function actor_on_update()
 
 
 		if keep_spotting then
+			-- printf("keep_spotting")
 			do_combat_on()
 		end
 
@@ -294,18 +297,28 @@ local function getArgs()
 	return args
 end
 
-local marked_enemy
+
+function tableSize(t)
+    local count = 0
+    for _ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
+
 local marker
 local marks = {}
 function mark_enemy(enemy, npc)
     enemy = enemy or level.get_target_obj()
     -- printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
-    if (enemy and enemy:alive()) then
-		marked_enemy = enemy
+    if enemy and enemy:alive() and not marks[enemy:id()] then
 		local args = getArgs()
         args.id = enemy:id()
         marker, mark_id = hmm:AddMarker(args)
 		marks[enemy:id()] = mark_id
+		printf("-- added marker %s for new enemy %s", mark_id, enemy:id())
+		printf("// active marks increased to %s", tableSize(marks))
 		if play_bark then
 			bark(npc)
 		end
@@ -316,7 +329,7 @@ function update_marks()
 	for id, marker in pairs(marks) do
 		local se_obj = id and alife_object(id)
 		if se_obj and (not se_obj:alive()) then
-			printf("!! update marks enemy not alive %s", se_obj:section_name())
+			printf("!! removing marker %s for dead enemy %s", marker, se_obj.id)
 			hmm:DelMarker(marker)
 			marks[id] = nil
 		end
@@ -336,10 +349,10 @@ function find_enemy()
 				if npc then
 					local be = npc:best_enemy()
 					if (be and be:alive()) then
-						-- local distance = be:position():distance_to_sqr(npc:position())
-						-- printf("! FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
+						local distance = be:position():distance_to_sqr(npc:position())
+						-- printf("* FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
 						if check_npc_perk(npc, PERK_SPOTTER) then
-							-- printf("% NPC %s has spotter perk", npc:character_name())
+							printf("% NPC %s has spotter perk", npc:character_name())
 							mark_enemy(be, npc)
 							return
 						end
@@ -378,13 +391,10 @@ function combat_started()
 end
 
 function do_combat_on()
+	printf("do_combat_on - active marks %s", tableSize(marks))
 	if squad_is_peaceful then return end
 
-	if marked_enemy then
-		if not marked_enemy:alive() then
-			marked_enemy = nil
-		end
-	else
+	if tableSize(marks) < max_marks then
 		-- printf("- TAKE POINT COMBAT [TAG]")
 		local enemy = find_enemy()
 	end
@@ -401,7 +411,7 @@ function on_key_press(dik)
 	if (dik == hotkey_dik) then
 		-- printf("- create spotter_mark_keyhold")
 		CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
-			printf("- execute spotter_mark_keyhold")
+			-- printf("- execute spotter_mark_keyhold")
 			local enemy = find_enemy()
 			spotter_mark_issued = true
 			return true
