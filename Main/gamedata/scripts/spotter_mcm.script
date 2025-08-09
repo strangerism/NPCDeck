@@ -209,6 +209,8 @@ function actor_on_update()
 			do_combat_on()
 		end
 
+		update_marks()
+
         local in_danger_state = is_companions_squad_in_danger()
 		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
         if squad_is_peaceful and in_danger_state then
@@ -294,7 +296,7 @@ end
 
 local marked_enemy
 local marker
--- local marks = {}
+local marks = {}
 function mark_enemy(enemy, npc)
     enemy = enemy or level.get_target_obj()
     -- printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
@@ -302,12 +304,23 @@ function mark_enemy(enemy, npc)
 		marked_enemy = enemy
 		local args = getArgs()
         args.id = enemy:id()
-        marker = hmm:AddMarker(args)
-		-- marks[enemy:id()] = marker
+        marker, mark_id = hmm:AddMarker(args)
+		marks[enemy:id()] = mark_id
 		if play_bark then
 			bark(npc)
 		end
     end
+end
+
+function update_marks()
+	for id, marker in pairs(marks) do
+		local se_obj = id and alife_object(id)
+		if se_obj and (not se_obj:alive()) then
+			printf("!! update marks enemy not alive %s", se_obj:section_name())
+			hmm:DelMarker(marker)
+			marks[id] = nil
+		end
+	end
 end
 
 function find_enemy()
