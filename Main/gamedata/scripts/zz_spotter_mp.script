@@ -1,0 +1,6 @@
+axrc_OG_add_to_actor_squad = axr_companions.add_to_actor_squad
+function axr_companions.add_to_actor_squad(npc)
+    printf("-- MP add_to_actor_squad")
+    axrc_OG_add_to_actor_squad(npc)
+    SendScriptCallback("npc_joins_actor_squad", npc)
+end

@@ -131,24 +131,89 @@ function check_npc_perk(npc, perk)
 		if stalkers[id][PERKS][perk]["acquired"] then
 			stalkers[id][PERKS][perk]["id"] = perk
 			stalkers[id][PERKS][perk]["rank"] = 1
-			print_tip("ui_mcm_spotter_has_perk", 15000, npc:character_name())
+			print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
 		end
 	end
 	return stalkers[id][PERKS][perk]["acquired"]
 end
 
-----
+local master_spotter_id = nil
+function find_master_spotter()
+	-- printf("--find_master_spotter")
+	local master_npc = nil
+	for id,squad in pairs(axr_companions.companion_squads) do 
+		if (squad and squad.commander_id) then
+			local i = 0
+			for k in squad:squad_members() do
+				local npc = db.storage[k.id] and db.storage[k.id].object
+				i = i+1
+				-- printf("companion[%s]", i)
+				if npc and npc:alive() and check_npc_perk(npc, PERK_SPOTTER) then
+					if master_npc == nil then
+						master_npc = npc
+					elseif master_npc:rank() < npc:rank() then
+						master_npc = npc
+					end
+				end
+			end
+		end
+	end
+	if master_npc then
+		-- printf("// found master spotter %s with rank %s", master_npc:character_name(), ranks.get_se_obj_rank_name(master_npc))
+		if master_npc:id() ~= master_spotter_id then
+			print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
+		end
+	else
+		-- printf("// No spotters in squad")
+	end
+	
+	return master_npc and master_npc:id() or nil
+end
+
+---- SQUAD UPDATES
+---
+--- ADD
 local function npc_joins_actor_squad(npc)
+	-- printf("-- npc_joins_actor_squad")
 	if (npc and npc:alive()) then
-		check_npc_perk(npc, PERK_SPOTTER)
+		master_spotter_id = find_master_spotter()
 	end
 end
 
-axrc_OG_add_to_actor_squad = axr_companions.add_to_actor_squad
-function axr_companions.add_to_actor_squad(npc)
-	axrc_OG_add_to_actor_squad(npc)
+--- zz_spotter_mp has the rest of the monkey patches for squad updates
+
+axrc_OG_add_special_task_npc_to_actor_squad = axr_companions.add_special_task_npc_to_actor_squad
+function axr_companions.add_special_task_npc_to_actor_squad(npc)
+	-- printf("-- MP add_special_task_npc_to_actor_squad")
+	axrc_OG_add_special_task_npc_to_actor_squad(npc)
 	SendScriptCallback("npc_joins_actor_squad", npc)
 end
+
+axrc_OG_add_special_squad = axr_companions.add_special_squad
+function axr_companions.add_special_squad(npc)
+	-- printf("-- MP add_special_squad")
+	axrc_OG_add_special_squad(npc)
+	SendScriptCallback("npc_joins_actor_squad", npc)
+end
+
+-- REMOVE
+local function npc_leaves_actor_squad(npc)
+	master_spotter_id = find_master_spotter()
+end
+
+axrc_OG_remove_from_actor_squad = axr_companions.remove_from_actor_squad
+function axr_companions.remove_from_actor_squad(npc)
+	axrc_OG_remove_from_actor_squad(npc)
+	SendScriptCallback("npc_leaves_actor_squad", npc)
+end
+
+axrc_OG_remove_all_from_actor_squad = axr_companions.remove_all_from_actor_squad
+function axr_companions.remove_all_from_actor_squad(npc)
+	axrc_OG_remove_all_from_actor_squad(npc)
+	SendScriptCallback("npc_leaves_actor_squad", npc)
+end
+
+-- DEATH
 
 local function squad_on_npc_death(squad,se_npc)
 	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
@@ -156,7 +221,14 @@ local function squad_on_npc_death(squad,se_npc)
 	printf("squad_on_npc_death name %s", npc and npc:name())
 	local id = npc:id() or 0
 	stalkers[id] = nil
+	for id,actor_squad in pairs(axr_companions.companion_squads) do
+		if squad.id == actor_squad.id then
+			master_spotter_id = find_master_spotter()
+		end
+	end
 end
+-----
+
 
 function is_companions_squad_in_danger()
 	--printf("============================================================================================")
@@ -210,12 +282,14 @@ function actor_on_update()
 		tg_update = tg + tg_update_step
 
 
-		if keep_spotting then
+		if not squad_is_peaceful and keep_spotting then
 			-- printf("keep_spotting")
-			do_combat_on()
+			do_keep_spotting()
 		end
 
-		update_marks()
+		if not squad_is_peaceful then
+			update_marks()
+		end
 
         local in_danger_state = is_companions_squad_in_danger()
 		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
@@ -339,67 +413,76 @@ function update_marks()
 	end
 end
 
-function find_enemy()
-	printf("- Find enemy")
+function spot_enemy(npc, be_list)
+	-- printf("% NPC %s uses spotter perk", npc:character_name())
+	local be = npc:best_enemy()
+	if (be and be:alive()) then
+		local distance = be:position():distance_to_sqr(npc:position())
+		-- printf("* FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
+		mark_enemy(be, npc)
+		-- -- Add a new element
+		-- table.insert(be_list, {be, distance})
+	end
+end
+
+function find_enemy(spotter_id)
+	-- printf("- Find enemy")
 	local be_list = {}
-	for id,squad in pairs(axr_companions.companion_squads) do 
-		if (squad and squad.commander_id) then
-			local i = 0
-			for k in squad:squad_members() do
-				local npc = db.storage[k.id] and db.storage[k.id].object
-				i = i+1
-				-- printf("companion[%s]", i)
-				if npc then
-					local be = npc:best_enemy()
-					if (be and be:alive()) then
-						local distance = be:position():distance_to_sqr(npc:position())
-						-- printf("* FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
-						if check_npc_perk(npc, PERK_SPOTTER) then
-							printf("% NPC %s has spotter perk", npc:character_name())
-							mark_enemy(be, npc)
-							return
-						end
-						-- -- Add a new element
-						-- table.insert(be_list, {be, distance})
+	if spotter_id then
+		local npc = db.storage[spotter_id] and db.storage[spotter_id].object
+		if npc then
+			spot_enemy(npc, be_list)
+		end		
+	else
+		for id,squad in pairs(axr_companions.companion_squads) do 
+			if (squad and squad.commander_id) then
+				local i = 0
+				for k in squad:squad_members() do
+					local npc = db.storage[k.id] and db.storage[k.id].object
+					i = i+1
+					-- printf("companion[%s]", i)
+					if npc and check_npc_perk(npc, PERK_SPOTTER) then
+						spot_enemy(npc, be_list)
+						return
 					end
 				end
 			end
 		end
+
+		-- local min_be = nil
+		-- local min_distance = math.huge  -- Start with a very large number
+
+		-- for _, pair in ipairs(be_list) do
+		-- 	local be = pair[1]
+		-- 	local distance = pair[2]
+
+		-- 	if distance < min_distance then
+		-- 		min_distance = distance
+		-- 		min_be = be
+		-- 	end
+		-- end
+
+		-- printf("-- ENEMY %s with smallest distance %s:", min_be and min_be:id(), min_distance)
+		-- return min_be		
 	end
-
-	-- local min_be = nil
-	-- local min_distance = math.huge  -- Start with a very large number
-
-	-- for _, pair in ipairs(be_list) do
-	-- 	local be = pair[1]
-	-- 	local distance = pair[2]
-
-	-- 	if distance < min_distance then
-	-- 		min_distance = distance
-	-- 		min_be = be
-	-- 	end
-	-- end
-
-	-- printf("-- ENEMY %s with smallest distance %s:", min_be and min_be:id(), min_distance)
-	-- return min_be
 end
 
 
 function combat_started()
     -- printf("- TAKE POINT COMBAT [START]")
-	
+	if not master_spotter_id then
+		master_spotter_id = find_master_spotter()
+	end
 	-- do the first spotting
-	local enemy = find_enemy()
+	local enemy = find_enemy(master_spotter_id)
 	-- printf("-- marker added %s", marker)
 end
 
-function do_combat_on()
-	printf("do_combat_on - active marks %s/%s", tableSize(marks), max_marks)
-	if squad_is_peaceful then return end
-
+function do_keep_spotting()
+	-- printf("do_keep_spotting - active marks %s/%s", tableSize(marks), max_marks)
 	if tableSize(marks) < max_marks then
-		printf("- TAKE POINT COMBAT [TAG]")
-		local enemy = find_enemy()
+		-- printf("- TAKE POINT COMBAT [TAG]")
+		local enemy = find_enemy(master_spotter_id)
 	end
 end
 
@@ -414,13 +497,14 @@ function on_key_press(dik)
 	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
 		-- printf("- create spotter_mark_keyhold")
-		CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
-			-- printf("- execute spotter_mark_keyhold")
-			local enemy = find_enemy()
-			spotter_mark_issued = true
-			return true
-		end)		
-
+		if not squad_is_peaceful then
+			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
+				-- printf("- execute spotter_mark_keyhold")
+				local enemy = find_enemy(master_spotter_id)
+				spotter_mark_issued = true
+				return true
+			end)
+		end
 	end
 end
 
@@ -475,16 +559,17 @@ function load_state(m_data)
 	end
 end
 
+if AddScriptCallback then
+	AddScriptCallback("spotter_combat_started")
+	AddScriptCallback("spotter_combat_ended")
+	AddScriptCallback("npc_joins_actor_squad")
+	AddScriptCallback("npc_leaves_actor_squad")
+end
+
 function on_game_start()
 	RegisterScriptCallback("actor_on_first_update",actor_on_first_update)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback('on_option_change', on_option_change)
-
-    if AddScriptCallback then
-        AddScriptCallback("spotter_combat_started")
-        AddScriptCallback("spotter_combat_ended")
-		AddScriptCallback("npc_joins_actor_squad")
-    end
 
 	if not zzzz_dynahud then
 		UnregisterScriptCallback("on_key_release",axr_companions.on_key_release)
@@ -500,4 +585,5 @@ function on_game_start()
     RegisterScriptCallback("save_state", save_state)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
 	RegisterScriptCallback("npc_joins_actor_squad",npc_joins_actor_squad)
+	RegisterScriptCallback("npc_leaves_actor_squad",npc_leaves_actor_squad)
 end
