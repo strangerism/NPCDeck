@@ -97,7 +97,11 @@ end
 local stalkers = {}
 local PERKS = "perks"
 local PERK_SPOTTER = "npc_perk_spotter"
-
+local PERK_SPOTTER_ABILITY_CALLMARK_1 = {
+	id = "npc_perk_spotter_callmark_1",
+	icon = "ui_icons_spotter_crosshair_gradient",
+	cooldown = 100
+}
 function is_archetype_perk(npc, perk)
 	local archetype = false
 	if perk == PERK_SPOTTER then
@@ -159,12 +163,17 @@ function find_master_spotter()
 		end
 	end
 	if master_npc then
-		-- printf("// found master spotter %s with rank %s", master_npc:character_name(), ranks.get_se_obj_rank_name(master_npc))
+		printf("// found master spotter %s with rank %s", master_npc:character_name(), ranks.get_se_obj_rank_name(master_npc))
 		if master_npc:id() ~= master_spotter_id then
+			local clist = axr_companions.list_actor_squad_by_id()
+			for i=1, #clist do
+				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK_1)
+			end			
 			print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
+			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK_1)
 		end
 	else
-		-- printf("// No spotters in squad")
+		printf("// No spotters in squad")
 	end
 	
 	return master_npc and master_npc:id() or nil
@@ -173,10 +182,18 @@ end
 ---- SQUAD UPDATES
 ---
 --- ADD
-local function npc_joins_actor_squad(npc)
-	-- printf("-- npc_joins_actor_squad")
-	if (npc and npc:alive()) then
-		master_spotter_id = find_master_spotter()
+update_master_spotter_requested = false
+local function schedule_update_master_spotter()
+	printf("-- schedule_update_master_spotter")
+	if not update_master_spotter_requested then
+		printf("// update_master_spotter_requested")
+		update_master_spotter_requested = true
+		CreateTimeEvent("spotter", "schedule_update_master_spotter", 1, function()
+			-- printf("- execute spotter_mark_keyhold")
+			master_spotter_id = find_master_spotter()
+			update_master_spotter_requested = false
+			return true
+		end)		
 	end
 end
 
@@ -186,31 +203,29 @@ axrc_OG_add_special_task_npc_to_actor_squad = axr_companions.add_special_task_np
 function axr_companions.add_special_task_npc_to_actor_squad(npc)
 	-- printf("-- MP add_special_task_npc_to_actor_squad")
 	axrc_OG_add_special_task_npc_to_actor_squad(npc)
-	SendScriptCallback("npc_joins_actor_squad", npc)
+	SendScriptCallback("schedule_update_master_spotter")
 end
 
 axrc_OG_add_special_squad = axr_companions.add_special_squad
 function axr_companions.add_special_squad(npc)
 	-- printf("-- MP add_special_squad")
 	axrc_OG_add_special_squad(npc)
-	SendScriptCallback("npc_joins_actor_squad", npc)
+	SendScriptCallback("schedule_update_master_spotter")
 end
 
 -- REMOVE
-local function npc_leaves_actor_squad(npc)
-	master_spotter_id = find_master_spotter()
-end
+
 
 axrc_OG_remove_from_actor_squad = axr_companions.remove_from_actor_squad
 function axr_companions.remove_from_actor_squad(npc)
 	axrc_OG_remove_from_actor_squad(npc)
-	SendScriptCallback("npc_leaves_actor_squad", npc)
+	SendScriptCallback("schedule_update_master_spotter")
 end
 
 axrc_OG_remove_all_from_actor_squad = axr_companions.remove_all_from_actor_squad
 function axr_companions.remove_all_from_actor_squad(npc)
 	axrc_OG_remove_all_from_actor_squad(npc)
-	SendScriptCallback("npc_leaves_actor_squad", npc)
+	SendScriptCallback("schedule_update_master_spotter")
 end
 
 -- DEATH
@@ -223,7 +238,7 @@ local function squad_on_npc_death(squad,se_npc)
 	stalkers[id] = nil
 	for id,actor_squad in pairs(axr_companions.companion_squads) do
 		if squad.id == actor_squad.id then
-			master_spotter_id = find_master_spotter()
+			SendScriptCallback("schedule_update_master_spotter")
 		end
 	end
 end
@@ -562,8 +577,7 @@ end
 if AddScriptCallback then
 	AddScriptCallback("spotter_combat_started")
 	AddScriptCallback("spotter_combat_ended")
-	AddScriptCallback("npc_joins_actor_squad")
-	AddScriptCallback("npc_leaves_actor_squad")
+	AddScriptCallback("schedule_update_master_spotter")
 end
 
 function on_game_start()
@@ -584,6 +598,5 @@ function on_game_start()
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
-	RegisterScriptCallback("npc_joins_actor_squad",npc_joins_actor_squad)
-	RegisterScriptCallback("npc_leaves_actor_squad",npc_leaves_actor_squad)
+	RegisterScriptCallback("schedule_update_master_spotter",schedule_update_master_spotter)
 end

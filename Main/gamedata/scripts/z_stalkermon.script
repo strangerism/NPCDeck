@@ -1,0 +1,202 @@
+
+
+local npc_abilities = {}
+
+local function show_cooldown(npc_id, ability)
+end
+
+function register_ability(npc_id, ability)
+    if not npc_abilities[npc_id] then
+        npc_abilities[npc_id] = {}
+    end
+	spotter_mcm.printlog_table("register_ability", ability)
+    npc_abilities[npc_id][ability.id] = ability
+end
+
+function unregister_ability(npc_id, ability)
+    if not npc_abilities[npc_id] then return end
+	printf("! unregister_ability %s", npc_id)
+    npc_abilities[npc_id][ability.id] = nil
+end
+
+function unregister_abilities(npc_id)
+    npc_abilities[npc_id] = nil
+end
+
+function activate_ability(npc_id, ability)
+    if not npc_id or not ability or not ability.id then return end
+    if not npc_abilities[npc_id] or not npc_abilities[npc_id][ability.id] then return end
+
+    show_cooldown(npc_id, ability)
+end
+
+
+function actor_on_update()
+end
+
+function on_game_start() 
+    RegisterScriptCallback("actor_on_update",actor_on_update)
+end
+
+og_axr_companions_UI_InitControls = axr_companions.UICompanionList.InitControls
+function axr_companions.UICompanionList:InitControls()
+	printf("-- UICompanionList:InitControls")
+	local xml = utils_xml.get_hud_xml()
+	self.xml = xml
+	self.dialog = xml:InitStatic("companion_list", self)
+	--utils_xml.correct_ratio(self.dialog, true)
+	self.ratio  = utils_xml.screen_ratio()
+	self.companion_info = {}
+	for i=1,8 do
+		self.companion_info[i]                   = {}
+		self.companion_info[i].base              = xml:InitStatic("companion_list:slot", self.dialog)
+		printf("self.companion_info[i].base x = %s ", self.companion_info[i].base:GetWndPos().x)
+        self.companion_info[i].background        = xml:InitStatic("companion_list:slot:background", self.companion_info[i].base)
+		self.companion_info[i].icon        		 = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
+		printf("self.companion_info[i].icon x = %s ", self.companion_info[i].icon:GetWndPos().x)
+        self.companion_info[i].danger_indicator  = xml:InitStatic("companion_list:slot:danger_indicator", self.companion_info[i].base)
+		self.companion_info[i].team_role_shadow  = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
+		self.companion_info[i].team_role         = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
+		self.companion_info[i].distance          = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
+		self.companion_info[i].prog_health       = xml:InitProgressBar("companion_list:slot:health", self.companion_info[i].base)
+		-- stalkermon
+		self.companion_info[i].abilities = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
+		self.companion_info[i].abilities:SetWndSize(vector2():set( 100, 25 ))
+		-- self.companion_info[i].abilities:SetWndPos(self.companion_info[i].icon:GetWndPos().x,self.companion_info[i].icon:GetWndPos().y)
+		printf("abilities ribbon x = %s ", self.companion_info[i].abilities:GetWndPos().x)
+        --
+		for _,ele in pairs(self.companion_info[i]) do
+			utils_xml.correct_ratio(ele)
+		end
+
+		printf("self.companion_info[i].base x = %s ", self.companion_info[i].base:GetWndPos().x)
+        printf("self.companion_info[i].icon x = %s ", self.companion_info[i].icon:GetWndPos().x)
+        
+		local h = self.companion_info[i].background:GetHeight()
+		self.companion_info[i].distance:SetFont(GetFontSmall())
+		self.companion_info[i].base:SetWndPos( vector2():set( 0 , (8-i)*(h+10) ) )
+		
+		local pos = self.companion_info[i].team_role:GetWndPos()
+		self.companion_info[i].team_role_shadow:SetWndPos( vector2():set( pos.x + 1 , pos.y + 2 ) )
+		self.companion_info[i].team_role_shadow:SetTextureColor( GetARGB(255, 0, 0, 0) )
+	end
+	-- stalkermon
+	self.abilities_ribbon = {}
+	--
+end
+
+og_axr_companions_UI_Update = axr_companions.UICompanionList.Update
+function axr_companions.UICompanionList:Update(force)
+	CUIScriptWnd.Update(self)
+	
+	local tg = time_global()
+	if force then
+		self._tmr = tg - 1
+	end
+	if self._tmr >= tg then
+		return
+	end
+	self._tmr = tg + self.update_rate
+	
+	self.ratio  = utils_xml.screen_ratio()
+	self.index  = 0
+	self.W      = 40
+	self.offset = 10
+	printf("-- UICompanionList:Update")
+	spotter_mcm.printlog_table("npc_abilities", npc_abilities)
+	local to_show = main_hud_shown()
+	local clist = axr_companions.list_actor_squad_by_id()
+	for i=1,8 do
+		local se_obj = clist[i] and alife_object(clist[i])
+		if to_show and (se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive()) then
+			local st = db.storage[se_obj.id]
+			local npc = st and st.object
+			local ele = self.companion_info[i]
+			
+			-- Icon
+			local icon_name = npc and npc:character_icon() or se_obj:character_icon()
+			icon_name = icon_name and icon_name ~= "" and icon_name or "ui\\ui_noise"
+			ele.icon:InitTexture(icon_name)
+			
+			-- Distance
+			ele.distance:SetText(string.format("%.2f M", se_obj.position:distance_to(db.actor:position())))
+
+			-- Leader and relation status
+			local squad = se_obj.group_id and se_obj.group_id ~= 65535 and alife_object(se_obj.group_id)
+			if (squad and squad:commander_id() == se_obj.id) then
+				ele.team_role:InitTexture("ui_minimap_squad_leader")
+				ele.team_role_shadow:InitTexture("ui_minimap_squad_leader")
+			else
+				ele.team_role:InitTexture("ui_minimap_point")
+				ele.team_role_shadow:InitTexture("ui_minimap_point")
+			end
+			
+			local community = npc and npc:character_community()
+			local clr = community and self.clr_list[community] or self.clr_list["def"]
+			ele.team_role:SetTextureColor(clr)
+			
+			-- Health
+			if (npc) then 
+				local health = clamp( round_idp(npc.health,1),0,1)
+				ele.prog_health:SetProgressPos( health )
+			end
+			
+			-- Danger state
+			ele.danger_indicator:Show(npc and npc:best_enemy() and true or false)
+			
+			-- stakermon abilities ribbon
+			local npc_id = se_obj.id
+
+			if self.abilities_ribbon[npc_id] then
+				printf("-- UICompanionList NPC %s remove abilities", npc_id)
+				for _, a_ele in pairs(self.abilities_ribbon[npc_id]) do
+					a_ele.icon:Show(false)
+					a_ele.icon = nil
+				end
+				self.abilities_ribbon[npc_id] = nil
+			end
+			
+			if npc_abilities[npc_id] then
+				printf("-- UICompanionList NPC %s has abilities", npc_id)
+				self.abilities_ribbon[npc_id] = {}
+				local j = 2
+				for a_id, ability in pairs(npc_abilities[npc_id]) do
+					-- printf("-- UICompanionList NPC abilitiy %s", ability.id)
+					-- init
+					self.abilities_ribbon[npc_id][a_id] = {}
+
+					-- icon
+					self.abilities_ribbon[npc_id][a_id].icon = self.xml:InitStatic("indicators:static", self.companion_info[i].abilities)
+					self.abilities_ribbon[npc_id][a_id].icon:InitTexture(ability.icon)
+
+					-- position
+					local x = (j-1)*(self.W + self.offset)
+					-- printf("ability %s x = %s", ability.id, x)
+					self.abilities_ribbon[npc_id][a_id].icon:SetWndPos( vector2():set( 0-x , 0 ) )
+					utils_xml.correct_ratio(self.abilities_ribbon[npc_id][a_id].icon)
+
+					-- show
+					self.abilities_ribbon[npc_id][a_id].icon:Show(true)
+
+					--
+					j = j + 1
+				end
+				-- printf("abilities ribbon x = %s ", self.companion_info[i].abilities:GetWndPos().x)
+				-- printf("self.companion_info[i].icon x = %s ", self.companion_info[i].icon:GetWndPos().x)
+        		self.companion_info[i].abilities:Show(true)
+			else
+				-- if self.abilities_ribbon[npc_id] then
+				-- 	printf("-- UICompanionList NPC %s remove abilities", npc_id)
+				-- 	for _, a_ele in pairs(self.abilities_ribbon[npc_id]) do
+				-- 		a_ele.icon:Show(false)
+				-- 		a_ele.icon = nil
+				-- 	end
+				-- 	self.abilities_ribbon[npc_id] = nil
+				-- end
+			end
+			self.companion_info[i].base:Show(true)
+		else 
+			self.companion_info[i].base:Show(false)
+		end
+	end
+end
