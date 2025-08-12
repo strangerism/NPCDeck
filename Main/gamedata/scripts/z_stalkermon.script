@@ -114,6 +114,7 @@ function axr_companions.UICompanionList:Update(force)
 	self._tmr = tg + self.update_rate
 	
 	self.ratio  = utils_xml.screen_ratio()
+	self.scale  = 0.75
 	self.index  = 0
 	self.W      = 40
 	self.offset = 10
@@ -206,8 +207,9 @@ function axr_companions.UICompanionList:Update(force)
 							-- ability icon
 							ele.abilities[npc_id][a_id].icon = self.xml_sm:InitStatic("abilities:static", ele.base)
 							ele.abilities[npc_id][a_id].icon:InitTexture(ability.icon)
+							ele.abilities[npc_id][a_id].icon:SetWndSize(vector2():set(ele.abilities[npc_id][a_id].icon:GetWidth() * self.scale, ele.abilities[npc_id][a_id].icon:GetHeight() * self.scale ))
 							-- position
-							local x = (j-1)*(self.W + self.offset)
+							local x = (j-1)*(self.W + self.offset) * self.scale
 							-- printf("ability %s x = %s", ability.id, x)
 							ele.abilities[npc_id][a_id].icon:SetWndPos( vector2():set( 0-x , 0 ) )
 							-- ability cooldown							
