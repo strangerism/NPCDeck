@@ -23,11 +23,31 @@ function unregister_abilities(npc_id)
     npc_abilities[npc_id] = nil
 end
 
+function manage_ability_cooldown(npc_id, ability_id)
+	if not npc_abilities[npc_id] or not npc_abilities[npc_id][ability_id] then return true end
+
+	if (npc_abilities[npc_id][ability_id].timer == 0 ) then
+		printf("! ending time event %s", npc_id)
+		return true
+	else
+		local timer = npc_abilities[npc_id][ability_id].timer
+		local cooldown = npc_abilities[npc_id][ability_id].cooldown
+		printf("// [tg][%s] manage_ability %s cooldown %s/%s", time_global(), ability_id, timer, cooldown)
+		npc_abilities[npc_id][ability_id].timer = npc_abilities[npc_id][ability_id].timer - 1
+		CreateTimeEvent("spotter_coolddown", tostring(npc_id) .. ability_id .. "_" .. tostring(timer), 1, manage_ability_cooldown, npc_id, ability_id)
+		return true
+	end
+	
+end
+
 function activate_ability(npc_id, ability)
+	printf("! activate_ability %s", ability)
     if not npc_id or not ability or not ability.id then return end
     if not npc_abilities[npc_id] or not npc_abilities[npc_id][ability.id] then return end
 
-    show_cooldown(npc_id, ability)
+	npc_abilities[npc_id][ability.id].timer = npc_abilities[npc_id][ability.id].cooldown
+
+	CreateTimeEvent("spotter_coolddown", tostring(npc_id) .. ability.id, 1, manage_ability_cooldown, npc_id, ability.id)
 end
 
 
@@ -45,33 +65,26 @@ function axr_companions.UICompanionList:InitControls()
 	self.xml = xml
 	self.dialog = xml:InitStatic("companion_list", self)
 	--utils_xml.correct_ratio(self.dialog, true)
-	self.ratio  = utils_xml.screen_ratio()
+
 	self.companion_info = {}
 	for i=1,8 do
 		self.companion_info[i]                   = {}
 		self.companion_info[i].base              = xml:InitStatic("companion_list:slot", self.dialog)
-		printf("self.companion_info[i].base x = %s ", self.companion_info[i].base:GetWndPos().x)
-        self.companion_info[i].background        = xml:InitStatic("companion_list:slot:background", self.companion_info[i].base)
+		self.companion_info[i].background        = xml:InitStatic("companion_list:slot:background", self.companion_info[i].base)
 		self.companion_info[i].icon        		 = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
-		printf("self.companion_info[i].icon x = %s ", self.companion_info[i].icon:GetWndPos().x)
-        self.companion_info[i].danger_indicator  = xml:InitStatic("companion_list:slot:danger_indicator", self.companion_info[i].base)
+		self.companion_info[i].danger_indicator  = xml:InitStatic("companion_list:slot:danger_indicator", self.companion_info[i].base)
 		self.companion_info[i].team_role_shadow  = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
 		self.companion_info[i].team_role         = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
 		self.companion_info[i].distance          = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
 		self.companion_info[i].prog_health       = xml:InitProgressBar("companion_list:slot:health", self.companion_info[i].base)
-		-- stalkermon
-		self.companion_info[i].abilities = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
-		self.companion_info[i].abilities:SetWndSize(vector2():set( 100, 25 ))
-		-- self.companion_info[i].abilities:SetWndPos(self.companion_info[i].icon:GetWndPos().x,self.companion_info[i].icon:GetWndPos().y)
-		printf("abilities ribbon x = %s ", self.companion_info[i].abilities:GetWndPos().x)
-        --
 		for _,ele in pairs(self.companion_info[i]) do
 			utils_xml.correct_ratio(ele)
-		end
+		end		
+		-- stalkermon
+		self.companion_info[i].abilities = {} -- = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
+		-- self.companion_info[i].abilities:SetWndSize(vector2():set( 100, 25 ))
 
-		printf("self.companion_info[i].base x = %s ", self.companion_info[i].base:GetWndPos().x)
-        printf("self.companion_info[i].icon x = %s ", self.companion_info[i].icon:GetWndPos().x)
-        
+		--
 		local h = self.companion_info[i].background:GetHeight()
 		self.companion_info[i].distance:SetFont(GetFontSmall())
 		self.companion_info[i].base:SetWndPos( vector2():set( 0 , (8-i)*(h+10) ) )
@@ -81,7 +94,7 @@ function axr_companions.UICompanionList:InitControls()
 		self.companion_info[i].team_role_shadow:SetTextureColor( GetARGB(255, 0, 0, 0) )
 	end
 	-- stalkermon
-	self.abilities_ribbon = {}
+	-- self.abilities_ribbon = {}
 	--
 end
 
@@ -102,8 +115,8 @@ function axr_companions.UICompanionList:Update(force)
 	self.index  = 0
 	self.W      = 40
 	self.offset = 10
-	printf("-- UICompanionList:Update")
-	spotter_mcm.printlog_table("npc_abilities", npc_abilities)
+	-- printf("-- UICompanionList:Update")
+	-- spotter_mcm.printlog_table("npc_abilities", npc_abilities)
 	local to_show = main_hud_shown()
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1,8 do
@@ -138,6 +151,7 @@ function axr_companions.UICompanionList:Update(force)
 			-- Health
 			if (npc) then 
 				local health = clamp( round_idp(npc.health,1),0,1)
+				printf("health %s", health)
 				ele.prog_health:SetProgressPos( health )
 			end
 			
@@ -147,52 +161,66 @@ function axr_companions.UICompanionList:Update(force)
 			-- stakermon abilities ribbon
 			local npc_id = se_obj.id
 
-			if self.abilities_ribbon[npc_id] then
+			if ele.abilities[npc_id] then
 				printf("-- UICompanionList NPC %s remove abilities", npc_id)
-				for _, a_ele in pairs(self.abilities_ribbon[npc_id]) do
-					a_ele.icon:Show(false)
-					a_ele.icon = nil
+				for a_id, a_ele in pairs(ele.abilities[npc_id]) do
+					
+					if not npc_abilities[npc_id][a_id] or npc_abilities[npc_id][a_id].timer == 0 then
+						printf("-- NPC %s remove ability %s ", npc_id, a_id)
+						a_ele.icon:Show(false)
+						a_ele.icon = nil
+						a_ele.cd:Show(false)
+						a_ele.cd = nil
+						ele.abilities[npc_id][a_id] = nil
+					end
 				end
-				self.abilities_ribbon[npc_id] = nil
+				-- self.abilities_ribbon[npc_id] = nil
 			end
 			
 			if npc_abilities[npc_id] then
-				printf("-- UICompanionList NPC %s has abilities", npc_id)
-				self.abilities_ribbon[npc_id] = {}
+				-- printf("-- UICompanionList NPC %s has abilities", npc_id)
+				if not ele.abilities[npc_id] then
+					printf("Init npc %s abilities ribbon", npc_id)
+					ele.abilities[npc_id] = {}
+				end
 				local j = 2
 				for a_id, ability in pairs(npc_abilities[npc_id]) do
 					-- printf("-- UICompanionList NPC abilitiy %s", ability.id)
-					-- init
-					self.abilities_ribbon[npc_id][a_id] = {}
-
-					-- icon
-					self.abilities_ribbon[npc_id][a_id].icon = self.xml:InitStatic("indicators:static", self.companion_info[i].abilities)
-					self.abilities_ribbon[npc_id][a_id].icon:InitTexture(ability.icon)
-
-					-- position
-					local x = (j-1)*(self.W + self.offset)
-					-- printf("ability %s x = %s", ability.id, x)
-					self.abilities_ribbon[npc_id][a_id].icon:SetWndPos( vector2():set( 0-x , 0 ) )
-					utils_xml.correct_ratio(self.abilities_ribbon[npc_id][a_id].icon)
-
-					-- show
-					self.abilities_ribbon[npc_id][a_id].icon:Show(true)
-
-					--
-					j = j + 1
+					if ability.timer and ability.timer > 0 then
+						-- init
+						if not ele.abilities[npc_id][a_id] then
+							-- init iconcooldown progress bar
+							printf("-- Init npc %s ability %s", npc_id, a_id)
+							ele.abilities[npc_id][a_id] = {}
+							-- ability icon
+							ele.abilities[npc_id][a_id].icon = self.xml:InitStatic("indicators:static", ele.base)
+							ele.abilities[npc_id][a_id].icon:InitTexture(ability.icon)
+							-- position
+							local x = (j-1)*(self.W + self.offset)
+							-- printf("ability %s x = %s", ability.id, x)
+							ele.abilities[npc_id][a_id].icon:SetWndPos( vector2():set( 0-x , 0 ) )
+							-- ability cooldown							
+							ele.abilities[npc_id][a_id].cd = self.xml:InitProgressBar("indicators:cooldown", ele.abilities[npc_id][a_id].icon)
+							-- set ratio
+							utils_xml.correct_ratio(ele.abilities[npc_id][a_id].icon)
+							utils_xml.correct_ratio(ele.abilities[npc_id][a_id].cd)
+							-- show
+							ele.abilities[npc_id][a_id].icon:Show(true)
+							ele.abilities[npc_id][a_id].cd:Show(true)
+						end
+						printf("update CD bar=%s",bar)
+						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
+						ele.abilities[npc_id][a_id].cd:SetProgressPos(bar)
+						--
+						j = j + 1
+					else
+						-- ele.abilities[npc_id][a_id].icon:Show(false)
+						-- ele.abilities[npc_id][a_id].icon = nil
+						-- ele.abilities[npc_id][a_id].cd:Show(false)
+						-- ele.abilities[npc_id][a_id].cd = nil
+					end
 				end
-				-- printf("abilities ribbon x = %s ", self.companion_info[i].abilities:GetWndPos().x)
-				-- printf("self.companion_info[i].icon x = %s ", self.companion_info[i].icon:GetWndPos().x)
-        		self.companion_info[i].abilities:Show(true)
-			else
-				-- if self.abilities_ribbon[npc_id] then
-				-- 	printf("-- UICompanionList NPC %s remove abilities", npc_id)
-				-- 	for _, a_ele in pairs(self.abilities_ribbon[npc_id]) do
-				-- 		a_ele.icon:Show(false)
-				-- 		a_ele.icon = nil
-				-- 	end
-				-- 	self.abilities_ribbon[npc_id] = nil
-				-- end
+        		-- ele.abilities:Show(true)
 			end
 			self.companion_info[i].base:Show(true)
 		else 

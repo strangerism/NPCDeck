@@ -100,7 +100,12 @@ local PERK_SPOTTER = "npc_perk_spotter"
 local PERK_SPOTTER_ABILITY_CALLMARK_1 = {
 	id = "npc_perk_spotter_callmark_1",
 	icon = "ui_icons_spotter_crosshair_gradient",
-	cooldown = 100
+	cooldown = 10
+}
+local PERK_SPOTTER_ABILITY_CALLMARK_2 = {
+	id = "npc_perk_spotter_callmark_2",
+	icon = "ui_icons_spotter_crosshair_gradient",
+	cooldown = 10
 }
 function is_archetype_perk(npc, perk)
 	local archetype = false
@@ -168,9 +173,11 @@ function find_master_spotter()
 			local clist = axr_companions.list_actor_squad_by_id()
 			for i=1, #clist do
 				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK_1)
+				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK_2)
 			end			
 			print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
 			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK_1)
+			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK_2)
 		end
 	else
 		printf("// No spotters in squad")
@@ -512,10 +519,12 @@ function on_key_press(dik)
 	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
 		-- printf("- create spotter_mark_keyhold")
-		if not squad_is_peaceful then
+		if true then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 				-- printf("- execute spotter_mark_keyhold")
 				local enemy = find_enemy(master_spotter_id)
+				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_CALLMARK_1)
+				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_CALLMARK_2)
 				spotter_mark_issued = true
 				return true
 			end)
