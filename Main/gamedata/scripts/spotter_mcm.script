@@ -97,15 +97,15 @@ end
 local stalkers = {}
 local PERKS = "perks"
 local PERK_SPOTTER = "npc_perk_spotter"
-local PERK_SPOTTER_ABILITY_CALLMARK_1 = {
-	id = "npc_perk_spotter_callmark_1",
-	icon = "ui_icons_spotter_crosshair_gradient",
-	cooldown = 10
+local PERK_SPOTTER_ABILITY_CALLMARK = {
+	id = "npc_perk_spotter_callmark",
+	icon = "ui_icons_spotter_pin_redskull",
+	cooldown = 180
 }
-local PERK_SPOTTER_ABILITY_CALLMARK_2 = {
-	id = "npc_perk_spotter_callmark_2",
+local PERK_SPOTTER_ABILITY_SPOT = {
+	id = "npc_perk_spotter_spot",
 	icon = "ui_icons_spotter_crosshair_gradient",
-	cooldown = 10
+	cooldown = 30
 }
 function is_archetype_perk(npc, perk)
 	local archetype = false
@@ -150,34 +150,28 @@ local master_spotter_id = nil
 function find_master_spotter()
 	-- printf("--find_master_spotter")
 	local master_npc = nil
-	for id,squad in pairs(axr_companions.companion_squads) do 
-		if (squad and squad.commander_id) then
-			local i = 0
-			for k in squad:squad_members() do
-				local npc = db.storage[k.id] and db.storage[k.id].object
-				i = i+1
-				-- printf("companion[%s]", i)
-				if npc and npc:alive() and check_npc_perk(npc, PERK_SPOTTER) then
-					if master_npc == nil then
-						master_npc = npc
-					elseif master_npc:rank() < npc:rank() then
-						master_npc = npc
-					end
-				end
+	local clist = axr_companions.list_actor_squad_by_id()
+	for i=1, #clist do
+		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
+		if npc and npc:alive() and check_npc_perk(npc, PERK_SPOTTER) then
+			if master_npc == nil then
+				master_npc = npc
+			elseif master_npc:rank() < npc:rank() then
+				master_npc = npc
 			end
-		end
+		end		
 	end
 	if master_npc then
 		printf("// found master spotter %s with rank %s", master_npc:character_name(), ranks.get_se_obj_rank_name(master_npc))
 		if master_npc:id() ~= master_spotter_id then
 			local clist = axr_companions.list_actor_squad_by_id()
 			for i=1, #clist do
-				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK_1)
-				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK_2)
+				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK)
+				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_SPOT)
 			end			
 			print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
-			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK_1)
-			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK_2)
+			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK)
+			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_SPOT)
 		end
 	else
 		printf("// No spotters in squad")
@@ -255,39 +249,32 @@ end
 function is_companions_squad_in_danger()
 	--printf("============================================================================================")
 	local squad_is_peaceful = true
-	for id,squad in pairs(axr_companions.companion_squads) do 
-		if (squad and squad.commander_id) then
-			local i = 0
-			for k in squad:squad_members() do
-				local npc = db.storage[k.id] and db.storage[k.id].object
-				i = i+1
-				-- printf("companion[%s]", i)
-				if npc then
-					local is_peaceful = false
-					-- check if is in fight
-					if (npc and npc:alive()) then
-						is_peaceful = (not npc:best_enemy()) and npc:dont_has_info("npcx_beh_ignore_combat") and true or false
-					end
-					-- printf("companion[%s] is_peaceful %s - dist: %s",k.id, is_peaceful, distance_between(db.actor,npc))
-					-- check if is too far away
-					squad_is_peaceful = squad_is_peaceful and is_peaceful
-					-- printf("current calculation for squad is_peaceful %s", squad_is_peaceful)					
-				end
-				-- printf("--")
+	local clist = axr_companions.list_actor_squad_by_id()
+	for i=1, #clist do
+		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
+		if npc then
+			local is_peaceful = false
+			-- check if is in fight
+			if npc:alive() then
+				is_peaceful = (not npc:best_enemy()) and npc:dont_has_info("npcx_beh_ignore_combat") and true or false
 			end
-		end
-	end
+			-- printf("companion[%s] is_peaceful %s - dist: %s",k.id, is_peaceful, distance_between(db.actor,npc))
+			-- check if is too far away
+			squad_is_peaceful = squad_is_peaceful and is_peaceful
+			-- printf("current calculation for squad is_peaceful %s", squad_is_peaceful)					
+		end	
+	end	
 	if not squad_is_peaceful then
 		-- printf("squad is under attack or attacking")
 	end
-	--printf("squad is resolved peaceful %s", squad_is_peaceful)
+	printf("-- squad is resolved peaceful %s", squad_is_peaceful)
 	--printf("============================================================================================")
 	return not squad_is_peaceful
 end
 
 
 
-local squad_is_peaceful
+local squad_is_peaceful = true
 function actor_on_first_update()
     squad_is_peaceful = is_companions_squad_in_danger()
 end
@@ -366,34 +353,59 @@ end
 
 local hmm = utils_spotter_hudmarks.get_hud_mark_manager()
 
-local function getArgs()
+local function getArgs(id)
 
 	local args = {
+		npc_perk_spotter_callmark = {
 
-		texture         = "ui_icons_spotter_pin_cursor_chevron_e",
-		-- a texture for the icon is required
-		width           = 24,
-		height          = 24,
-		-- the size of the texture	
-		xmlfile         = "ui_hud_marker.xml",
-		-- The marker XML structure
-		bone            = "bip01_head",
-		near_end_dist   = 2,
-		-- marker is automatically destroyed if actor gets this close
-		far_end_dist     = 100,
-		-- marker is automatically destroyed if actor gets this far away
-		show_dist         = true,
-		-- show distance indicator by the marker
-		func_on_update = (
-			function(mark, args)
-				-- printf("func_on_update")
-				local init_time = mark and mark.init_time or 0
-				if time_global() - init_time > marker_life*1000 then mark:Destroy() end
-			end
-			)
+			texture         = "ui_icons_spotter_pin_redskull",
+			-- a texture for the icon is required
+			width           = 24,
+			height          = 24,
+			-- the size of the texture	
+			xmlfile         = "ui_hud_marker.xml",
+			-- The marker XML structure
+			bone            = "bip01_head",
+			near_end_dist   = 2,
+			-- marker is automatically destroyed if actor gets this close
+			far_end_dist     = 300,
+			-- marker is automatically destroyed if actor gets this far away
+			show_dist         = true,
+			-- show distance indicator by the marker
+			-- func_on_update = (
+			-- 	function(mark, args)
+			-- 		-- printf("func_on_update")
+			-- 		local init_time = mark and mark.init_time or 0
+			-- 		if time_global() - init_time > marker_life*1000 then mark:Destroy() end
+			-- 	end
+			-- 	)
+		},
+		npc_perk_spotter_spot = {
+
+			texture         = "ui_icons_spotter_pin_cursor_chevron_e",
+			-- a texture for the icon is required
+			width           = 24,
+			height          = 24,
+			-- the size of the texture	
+			xmlfile         = "ui_hud_marker.xml",
+			-- The marker XML structure
+			bone            = "bip01_head",
+			near_end_dist   = 2,
+			-- marker is automatically destroyed if actor gets this close
+			far_end_dist     = 100,
+			-- marker is automatically destroyed if actor gets this far away
+			show_dist         = true,
+			-- show distance indicator by the marker
+			func_on_update = (
+				function(mark, args)
+					-- printf("func_on_update")
+					local init_time = mark and mark.init_time or 0
+					if time_global() - init_time > marker_life*1000 then mark:Destroy() end
+				end
+				)
+		}	
 	}
-
-	return args
+	return args[id]
 end
 
 
@@ -406,13 +418,14 @@ function tableSize(t)
 end
 
 
-local marker
+local callmark
 local marks = {}
 function mark_enemy(enemy, npc)
     enemy = enemy or level.get_target_obj()
     -- printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
     if enemy and enemy:alive() and not marks[enemy:id()] then
-		local args = getArgs()
+		z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_SPOT)
+		local args = getArgs(PERK_SPOTTER_ABILITY_SPOT.id)
         args.id = enemy:id()
         marker, mark_id = hmm:AddMarker(args)
 		marks[enemy:id()] = mark_id
@@ -452,22 +465,16 @@ function find_enemy(spotter_id)
 	local be_list = {}
 	if spotter_id then
 		local npc = db.storage[spotter_id] and db.storage[spotter_id].object
-		if npc then
+		if npc and npc:alive() then
 			spot_enemy(npc, be_list)
-		end		
+		end
 	else
-		for id,squad in pairs(axr_companions.companion_squads) do 
-			if (squad and squad.commander_id) then
-				local i = 0
-				for k in squad:squad_members() do
-					local npc = db.storage[k.id] and db.storage[k.id].object
-					i = i+1
-					-- printf("companion[%s]", i)
-					if npc and check_npc_perk(npc, PERK_SPOTTER) then
-						spot_enemy(npc, be_list)
-						return
-					end
-				end
+		local clist = axr_companions.list_actor_squad_by_id()
+		for i=1, #clist do
+			local npc = db.storage[clist[i]] and db.storage[clist[i]].object
+			if npc and npc:alive() and check_npc_perk(npc, PERK_SPOTTER) then
+				spot_enemy(npc, be_list)
+				return
 			end
 		end
 
@@ -519,12 +526,12 @@ function on_key_press(dik)
 	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
 		-- printf("- create spotter_mark_keyhold")
-		if true then
+		if not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 				-- printf("- execute spotter_mark_keyhold")
 				local enemy = find_enemy(master_spotter_id)
-				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_CALLMARK_1)
-				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_CALLMARK_2)
+				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_CALLMARK)
+				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_SPOT)
 				spotter_mark_issued = true
 				return true
 			end)
