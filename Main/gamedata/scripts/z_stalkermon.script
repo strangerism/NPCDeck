@@ -1,4 +1,114 @@
+-- notifications
 
+print_tip = function(text,delay, ...)
+
+    -- local enabled = dynavision_mcm.get_config('configuration/notifications/enable')
+	local enabled = true
+    if enabled then
+		local text = tostring(text)
+		printf(text, ...)
+		if not db.actor then
+			return
+		end
+		
+		local ico = "ui_inGame2_Dengi_otdani"
+		local text_color = utils_xml.get_color("pda_white")
+		local arg_color = utils_xml.get_color("d_green")
+		local function colorize(s)
+			return arg_color .. s .. text_color
+		end
+		local i = 0
+		local t = {...}
+		if #t > 0 then
+			local function sr(a)
+				i = i + 1
+				if (type(t[i]) == 'userdata') then
+					if (t[i].x and t[i].y) then
+						return colorize(vec_to_str(t[i]))
+					end
+					return colorize('userdata')
+				end
+				return colorize(tostring(t[i]))
+			end
+			text = string.gsub(game.translate_string(text), "%%s", sr)
+		else
+			text = game.translate_string(text)
+		end
+		text = text_color .. text
+		if delay == nil then
+			delay = 6000
+		end
+		news_manager.send_tip(db.actor, text, nil, ico, delay)
+	end
+end
+
+local stalkers = {}
+FIELD = {
+	id = "id",
+	PERKS = "PERKS",
+	rank = "rank"
+}
+
+function Add_npc(npc_id)
+	if stalkers[npc_id] then return false end
+	printf("-- npc %s added", npc_id)
+	stalkers[npc_id] = {}
+	stalkers[npc_id]["id"] = npc_id
+	stalkers[npc_id]["PERKS"] = {}
+	return true
+end
+
+function Remove_npc(npc_id)
+	stalkers[npc_id] = nil
+end
+
+function Get_perks(npc_id)
+	if not stalkers[npc_id] then return end
+
+	return stalkers[npc_id]["PERKS"]
+end
+
+function Get_perk(npc_id, perk_id)
+	if not stalkers[npc_id] then return end
+
+	return stalkers[npc_id]["PERKS"][perk_id]
+end
+
+function Has_perk(npc_id, perk_id)
+	printf("-- npc %s Has_perk", npc_id)
+	if not stalkers[npc_id] then return end
+
+	local perk = stalkers[npc_id]["PERKS"][perk_id]
+	
+	return (perk and (perk.rank > 0)) or false
+end
+
+function Roll_perk(npc_id, perk)
+	printf("-- npc %s Roll_perk", npc_id)
+	if stalkers[npc_id]["PERKS"][perk.id] then return end
+
+	stalkers[npc_id]["PERKS"][perk.id] = {}
+	stalkers[npc_id]["PERKS"][perk.id]["id"]  = perk.id
+	stalkers[npc_id]["PERKS"][perk.id]["rank"]  = -1
+
+	local roll = perk.functor and execute_func(unpack(perk.functor))
+	if roll then
+		stalkers[npc_id]["PERKS"][perk.id]["rank"]  = 1
+		printf("-- npc %s Roll_perk %s", true)
+		return true
+	end
+
+	return false
+end
+
+function Add_perk(npc_id, perks)
+
+end
+
+function Set_perks(npc_id, perks)
+	if not stalkers[npc_id] then return end
+	stalkers[npc_id]["PERKS"] = perks
+end
 
 local npc_abilities = {}
 
@@ -9,7 +119,7 @@ function register_ability(npc_id, ability)
     if not npc_abilities[npc_id] then
         npc_abilities[npc_id] = {}
     end
-	spotter_mcm.printlog_table("register_ability", ability)
+	printlog_table("register_ability", ability)
     npc_abilities[npc_id][ability.id] = ability
 end
 
@@ -245,4 +355,97 @@ function axr_companions.UICompanionList:Update(force)
 			self.companion_info[i].base:Show(false)
 		end
 	end
+end
+
+
+--------------- SQUAD UPDATES
+---
+-- ADD
+
+axrc_OG_add_special_task_npc_to_actor_squad = axr_companions.add_special_task_npc_to_actor_squad
+function axr_companions.add_special_task_npc_to_actor_squad(npc)
+	-- printf("-- MP add_special_task_npc_to_actor_squad")
+	axrc_OG_add_special_task_npc_to_actor_squad(npc)
+	SendScriptCallback("stalkermon_squad_update")
+end
+
+axrc_OG_add_special_squad = axr_companions.add_special_squad
+function axr_companions.add_special_squad(npc)
+	-- printf("-- MP add_special_squad")
+	axrc_OG_add_special_squad(npc)
+	SendScriptCallback("stalkermon_squad_update")
+end
+
+axrc_OG_add_to_actor_squad = axr_companions.add_to_actor_squad
+function axr_companions.add_to_actor_squad(npc)
+    -- printf("-- MP add_to_actor_squad")
+    axrc_OG_add_to_actor_squad(npc)
+    SendScriptCallback("stalkermon_squad_update")
+end
+
+-- REMOVE
+
+axrc_OG_remove_from_actor_squad = axr_companions.remove_from_actor_squad
+function axr_companions.remove_from_actor_squad(npc)
+	axrc_OG_remove_from_actor_squad(npc)
+	SendScriptCallback("stalkermon_squad_update")
+end
+
+axrc_OG_remove_all_from_actor_squad = axr_companions.remove_all_from_actor_squad
+function axr_companions.remove_all_from_actor_squad(npc)
+	axrc_OG_remove_all_from_actor_squad(npc)
+	SendScriptCallback("stalkermon_squad_update")
+end
+
+-- DEATH
+
+local function squad_on_npc_death(squad,se_npc)
+	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
+	if not npc then return end
+	-- printf("squad_on_npc_death name %s", npc and npc:name())
+	local npc_id = npc:id() or 0
+	Remove_npc(npc_id)
+	for id,actor_squad in pairs(axr_companions.companion_squads) do
+		if squad.id == actor_squad.id then
+			SendScriptCallback("stalkermon_squad_update")
+		end
+	end
+end
+
+
+-- STATE MGMT
+
+local string_format = string.format
+function printlog_table(text, node, ...)
+    
+    text = string_format(text, ...)
+    printf("STALKERMON: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
+end
+
+function save_state(m_data)
+	printf("$ STALKERMON Save State")
+    if not m_data.stalkermon then
+        m_data.stalkermon = {}
+    end 
+    -- save the state
+    m_data.stalkermon.stalkers = stalkers
+	printlog_table("STALKERMON", m_data.stalkermon.stalkers)
+end
+
+function load_state(m_data)
+	printf("$ STALKERMON Load State")
+	if m_data.stalkermon and m_data.stalkermon.stalkers then
+        -- cache the state
+		stalkers = m_data.stalkermon.stalkers
+		printlog_table("Stalkers", stalkers)
+	end
+end
+
+
+if AddScriptCallback then
+	AddScriptCallback("stalkermon_squad_update")
+end
+
+function on_game_start()
+	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
 end

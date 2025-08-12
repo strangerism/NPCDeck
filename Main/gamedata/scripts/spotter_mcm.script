@@ -1,3 +1,5 @@
+local SM = z_stalkermon
+
 function on_mcm_load()
     op = { id= "spotter", sh=true ,gr =
 			{
@@ -47,56 +49,25 @@ function on_option_change()
 	max_marks = get_config('max_marks')
 end
 
--- notifications
-
-print_tip = function(text,delay, ...)
-
-    -- local enabled = dynavision_mcm.get_config('configuration/notifications/enable')
-	local enabled = true
-    if enabled then
-		local text = tostring(text)
-		printf(text, ...)
-		if not db.actor then
-			return
-		end
-		
-		local ico = "ui_inGame2_Dengi_otdani"
-		local text_color = utils_xml.get_color("pda_white")
-		local arg_color = utils_xml.get_color("d_green")
-		local function colorize(s)
-			return arg_color .. s .. text_color
-		end
-		local i = 0
-		local t = {...}
-		if #t > 0 then
-			local function sr(a)
-				i = i + 1
-				if (type(t[i]) == 'userdata') then
-					if (t[i].x and t[i].y) then
-						return colorize(vec_to_str(t[i]))
-					end
-					return colorize('userdata')
-				end
-				return colorize(tostring(t[i]))
-			end
-			text = string.gsub(game.translate_string(text), "%%s", sr)
-		else
-			text = game.translate_string(text)
-		end
-		text = text_color .. text
-		if delay == nil then
-			delay = 6000
-		end
-		news_manager.send_tip(db.actor, text, nil, ico, delay)
-	end
-end
-
-
 -- PERKS
 
-local stalkers = {}
-local PERKS = "perks"
-local PERK_SPOTTER = "npc_perk_spotter"
+local PERK_SPOTTER = {
+	id = "npc_perk_spotter",
+	abilities = {
+		PERK_SPOTTER_ABILITY_CALLMARK = {
+			id = "npc_perk_spotter_callmark",
+			icon = "ui_icons_spotter_pin_redskull",
+			cooldown = 180
+		},
+		PERK_SPOTTER_ABILITY_SPOT = {
+			id = "npc_perk_spotter_spot",
+			icon = "ui_icons_spotter_crosshair_gradient",
+			cooldown = 30
+		}
+	},
+	functor = nil,
+}
+
 local PERK_SPOTTER_ABILITY_CALLMARK = {
 	id = "npc_perk_spotter_callmark",
 	icon = "ui_icons_spotter_pin_redskull",
@@ -107,43 +78,35 @@ local PERK_SPOTTER_ABILITY_SPOT = {
 	icon = "ui_icons_spotter_crosshair_gradient",
 	cooldown = 30
 }
-function is_archetype_perk(npc, perk)
+
+local function is_archetype_perk(npc_id)
 	local archetype = false
-	if perk == PERK_SPOTTER then
-		if npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
-			-- printf("/ npc %s archetype perk", npc:section())
-			archetype = true
-		end
-	end	
+
+	local npc = db.storage[npc_id] and db.storage[npc_id].object
+	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
+		printf("/ npc %s archetype perk", npc:section())
+		archetype = true
+	end
 
 	return archetype
 end
 
-function roll_perks(perk)
-	local roll = false
-	if perk == PERK_SPOTTER then
-		roll = (math.random(100) <= perk_chance)
-	end
-	return roll
+function roll_perk(npc_id)
+	printf("! npc %s roll_perk perk", npc_id)
+	return is_archetype_perk(npc_id) or (math.random(100) <= perk_chance)
 end
 
-function check_npc_perk(npc, perk)
-	if not npc then return end 
-	local id = npc:id()
-	if not stalkers[id] and npc:alive() then
-			-- save this NPC
-		stalkers[id] = {}
-		stalkers[id]["id"] = id
-		stalkers[id][PERKS] = {}
-		stalkers[id][PERKS][perk] = {}
-		stalkers[id][PERKS][perk]["acquired"] = is_archetype_perk(npc, perk) or roll_perks(perk)
-		if stalkers[id][PERKS][perk]["acquired"] then
-			stalkers[id][PERKS][perk]["id"] = perk
-			stalkers[id][PERKS][perk]["rank"] = 1
-			print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
+local function is_spotter(npc)
+	local npc_id = npc:id()
+	printf("! npc %s is_spotter", npc_id)
+	if SM.Add_npc(npc_id) then
+		-- It's a new NPC lets roll the perk
+		PERK_SPOTTER.functor = {"spotter_mcm","roll_perk", npc_id}
+		if SM.Roll_perk(npc_id, PERK_SPOTTER) then
+			SM.print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
 		end
 	end
-	return stalkers[id][PERKS][perk]["acquired"]
+	return SM.Has_perk(npc_id, PERK_SPOTTER.id)
 end
 
 local master_spotter_id = nil
@@ -153,7 +116,7 @@ function find_master_spotter()
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
 		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
-		if npc and npc:alive() and check_npc_perk(npc, PERK_SPOTTER) then
+		if npc and npc:alive() and is_spotter(npc) then
 			if master_npc == nil then
 				master_npc = npc
 			elseif master_npc:rank() < npc:rank() then
@@ -169,7 +132,7 @@ function find_master_spotter()
 				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK)
 				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_SPOT)
 			end			
-			print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
+			SM.print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
 			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK)
 			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_SPOT)
 		end
@@ -181,8 +144,7 @@ function find_master_spotter()
 end
 
 ---- SQUAD UPDATES
----
---- ADD
+
 update_master_spotter_requested = false
 local function schedule_update_master_spotter()
 	printf("-- schedule_update_master_spotter")
@@ -195,52 +157,6 @@ local function schedule_update_master_spotter()
 			update_master_spotter_requested = false
 			return true
 		end)		
-	end
-end
-
---- zz_spotter_mp has the rest of the monkey patches for squad updates
-
-axrc_OG_add_special_task_npc_to_actor_squad = axr_companions.add_special_task_npc_to_actor_squad
-function axr_companions.add_special_task_npc_to_actor_squad(npc)
-	-- printf("-- MP add_special_task_npc_to_actor_squad")
-	axrc_OG_add_special_task_npc_to_actor_squad(npc)
-	SendScriptCallback("schedule_update_master_spotter")
-end
-
-axrc_OG_add_special_squad = axr_companions.add_special_squad
-function axr_companions.add_special_squad(npc)
-	-- printf("-- MP add_special_squad")
-	axrc_OG_add_special_squad(npc)
-	SendScriptCallback("schedule_update_master_spotter")
-end
-
--- REMOVE
-
-
-axrc_OG_remove_from_actor_squad = axr_companions.remove_from_actor_squad
-function axr_companions.remove_from_actor_squad(npc)
-	axrc_OG_remove_from_actor_squad(npc)
-	SendScriptCallback("schedule_update_master_spotter")
-end
-
-axrc_OG_remove_all_from_actor_squad = axr_companions.remove_all_from_actor_squad
-function axr_companions.remove_all_from_actor_squad(npc)
-	axrc_OG_remove_all_from_actor_squad(npc)
-	SendScriptCallback("schedule_update_master_spotter")
-end
-
--- DEATH
-
-local function squad_on_npc_death(squad,se_npc)
-	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
-	if not npc then return end
-	printf("squad_on_npc_death name %s", npc and npc:name())
-	local id = npc:id() or 0
-	stalkers[id] = nil
-	for id,actor_squad in pairs(axr_companions.companion_squads) do
-		if squad.id == actor_squad.id then
-			SendScriptCallback("schedule_update_master_spotter")
-		end
 	end
 end
 -----
@@ -267,7 +183,7 @@ function is_companions_squad_in_danger()
 	if not squad_is_peaceful then
 		-- printf("squad is under attack or attacking")
 	end
-	printf("-- squad is resolved peaceful %s", squad_is_peaceful)
+	-- printf("-- squad is resolved peaceful %s", squad_is_peaceful)
 	--printf("============================================================================================")
 	return not squad_is_peaceful
 end
@@ -323,11 +239,11 @@ local f = getFS()
 
 function build_npc_barks_lib(npc)
 	local npc_id = npc:id()
-	stalkers[npc_id]["bark"] = {}
+	SM.stalkers[npc_id]["bark"] = {}
 	local num = 1
 	while f:exist("$game_sounds$",npc:sound_prefix().."fight\\enemy\\enemy_"..num..".ogg") do
 		-- printf("adding sound ["..npc:sound_prefix().."fight\\enemy\\enemy_"..num.."] to table id = "..num)
-		stalkers[npc_id]["bark"][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
+		SM.stalkers[npc_id]["bark"][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
 		num = num + 1
 	end
 end
@@ -341,10 +257,10 @@ function bark(npc)
 	if female_visual or female_voice then
 		file_to_say = xr_sound.get_safe_sound_object( "spotters\\command_fireatwill_" .. math.random(3))
 	else
-		if not stalkers[npc_id]["bark"] then
+		if not SM.stalkers[npc_id]["bark"] then
 			build_npc_barks_lib(npc)
 		end
-		file_to_say = xr_sound.get_safe_sound_object(stalkers[npc_id]["bark"][math.random(#stalkers[npc_id]["bark"])]) --sets the file to play			
+		file_to_say = xr_sound.get_safe_sound_object(SM.stalkers[npc_id]["bark"][math.random(#SM.stalkers[npc_id]["bark"])]) --sets the file to play			
 	end
 	file_to_say:play(db.actor,0,sound_object.s2d) --plays it
 	file_to_say.volume = 1.0 --sets how loud the sound should be
@@ -472,7 +388,7 @@ function find_enemy(spotter_id)
 		local clist = axr_companions.list_actor_squad_by_id()
 		for i=1, #clist do
 			local npc = db.storage[clist[i]] and db.storage[clist[i]].object
-			if npc and npc:alive() and check_npc_perk(npc, PERK_SPOTTER) then
+			if npc and npc:alive() and is_spotter(npc) then
 				spot_enemy(npc, be_list)
 				return
 			end
@@ -526,7 +442,7 @@ function on_key_press(dik)
 	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
 		-- printf("- create spotter_mark_keyhold")
-		if not squad_is_peaceful then
+		if true then -- not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 				-- printf("- execute spotter_mark_keyhold")
 				local enemy = find_enemy(master_spotter_id)
@@ -564,31 +480,6 @@ end
 -- 		female_npc[character_id] = true
 -- 	end
 -- end)
-local string_format = string.format
-function printlog_table(text, node, ...)
-    
-    text = string_format(text, ...)
-    printf("Spotter: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
-end
-
-function save_state(m_data)
-	printf("$ Spotter Save State")
-    if not m_data.spotter then
-        m_data.spotter = {}
-    end 
-    -- save the state
-    m_data.spotter.stalkers = stalkers
-	printlog_table("Stalkers", m_data.spotter.stalkers)
-end
-
-function load_state(m_data)
-	printf("$ Spotter Load State")
-	if m_data.spotter and m_data.spotter.stalkers then
-        -- cache the state
-		stalkers = m_data.spotter.stalkers
-		printlog_table("Stalkers", stalkers)
-	end
-end
 
 if AddScriptCallback then
 	AddScriptCallback("spotter_combat_started")
@@ -613,6 +504,6 @@ function on_game_start()
 	on_option_change()
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
-	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
-	RegisterScriptCallback("schedule_update_master_spotter",schedule_update_master_spotter)
+
+	RegisterScriptCallback("stalkermon_squad_update",schedule_update_master_spotter)
 end
