@@ -191,7 +191,7 @@ function axr_companions.UICompanionList:Update(force)
 					-- printf("-- UICompanionList NPC abilitiy %s", ability.id)
 					if ability.timer and ability.timer > 0 then
 						-- init if it is new or has changed position in the ribbon
-						if not ele.abilities[npc_id][a_id] or ele.abilities[npc_id][a_id].index ~= j then
+						if not ele.abilities[npc_id][a_id] or ele.abilities[npc_id][a_id].index ~= j or ability.timer == 5 then
 							-- delete from hud
 							if ele.abilities[npc_id][a_id] then
 								ele.abilities[npc_id][a_id].icon:Show(false)
@@ -205,7 +205,11 @@ function axr_companions.UICompanionList:Update(force)
 							-- ability index: stores the position where it is created, in the ability ribbon. If it happens to change it will be re-initialized to the new position   
 							ele.abilities[npc_id][a_id].index = j
 							-- ability icon
-							ele.abilities[npc_id][a_id].icon = self.xml_sm:InitStatic("abilities:static", ele.base)
+							if ability.timer > 5 then
+								ele.abilities[npc_id][a_id].icon = self.xml_sm:InitStatic("abilities:static", ele.base)
+							else
+								ele.abilities[npc_id][a_id].icon = self.xml_sm:InitStatic("abilities:flashing", ele.base)
+							end
 							ele.abilities[npc_id][a_id].icon:InitTexture(ability.icon)
 							ele.abilities[npc_id][a_id].icon:SetWndSize(vector2():set(ele.abilities[npc_id][a_id].icon:GetWidth() * self.scale, ele.abilities[npc_id][a_id].icon:GetHeight() * self.scale ))
 							-- position
