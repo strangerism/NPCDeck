@@ -1,0 +1,11 @@
+<w>
+	<abilities x="160" y="726" width="480" height="40" stretch="1"> 
+		<static x="0" y="0" width="40" height="40" stretch="1"/>
+		<flashing x="0" y="0" width="40" height="40" stretch="1" light_anim="ui_slow_blinking_alpha"/>
+		<cooldown x="0" y="0" width="40" height="40" stretch="1" horz="0" min="0" max="1" pos="0"> 
+			<progress stretch="1">
+				<texture a="100">ui_inGame2_companion_hud_slot</texture>
+			</progress>
+		</cooldown>		
+	</abilities>
+</w>

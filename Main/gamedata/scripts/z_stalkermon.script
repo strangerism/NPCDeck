@@ -63,6 +63,8 @@ function axr_companions.UICompanionList:InitControls()
 	printf("-- UICompanionList:InitControls")
 	local xml = utils_xml.get_hud_xml()
 	self.xml = xml
+	self.xml_sm = CScriptXmlInit()
+	self.xml_sm:ParseFile("ui_stalkermon_hud.xml")
 	self.dialog = xml:InitStatic("companion_list", self)
 	--utils_xml.correct_ratio(self.dialog, true)
 
@@ -193,14 +195,15 @@ function axr_companions.UICompanionList:Update(force)
 							printf("-- Init npc %s ability %s", npc_id, a_id)
 							ele.abilities[npc_id][a_id] = {}
 							-- ability icon
-							ele.abilities[npc_id][a_id].icon = self.xml:InitStatic("indicators:static", ele.base)
+							ele.abilities[npc_id][a_id].icon = self.xml_sm:InitStatic("abilities:static", ele.base)
 							ele.abilities[npc_id][a_id].icon:InitTexture(ability.icon)
 							-- position
 							local x = (j-1)*(self.W + self.offset)
 							-- printf("ability %s x = %s", ability.id, x)
 							ele.abilities[npc_id][a_id].icon:SetWndPos( vector2():set( 0-x , 0 ) )
 							-- ability cooldown							
-							ele.abilities[npc_id][a_id].cd = self.xml:InitProgressBar("indicators:cooldown", ele.abilities[npc_id][a_id].icon)
+							ele.abilities[npc_id][a_id].cd = self.xml_sm:InitProgressBar("abilities:cooldown", ele.abilities[npc_id][a_id].icon)
+							ele.abilities[npc_id][a_id].cd:SetWndSize(vector2():set(ele.abilities[npc_id][a_id].icon:GetWidth(), ele.abilities[npc_id][a_id].icon:GetHeight() ))
 							-- set ratio
 							utils_xml.correct_ratio(ele.abilities[npc_id][a_id].icon)
 							utils_xml.correct_ratio(ele.abilities[npc_id][a_id].cd)
