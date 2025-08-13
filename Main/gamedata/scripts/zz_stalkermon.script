@@ -59,10 +59,12 @@ C = {
 	timer = "timer"
 }
 
+ABILITY_STATE = {
+	READY = "READY",
+	COOLDOWN = "COOLDOWN",
+	READING = "READING",
+}
 
-local READY = "READY"
-local COOLDOWN = "COOLDOWN"
-local READING = "READING"
 
 
 function Add_npc(npc_id)
@@ -77,7 +79,7 @@ end
 
 local function add_ability(npc_id, feat)
 	stalkers[npc_id]["ABILITIES"][feat.id] = feat
-	stalkers[npc_id]["ABILITIES"][feat.id]["state"] = READY
+	stalkers[npc_id]["ABILITIES"][feat.id]["state"] = ABILITY_STATE.READY
 	stalkers[npc_id]["ABILITIES"][feat.id]["timer"] = -1
 end
 
@@ -161,14 +163,16 @@ end
 
 function manage_ability_cooldown(npc_id, feat_id)
 	if not stalkers[npc_id]["ABILITIES"][feat_id] then return true end
-
+	if stalkers[npc_id]["ABILITIES"][feat_id].state == ABILITY_STATE.READY then
+		stalkers[npc_id]["ABILITIES"][feat_id].state = ABILITY_STATE.COOLDOWN
+	end
 	if stalkers[npc_id]["ABILITIES"][feat_id].timer <= -5 then
 		stalkers[npc_id]["ABILITIES"][feat_id].timer = -999
-		stalkers[npc_id]["ABILITIES"][feat_id].state = READY
+		stalkers[npc_id]["ABILITIES"][feat_id].state = ABILITY_STATE.READY
 		printf("! ending time event %s", npc_id)
 		return true
 	elseif stalkers[npc_id]["ABILITIES"][feat_id].timer == 0 then
-		stalkers[npc_id]["ABILITIES"][feat_id].state = READING
+		stalkers[npc_id]["ABILITIES"][feat_id].state = ABILITY_STATE.READING
 	end
 	local timer = stalkers[npc_id]["ABILITIES"][feat_id].timer
 	local cooldown = stalkers[npc_id]["ABILITIES"][feat_id].cooldown
@@ -184,23 +188,29 @@ function Activate_ability(npc_id, feat_id)
 
     if not npc_id or not stalkers[npc_id] or not stalkers[npc_id]["ABILITIES"][feat_id] then return false end
 
-	if (stalkers[npc_id]["ABILITIES"][feat_id].state == COOLDOWN) then return false end
+	if (stalkers[npc_id]["ABILITIES"][feat_id].state == ABILITY_STATE.COOLDOWN) then return false end
 
 	stalkers[npc_id]["ABILITIES"][feat_id].timer = stalkers[npc_id]["ABILITIES"][feat_id].cooldown
-	stalkers[npc_id]["ABILITIES"][feat_id].state = COOLDOWN 
+	stalkers[npc_id]["ABILITIES"][feat_id].state = ABILITY_STATE.READY 
 	CreateTimeEvent("ability_coolddown", tostring(npc_id) .. feat_id, 1, manage_ability_cooldown, npc_id, feat_id)
 end
 
-function has_abilities(npc_id)
+function Has_abilities(npc_id)
 	if not stalkers[npc_id] then return false end
 
 	return tablelength(stalkers[npc_id]["ABILITIES"]) > 0
 end
 
-function get_abilities(npc_id)
+function Get_abilities(npc_id)
 	if not stalkers[npc_id] then return end
 	
 	return stalkers[npc_id]["ABILITIES"]
+end
+
+function Get_ability(npc_id, perk_id)
+	if not stalkers[npc_id] then return end
+	
+	return stalkers[npc_id]["ABILITIES"][perk_id]
 end
 
 ---- COMPANIONS
@@ -229,197 +239,6 @@ function is_companions_squad_in_danger()
 	-- printf("-- squad is resolved peaceful %s", squad_is_peaceful)
 	--printf("============================================================================================")
 	return not squad_is_peaceful
-end
-
-og_axr_companions_UI_InitControls = axr_companions.UICompanionList.InitControls
-function axr_companions.UICompanionList:InitControls()
-	printf("-- UICompanionList:InitControls")
-	local xml = utils_xml.get_hud_xml()
-	self.xml = xml
-	self.xml_sm = CScriptXmlInit()
-	self.xml_sm:ParseFile("ui_stalkermon_hud.xml")
-	self.dialog = xml:InitStatic("companion_list", self)
-	--utils_xml.correct_ratio(self.dialog, true)
-
-	self.companion_info = {}
-	for i=1,8 do
-		self.companion_info[i]                   = {}
-		self.companion_info[i].base              = xml:InitStatic("companion_list:slot", self.dialog)
-		self.companion_info[i].background        = xml:InitStatic("companion_list:slot:background", self.companion_info[i].base)
-		self.companion_info[i].icon        		 = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
-		self.companion_info[i].danger_indicator  = xml:InitStatic("companion_list:slot:danger_indicator", self.companion_info[i].base)
-		self.companion_info[i].team_role_shadow  = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
-		self.companion_info[i].team_role         = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
-		self.companion_info[i].distance          = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
-		self.companion_info[i].prog_health       = xml:InitProgressBar("companion_list:slot:health", self.companion_info[i].base)
-		for _,ele in pairs(self.companion_info[i]) do
-			utils_xml.correct_ratio(ele)
-		end		
-		-- stalkermon
-		self.companion_info[i].abilities = {} -- = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
-		-- self.companion_info[i].abilities:SetWndSize(vector2():set( 100, 25 ))
-
-		--
-		local h = self.companion_info[i].background:GetHeight()
-		self.companion_info[i].distance:SetFont(GetFontSmall())
-		self.companion_info[i].base:SetWndPos( vector2():set( 0 , (8-i)*(h+10) ) )
-		
-		local pos = self.companion_info[i].team_role:GetWndPos()
-		self.companion_info[i].team_role_shadow:SetWndPos( vector2():set( pos.x + 1 , pos.y + 2 ) )
-		self.companion_info[i].team_role_shadow:SetTextureColor( GetARGB(255, 0, 0, 0) )
-	end
-	-- stalkermon
-	-- self.abilities_ribbon = {}
-	--
-end
-
-og_axr_companions_UI_Update = axr_companions.UICompanionList.Update
-function axr_companions.UICompanionList:Update(force)
-	CUIScriptWnd.Update(self)
-	
-	local tg = time_global()
-	if force then
-		self._tmr = tg - 1
-	end
-	if self._tmr >= tg then
-		return
-	end
-	self._tmr = tg + self.update_rate
-	
-	self.ratio  = utils_xml.screen_ratio()
-	self.scale  = 0.75
-	self.index  = 0
-	self.W      = 40
-	self.offset = 10
-	-- printf("-- UICompanionList:Update")
-	local to_show = main_hud_shown()
-	local clist = axr_companions.list_actor_squad_by_id()
-	for i=1,8 do
-		local se_obj = clist[i] and alife_object(clist[i])
-		if to_show and (se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive()) then
-			local st = db.storage[se_obj.id]
-			local npc = st and st.object
-			local ele = self.companion_info[i]
-			
-			-- Icon
-			local icon_name = npc and npc:character_icon() or se_obj:character_icon()
-			icon_name = icon_name and icon_name ~= "" and icon_name or "ui\\ui_noise"
-			ele.icon:InitTexture(icon_name)
-			
-			-- Distance
-			ele.distance:SetText(string.format("%.2f M", se_obj.position:distance_to(db.actor:position())))
-
-			-- Leader and relation status
-			local squad = se_obj.group_id and se_obj.group_id ~= 65535 and alife_object(se_obj.group_id)
-			if (squad and squad:commander_id() == se_obj.id) then
-				ele.team_role:InitTexture("ui_minimap_squad_leader")
-				ele.team_role_shadow:InitTexture("ui_minimap_squad_leader")
-			else
-				ele.team_role:InitTexture("ui_minimap_point")
-				ele.team_role_shadow:InitTexture("ui_minimap_point")
-			end
-			
-			local community = npc and npc:character_community()
-			local clr = community and self.clr_list[community] or self.clr_list["def"]
-			ele.team_role:SetTextureColor(clr)
-			
-			-- Health
-			if (npc) then 
-				local health = clamp( round_idp(npc.health,1),0,1)
-				ele.prog_health:SetProgressPos( health )
-			end
-			
-			-- Danger state
-			ele.danger_indicator:Show(npc and npc:best_enemy() and true or false)
-			
-			-- stakermon abilities hud
-			local npc_id = se_obj.id
-			local abi_hud_count = ele.abilities[npc_id] and tablelength(ele.abilities[npc_id]) or 0
-			if abi_hud_count > 0 then
-				printf("-- UICompanionList NPC %s clear HUD abilities", npc_id)
-				for a_id, a_ele in pairs(ele.abilities[npc_id]) do
-					
-					if not stalkers[npc_id]["ABILITIES"][a_id] or stalkers[npc_id]["ABILITIES"][a_id].state == READY then
-						printf("-- NPC %s remove ability %s ", npc_id, a_id)
-						a_ele.icon:Show(false)
-						a_ele.icon = nil
-						a_ele.cd:Show(false)
-						a_ele.cd = nil
-						ele.abilities[npc_id][a_id] = nil
-					end
-				end
-			end
-			
-			if has_abilities(npc_id) then
-				printf("-- UICompanionList NPC %s has abilities", npc_id)
-				if not ele.abilities[npc_id] then
-					printf("Init npc %s abilities hud", npc_id)
-					ele.abilities[npc_id] = {}
-				end
-				local j = 2
-				for a_id, ability in pairs(get_abilities(npc_id)) do
-					printf("-- UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
-					if ability.state ~= READY then
-						-- init if it is new or has changed position in the ribbon
-						local ui_ability = ele.abilities[npc_id][a_id]
-						printf("-- npc %s ability %s state %s/%s",npc_id, a_id, ability.state, ui_ability and ui_ability.state or nil)
-						if not ui_ability or ui_ability.index ~= j or (ability.state == READING and ui_ability.state == COOLDOWN) then
-							-- delete from hud
-							if ui_ability then
-								ui_ability.icon:Show(false)
-								ui_ability.icon = nil
-								ui_ability.cd:Show(false)
-								ui_ability.cd = nil
-							end
-							-- init icon cooldown progress bar
-							printf("-- Init npc %s ability %s", npc_id, a_id)
-							ele.abilities[npc_id][a_id] = {}
-							ui_ability = ele.abilities[npc_id][a_id]
-							-- ability index: stores the position where it is created, in the ability ribbon. If it happens to change it will be re-initialized to the new position   
-							ui_ability.index = j
-							-- ability icon
-							if ability.state == COOLDOWN then
-								ui_ability.icon = self.xml_sm:InitStatic("abilities:static", ele.base)
-								ui_ability.state = COOLDOWN
-							else
-								ui_ability.icon = self.xml_sm:InitStatic("abilities:flashing", ele.base)
-								ui_ability.state = READING
-							end
-							ui_ability.icon:InitTexture(ability.icon)
-							ui_ability.icon:SetWndSize(vector2():set(ui_ability.icon:GetWidth() * self.scale, ui_ability.icon:GetHeight() * self.scale ))
-							-- position
-							local x = (j-1)*(self.W + self.offset) * self.scale
-							-- printf("ability %s x = %s", ability.id, x)
-							ui_ability.icon:SetWndPos( vector2():set( 0-x , 0 ) )
-							-- ability cooldown							
-							ui_ability.cd = self.xml_sm:InitProgressBar("abilities:cooldown", ui_ability.icon)
-							ui_ability.cd:SetWndSize(vector2():set(ui_ability.icon:GetWidth(), ui_ability.icon:GetHeight() ))
-							-- set ratio
-							utils_xml.correct_ratio(ui_ability.icon)
-							utils_xml.correct_ratio(ui_ability.cd)
-							-- show
-							ui_ability.icon:Show(true)
-							ui_ability.cd:Show(true)
-						end
-						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
-						printf("update CD bar=%s",bar)
-						ui_ability.cd:SetProgressPos(bar)
-						--
-						j = j + 1
-					else
-						-- ui_ability.icon:Show(false)
-						-- ui_ability.icon = nil
-						-- ui_ability.cd:Show(false)
-						-- ui_ability.cd = nil
-					end
-				end
-        		-- ele.abilities:Show(true)
-			end
-			self.companion_info[i].base:Show(true)
-		else 
-			self.companion_info[i].base:Show(false)
-		end
-	end
 end
 
 
