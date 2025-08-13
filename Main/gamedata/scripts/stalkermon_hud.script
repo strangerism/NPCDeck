@@ -8,6 +8,58 @@ function tablelength(T)
   return count
 end
 
+local HUD_MODE = {
+	STATIC = "STATIC",
+	FLASHING = "FLASHING"
+}
+
+function add_ability_to_hud(self, ability, companion_hud, index, mode)
+
+	local npc_id = companion_hud.npc_id
+	local a_id = ability.id
+
+	-- delete current statics from hud
+	if companion_hud.abilities[a_id] then
+		companion_hud.abilities[a_id].icon:Show(false)
+		companion_hud.abilities[a_id].icon = nil
+		companion_hud.abilities[a_id].cd:Show(false)
+		companion_hud.abilities[a_id].cd = nil
+	end
+
+	printf("-- Init npc %s ability %s", npc_id, a_id)
+	companion_hud.abilities[a_id] = {}
+	local ui_ability = companion_hud.abilities[a_id]
+	-- ability index: stores the position where it is created, in the ability ribbon. If it happens to change it will be re-initialized to the new position   
+	ui_ability.index = index
+	-- ability icon
+	if mode == HUD_MODE.STATIC then
+		printf("-- Init STATIC npc %s ability %s", npc_id, a_id)
+		ui_ability.icon = self.xml_sm:InitStatic("abilities:static", companion_hud.base)
+		ui_ability.state = STATE.COOLDOWN
+	else
+		printf("-- Init FLASHING npc %s ability %s", npc_id, a_id)
+		ui_ability.icon = self.xml_sm:InitStatic("abilities:flashing", companion_hud.base)
+		ui_ability.state = STATE.READING
+	end
+	ui_ability.icon:InitTexture(ability.icon)
+	ui_ability.icon:SetWndSize(vector2():set(ui_ability.icon:GetWidth() * self.scale, ui_ability.icon:GetHeight() * self.scale ))
+	-- position
+	local x = (index-1)*(self.W + self.offset) * self.scale
+	-- printf("ability %s x = %s", ability.id, x)
+	ui_ability.icon:SetWndPos( vector2():set( 0-x , 0 ) )
+	-- ability cooldown							
+	ui_ability.cd = self.xml_sm:InitProgressBar("abilities:cooldown", ui_ability.icon)
+	ui_ability.cd:SetWndSize(vector2():set(ui_ability.icon:GetWidth(), ui_ability.icon:GetHeight() ))
+	-- set ratio
+	utils_xml.correct_ratio(ui_ability.icon)
+	utils_xml.correct_ratio(ui_ability.cd)
+	-- show
+	ui_ability.icon:Show(true)
+	ui_ability.cd:Show(true)
+
+	return companion_hud
+end
+
 og_axr_companions_UI_InitControls = axr_companions.UICompanionList.InitControls
 function axr_companions.UICompanionList:InitControls()
 	printf("-- UICompanionList:InitControls")
@@ -77,7 +129,7 @@ function axr_companions.UICompanionList:Update(force)
 			local st = db.storage[se_obj.id]
 			local npc = st and st.object
 			local ele = self.companion_info[i]
-			
+			ele.npc_id = se_obj.id
 			-- Icon
 			local icon_name = npc and npc:character_icon() or se_obj:character_icon()
 			icon_name = icon_name and icon_name ~= "" and icon_name or "ui\\ui_noise"
@@ -111,10 +163,10 @@ function axr_companions.UICompanionList:Update(force)
 			
 			-- stakermon abilities hud
 			local npc_id = se_obj.id
-			local abi_hud_count = ele.abilities[npc_id] and tablelength(ele.abilities[npc_id]) or 0
+			local abi_hud_count = ele.abilities and tablelength(ele.abilities) or 0
 			if abi_hud_count > 0 then
 				printf("* UICompanionList NPC %s clear HUD abilities", npc_id)
-				for a_id, a_ele in pairs(ele.abilities[npc_id]) do
+				for a_id, a_ele in pairs(ele.abilities) do
 					local ability = SM.Get_ability(npc_id, a_id)
 					
 					if not ability or ability.state == STATE.READY then
@@ -123,69 +175,31 @@ function axr_companions.UICompanionList:Update(force)
 						a_ele.icon = nil
 						a_ele.cd:Show(false)
 						a_ele.cd = nil
-						ele.abilities[npc_id][a_id] = nil
+						ele.abilities[a_id] = nil
 					end
 				end
 			end
 			
 			if SM.Has_abilities(npc_id) then
 				printf("* UICompanionList NPC %s has abilities", npc_id)
-				if not ele.abilities[npc_id] then
-					printf("-- Init npc %s abilities hud", npc_id)
-					ele.abilities[npc_id] = {}
-				end
-				local j = 2
+				local index = 2
 				for a_id, ability in pairs(SM.Get_abilities(npc_id)) do
 					printf("* UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
 					if ability.state ~= STATE.READY then
 						-- init if it is new or has changed position in the ribbon
-						local ui_ability = ele.abilities[npc_id][a_id]
-						printf("$ npc %s ability %s state %s/%s",npc_id, a_id, ability.state, ui_ability and ui_ability.state or nil)
-						if not ui_ability or ui_ability.index ~= j or (ability.state ~= ui_ability.state) then
-							-- delete from hud
-							if ui_ability then
-								ui_ability.icon:Show(false)
-								ui_ability.icon = nil
-								ui_ability.cd:Show(false)
-								ui_ability.cd = nil
-							end
-							-- init icon cooldown progress bar
-							printf("-- Init npc %s ability %s", npc_id, a_id)
-							ele.abilities[npc_id][a_id] = {}
-							ui_ability = ele.abilities[npc_id][a_id]
-							-- ability index: stores the position where it is created, in the ability ribbon. If it happens to change it will be re-initialized to the new position   
-							ui_ability.index = j
-							-- ability icon
+						printf("$ npc %s ability %s state %s/%s",npc_id, a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
+						if not ele.abilities[a_id] or ele.abilities[a_id].index ~= index or (ability.state ~= ele.abilities[a_id].state) then
 							if ability.state == STATE.COOLDOWN then
-								printf("-- Init STATIC npc %s ability %s", npc_id, a_id)
-								ui_ability.icon = self.xml_sm:InitStatic("abilities:static", ele.base)
-								ui_ability.state = STATE.COOLDOWN
+								ele = add_ability_to_hud(self, ability, ele, index, HUD_MODE.STATIC)
 							else
-								printf("-- Init FLASHING npc %s ability %s", npc_id, a_id)
-								ui_ability.icon = self.xml_sm:InitStatic("abilities:flashing", ele.base)
-								ui_ability.state = STATE.READING
+								ele = add_ability_to_hud(self, ability, ele, index, HUD_MODE.FLASHING)
 							end
-							ui_ability.icon:InitTexture(ability.icon)
-							ui_ability.icon:SetWndSize(vector2():set(ui_ability.icon:GetWidth() * self.scale, ui_ability.icon:GetHeight() * self.scale ))
-							-- position
-							local x = (j-1)*(self.W + self.offset) * self.scale
-							-- printf("ability %s x = %s", ability.id, x)
-							ui_ability.icon:SetWndPos( vector2():set( 0-x , 0 ) )
-							-- ability cooldown							
-							ui_ability.cd = self.xml_sm:InitProgressBar("abilities:cooldown", ui_ability.icon)
-							ui_ability.cd:SetWndSize(vector2():set(ui_ability.icon:GetWidth(), ui_ability.icon:GetHeight() ))
-							-- set ratio
-							utils_xml.correct_ratio(ui_ability.icon)
-							utils_xml.correct_ratio(ui_ability.cd)
-							-- show
-							ui_ability.icon:Show(true)
-							ui_ability.cd:Show(true)
 						end
 						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
 						-- printf("update CD bar=%s",bar)
-						ui_ability.cd:SetProgressPos(bar)
+						ele.abilities[a_id].cd:SetProgressPos(bar)
 						--
-						j = j + 1
+						index = index + 1
 					else
 						-- ui_ability.icon:Show(false)
 						-- ui_ability.icon = nil
