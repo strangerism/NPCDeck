@@ -100,6 +100,7 @@ local function is_spotter(npc)
 		PERK_SPOTTER.functor = {"spotter_mcm","roll_perk", npc_id}
 		if SM.Roll_perk(npc_id, PERK_SPOTTER) then
 			SM.print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
+			zz_stalkermon.Register_abilities(npc_id, PERK_SPOTTER.id)
 		end
 	end
 	return SM.Has_perk(npc_id, PERK_SPOTTER.id)
@@ -123,12 +124,7 @@ local function find_master_spotter()
 	if master_npc then
 		printf("// found master spotter %s with rank %s", master_npc:character_name(), ranks.get_se_obj_rank_name(master_npc))
 		if master_npc:id() ~= master_spotter_id then
-			local clist = axr_companions.list_actor_squad_by_id()
-			for i=1, #clist do
-				zz_stalkermon.Unregister_abilities(clist[i], PERK_SPOTTER.id)
-			end			
 			SM.print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
-			zz_stalkermon.Register_abilities(master_npc:id(), PERK_SPOTTER.id)
 		end
 	else
 		printf("// No spotters in squad")

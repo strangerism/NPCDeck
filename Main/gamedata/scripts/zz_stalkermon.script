@@ -63,6 +63,7 @@ ABILITY_STATE = {
 	READY = "READY",
 	COOLDOWN = "COOLDOWN",
 	READING = "READING",
+	DISABLED = "DISABLED",
 }
 
 
@@ -78,8 +79,11 @@ function Add_npc(npc_id)
 end
 
 local function add_ability(npc_id, feat)
-	stalkers[npc_id]["ABILITIES"][feat.id] = feat
+	stalkers[npc_id]["ABILITIES"][feat.id] = {}
+	stalkers[npc_id]["ABILITIES"][feat.id]["id"] = feat.id
+	stalkers[npc_id]["ABILITIES"][feat.id]["icon"] = feat.icon
 	stalkers[npc_id]["ABILITIES"][feat.id]["state"] = ABILITY_STATE.READY
+	stalkers[npc_id]["ABILITIES"][feat.id]["cooldown"] = feat.cooldown
 	stalkers[npc_id]["ABILITIES"][feat.id]["timer"] = -1
 end
 
@@ -342,6 +346,8 @@ function actor_on_update()
 	tg_update = tg + tg_update_step
 
 	squad_in_danger = is_companions_squad_in_danger()
+
+	-- printlog_table("Stalkers", stalkers)
 end
 
 

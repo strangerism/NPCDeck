@@ -15,7 +15,7 @@ local HUD_MODE = {
 
 function add_ability_to_hud(self, ability, companion_hud, index, mode)
 
-	local npc_id = companion_hud.npc_id
+	local npc_id = companion_hud.name:GetText()
 	local a_id = ability.id
 
 	-- delete current statics from hud
@@ -81,10 +81,15 @@ function axr_companions.UICompanionList:InitControls()
 		self.companion_info[i].team_role         = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
 		self.companion_info[i].distance          = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
 		self.companion_info[i].prog_health       = xml:InitProgressBar("companion_list:slot:health", self.companion_info[i].base)
+		self.companion_info[i].name          	 = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
 		for _,ele in pairs(self.companion_info[i]) do
 			utils_xml.correct_ratio(ele)
 		end		
 		-- stalkermon
+		-- self.companion_info[i].name:SetFont(GetFontSmall())  - self.companion_info[i].icon:GetWidth()/2
+		self.companion_info[i].name:SetWndSize(vector2():set( self.companion_info[i].name:GetWidth() + 30, self.companion_info[i].name:GetHeight()))
+		self.companion_info[i].name:SetTextAlignment(0)
+		self.companion_info[i].name:SetWndPos( vector2():set( self.companion_info[i].distance:GetWndPos().x , self.companion_info[i].distance:GetWndPos().y + self.companion_info[i].icon:GetHeight()/2 ) )
 		self.companion_info[i].abilities = {} -- = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
 		-- self.companion_info[i].abilities:SetWndSize(vector2():set( 100, 25 ))
 
@@ -92,7 +97,6 @@ function axr_companions.UICompanionList:InitControls()
 		local h = self.companion_info[i].background:GetHeight()
 		self.companion_info[i].distance:SetFont(GetFontSmall())
 		self.companion_info[i].base:SetWndPos( vector2():set( 0 , (8-i)*(h+10) ) )
-		
 		local pos = self.companion_info[i].team_role:GetWndPos()
 		self.companion_info[i].team_role_shadow:SetWndPos( vector2():set( pos.x + 1 , pos.y + 2 ) )
 		self.companion_info[i].team_role_shadow:SetTextureColor( GetARGB(255, 0, 0, 0) )
@@ -137,6 +141,9 @@ function axr_companions.UICompanionList:Update(force)
 			
 			-- Distance
 			ele.distance:SetText(string.format("%.2f M", se_obj.position:distance_to(db.actor:position())))
+			
+			-- Name
+			ele.name:SetText(npc:character_name())
 
 			-- Leader and relation status
 			local squad = se_obj.group_id and se_obj.group_id ~= 65535 and alife_object(se_obj.group_id)
@@ -163,9 +170,10 @@ function axr_companions.UICompanionList:Update(force)
 			
 			-- stakermon abilities hud
 			local npc_id = se_obj.id
+			printf("% npc_id = %s", npc_id)
 			local abi_hud_count = ele.abilities and tablelength(ele.abilities) or 0
 			if abi_hud_count > 0 then
-				printf("* UICompanionList NPC %s clear HUD abilities", npc_id)
+				printf("* UICompanionList NPC %s clear HUD abilities", ele.name:GetText())
 				for a_id, a_ele in pairs(ele.abilities) do
 					local ability = SM.Get_ability(npc_id, a_id)
 					
@@ -181,33 +189,25 @@ function axr_companions.UICompanionList:Update(force)
 			end
 			
 			if SM.Has_abilities(npc_id) then
-				printf("* UICompanionList NPC %s has abilities", npc_id)
+				printf("* UICompanionList NPC %s has abilities", ele.name:GetText())
 				local index = 2
-				for a_id, ability in pairs(SM.Get_abilities(npc_id)) do
+				local npc_abilities = SM.Get_abilities(npc_id)
+				-- if npc_abilities then SM.printlog_table("STALKERMON", npc_abilities) end
+				for a_id, ability in pairs(npc_abilities) do
 					printf("* UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
 					if ability.state ~= STATE.READY then
 						-- init if it is new or has changed position in the ribbon
-						printf("$ npc %s ability %s state %s/%s",npc_id, a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
+						printf("$ npc %s ability %s state %s/%s",ele.name:GetText(), a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
 						if not ele.abilities[a_id] or ele.abilities[a_id].index ~= index or (ability.state ~= ele.abilities[a_id].state) then
-							if ability.state == STATE.COOLDOWN then
-								ele = add_ability_to_hud(self, ability, ele, index, HUD_MODE.STATIC)
-							else
-								ele = add_ability_to_hud(self, ability, ele, index, HUD_MODE.FLASHING)
-							end
+							add_ability_to_hud(self, ability, ele, index, ability.state == STATE.COOLDOWN and HUD_MODE.STATIC or HUD_MODE.FLASHING)
 						end
 						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
 						-- printf("update CD bar=%s",bar)
 						ele.abilities[a_id].cd:SetProgressPos(bar)
 						--
 						index = index + 1
-					else
-						-- ui_ability.icon:Show(false)
-						-- ui_ability.icon = nil
-						-- ui_ability.cd:Show(false)
-						-- ui_ability.cd = nil
 					end
 				end
-        		-- ele.abilities:Show(true)
 			end
 			self.companion_info[i].base:Show(true)
 		else 
