@@ -49,6 +49,24 @@ function on_option_change()
 	max_marks = get_config('max_marks')
 end
 
+-- UTILS
+
+local function get_npc(npc_id)
+	return db.storage[npc_id] and db.storage[npc_id].object
+end
+
+-- SPOTTERS
+
+local Spotters = {}
+
+local function add_spotter(npc_id)
+	Spotters[npc_id] = {}
+end
+
+local function remove_spotter(npc_id)
+	Spotters[npc_id] = nil
+end
+
 -- PERKS
 
 local PERK_SPOTTER = {
@@ -78,7 +96,7 @@ local SPOT = PERK_SPOTTER.feats.PERK_SPOTTER_ABILITY_SPOT.id
 local function is_archetype_perk(npc_id)
 	local archetype = false
 
-	local npc = db.storage[npc_id] and db.storage[npc_id].object
+	local npc = get_npc(npc_id)
 	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
 		printf("/ npc %s has archetype perk", npc:section())
 		archetype = true
@@ -87,6 +105,7 @@ local function is_archetype_perk(npc_id)
 	return archetype
 end
 
+-- called from zz_stalkermon 
 function roll_perk(npc_id)
 	printf("! npc %s rolling chance to have perk", npc_id)
 	return is_archetype_perk(npc_id) or (math.random(100) <= perk_chance)
@@ -100,6 +119,7 @@ local function is_spotter(npc)
 		PERK_SPOTTER.functor = {"spotter_mcm","roll_perk", npc_id}
 		if SM.Roll_perk(npc_id, PERK_SPOTTER) then
 			SM.print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
+			add_spotter(npc_id)
 			zz_stalkermon.Register_abilities(npc_id, PERK_SPOTTER.id)
 		end
 	end
@@ -112,7 +132,7 @@ local function find_master_spotter()
 	local master_npc = nil
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
-		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
+		local npc = get_npc(clist[i])
 		if npc and npc:alive() and is_spotter(npc) then
 			if master_npc == nil then
 				master_npc = npc
@@ -196,18 +216,19 @@ end
 
 local f = getFS()
 
-function build_npc_barks_lib(npc)
+local function build_npc_barks_lib(npc)
 	local npc_id = npc:id()
-	SM.stalkers[npc_id]["bark"] = {}
+	add_spotter(npc_id)
+	Spotters[npc_id]["bark"] = {}
 	local num = 1
 	while f:exist("$game_sounds$",npc:sound_prefix().."fight\\enemy\\enemy_"..num..".ogg") do
 		-- printf("adding sound ["..npc:sound_prefix().."fight\\enemy\\enemy_"..num.."] to table id = "..num)
-		SM.stalkers[npc_id]["bark"][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
+		Spotters[npc_id]["bark"][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
 		num = num + 1
 	end
 end
 
-function bark(npc)
+local function bark(npc)
 	if not npc then return end
 	local female_visual = npc:get_visual_name():find("fstalker")
 	local female_voice = npc:sound_prefix():find("woman")
@@ -216,10 +237,10 @@ function bark(npc)
 	if female_visual or female_voice then
 		file_to_say = xr_sound.get_safe_sound_object( "spotters\\command_fireatwill_" .. math.random(3))
 	else
-		if not SM.stalkers[npc_id]["bark"] then
+		if not Spotters[npc_id] or not Spotters[npc_id]["bark"] then
 			build_npc_barks_lib(npc)
 		end
-		file_to_say = xr_sound.get_safe_sound_object(SM.stalkers[npc_id]["bark"][math.random(#SM.stalkers[npc_id]["bark"])]) --sets the file to play			
+		file_to_say = xr_sound.get_safe_sound_object(Spotters[npc_id]["bark"][math.random(#Spotters[npc_id]["bark"])]) --sets the file to play			
 	end
 	file_to_say:play(db.actor,0,sound_object.s2d) --plays it
 	file_to_say.volume = 1.0 --sets how loud the sound should be
@@ -293,23 +314,49 @@ function tableSize(t)
 end
 
 
-local callmark
 local marks = {}
-function mark_enemy(enemy, npc)
-    enemy = enemy or level.get_target_obj()
-    -- printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
-    if enemy and enemy:alive() and not marks[enemy:id()] then
-		zz_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_SPOT)
-		local args = getArgs(PERK_SPOTTER_ABILITY_SPOT.id)
-        args.id = enemy:id()
-        marker, mark_id = hmm:AddMarker(args)
-		marks[enemy:id()] = mark_id
-		printf("-- added marker %s for new enemy %s", mark_id, enemy:id())
-		printf("// active marks increased to %s", tableSize(marks))
-		if play_bark then
-			bark(npc)
-		end
-    end
+
+local function can_spot()
+	return tableSize(marks) < max_marks
+end
+
+local function is_enemy_marked(enemy)
+	return marks[enemy:id()]
+end
+
+local function maxed_marks()
+	return tableSize(marks) == max_marks
+end
+
+local function delete_marked(enemy)
+	local id
+	if not enemy then
+		id = math.random(tableSize(marks))
+	else
+		id = enemy:id()
+	end
+	hmm:DelMarker(marks[id])
+	marks[id] = nil
+end
+
+
+function mark_enemy(enemy, npc, perk_id)
+	local marker, mark_id
+    printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
+	if is_enemy_marked(enemy) then -- replace existing mark
+		delete_marked(enemy)
+	elseif maxed_marks() and perk_id == CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
+		delete_marked()
+	end
+	local args = getArgs(perk_id)
+	args.id = enemy:id()
+	marker, mark_id = hmm:AddMarker(args)
+	marks[enemy:id()] = mark_id
+	printf("-- added marker %s for new enemy %s", mark_id, enemy:id())
+	printf("// active marks increased to %s", tableSize(marks))
+	if play_bark then
+		bark(npc)
+	end
 end
 
 function update_marks()
@@ -323,13 +370,25 @@ function update_marks()
 	end
 end
 
+function call_mark(npc)
+
+	local enemy = level.get_target_obj()
+	if enemy and enemy:alive() then
+		if zz_stalkermon.Activate_ability(npc:id(), CALLMARK) then
+			mark_enemy(enemy, npc, CALLMARK)
+		end
+	end
+end
+
 function spot_enemy(npc, be_list)
-	-- printf("% NPC %s uses spotter perk", npc:character_name())
+	printf("% NPC %s attempt to spot", npc:character_name())
 	local be = npc:best_enemy()
 	if (be and be:alive()) then
 		local distance = be:position():distance_to_sqr(npc:position())
-		-- printf("* FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
-		mark_enemy(be, npc)
+		printf("* FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
+		if zz_stalkermon.Activate_ability(npc:id(), SPOT) then
+			mark_enemy(be, npc, SPOT)
+		end
 		-- -- Add a new element
 		-- table.insert(be_list, {be, distance})
 	end
@@ -339,14 +398,14 @@ function find_enemy(spotter_id)
 	-- printf("- Find enemy")
 	local be_list = {}
 	if spotter_id then
-		local npc = db.storage[spotter_id] and db.storage[spotter_id].object
+		local npc = get_npc(spotter_id)
 		if npc and npc:alive() then
 			spot_enemy(npc, be_list)
 		end
 	else
 		local clist = axr_companions.list_actor_squad_by_id()
 		for i=1, #clist do
-			local npc = db.storage[clist[i]] and db.storage[clist[i]].object
+			local npc = get_npc(clist[i])
 			if npc and npc:alive() and is_spotter(npc) then
 				spot_enemy(npc, be_list)
 				return
@@ -384,7 +443,7 @@ end
 
 function do_keep_spotting()
 	-- printf("do_keep_spotting - active marks %s/%s", tableSize(marks), max_marks)
-	if tableSize(marks) < max_marks then
+	if can_spot() then
 		-- printf("- TAKE POINT COMBAT [TAG]")
 		local enemy = find_enemy(master_spotter_id)
 	end
@@ -398,16 +457,17 @@ end
 local spotter_mark_issued
 function on_key_press(dik)
 	
-	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
+	printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
-		-- printf("- create spotter_mark_keyhold")
-		if true then -- not squad_is_peaceful then
+		printf("- create spotter_mark_keyhold")
+		if not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
-				-- printf("- execute spotter_mark_keyhold")
+				printf("- execute spotter_mark_keyhold")
 				if master_spotter_id then
-					local enemy = find_enemy(master_spotter_id)
-					zz_stalkermon.Activate_ability(master_spotter_id, CALLMARK)
-					zz_stalkermon.Activate_ability(master_spotter_id, SPOT)
+					local npc = get_npc(master_spotter_id)
+					if npc and npc:alive() then
+						call_mark(npc)
+					end					
 				end
 				spotter_mark_issued = true
 				return true
@@ -418,11 +478,11 @@ end
 
 function on_key_release(dik)
 
-	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
+	printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if dik == hotkey_dik then
 		RemoveTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long")
 		if spotter_mark_issued then
-			-- printf("- consume spotter_mark_keyhold")
+			printf("- consume spotter_mark_keyhold")
 			spotter_mark_issued = false
 		else
 			if not zzzz_dynahud then
@@ -441,6 +501,10 @@ end
 -- 		female_npc[character_id] = true
 -- 	end
 -- end)
+
+function squad_on_npc_death(squad,se_npc)
+	remove_spotter(se_npc.id)
+end
 
 if AddScriptCallback then
 	AddScriptCallback("spotter_combat_started")
@@ -463,6 +527,6 @@ function on_game_start()
     RegisterScriptCallback("spotter_combat_ended",combat_ended)
 
 	on_option_change()
-
+	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
 	RegisterScriptCallback("stalkermon_squad_update",schedule_update_master_spotter)
 end

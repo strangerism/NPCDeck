@@ -67,7 +67,7 @@ ABILITY_STATE = {
 }
 
 
-
+-- returns true of a new npc is added
 function Add_npc(npc_id)
 	if stalkers[npc_id] then return false end
 	printf("-- npc %s added", npc_id)
@@ -116,6 +116,7 @@ function Has_perk(npc_id, perk_id)
 	return (perk and (perk.rank > 0)) or false
 end
 
+-- returns true of the perk is rolled
 function Roll_perk(npc_id, perk)
 	printf("-- npc %s Roll_perk", npc_id)
 	if stalkers[npc_id]["PERKS"][perk.id] then return end
@@ -165,8 +166,10 @@ function Unregister_abilities(npc_id, perk_id)
 	end
 end
 
+-- time event function
 function manage_ability_cooldown(npc_id, feat_id)
-	if not stalkers[npc_id]["ABILITIES"][feat_id] then return true end
+	if not stalkers[npc_id] then return true end  -- npc died?
+	if not stalkers[npc_id]["ABILITIES"][feat_id] then return true end -- ability unregistered?
 	if stalkers[npc_id]["ABILITIES"][feat_id].state == ABILITY_STATE.READY then
 		stalkers[npc_id]["ABILITIES"][feat_id].state = ABILITY_STATE.COOLDOWN
 	end
@@ -183,7 +186,6 @@ function manage_ability_cooldown(npc_id, feat_id)
 	printf("// [tg][%s] manage_ability %s cooldown %s/%s", time_global(), feat_id, timer, cooldown)
 	stalkers[npc_id]["ABILITIES"][feat_id].timer = stalkers[npc_id]["ABILITIES"][feat_id].timer - 1
 	CreateTimeEvent("ability_coolddown", tostring(npc_id) .. feat_id .. "_" .. tostring(timer), 1, manage_ability_cooldown, npc_id, feat_id)
-	-- CreateTimeEvent("ability_coolddown", tostring(npc_id) .. feat_id, 1, manage_ability_cooldown, npc_id, feat_id)
 	return true
 end
 
@@ -197,6 +199,7 @@ function Activate_ability(npc_id, feat_id)
 	stalkers[npc_id]["ABILITIES"][feat_id].timer = stalkers[npc_id]["ABILITIES"][feat_id].cooldown
 	stalkers[npc_id]["ABILITIES"][feat_id].state = ABILITY_STATE.READY 
 	CreateTimeEvent("ability_coolddown", tostring(npc_id) .. feat_id, 1, manage_ability_cooldown, npc_id, feat_id)
+	return true
 end
 
 function Has_abilities(npc_id)
