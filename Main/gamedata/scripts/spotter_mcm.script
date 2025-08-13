@@ -1,4 +1,4 @@
-local SM = z_stalkermon
+local SM = zz_stalkermon
 
 function on_mcm_load()
     op = { id= "spotter", sh=true ,gr =
@@ -53,14 +53,18 @@ end
 
 local PERK_SPOTTER = {
 	id = "npc_perk_spotter",
-	abilities = {
+	feats = {
 		PERK_SPOTTER_ABILITY_CALLMARK = {
 			id = "npc_perk_spotter_callmark",
+			name = "npc_perk_spotter_callmark",
+			type = "active",
 			icon = "ui_icons_spotter_pin_redskull",
 			cooldown = 180
 		},
 		PERK_SPOTTER_ABILITY_SPOT = {
 			id = "npc_perk_spotter_spot",
+			name = "npc_perk_spotter_spot",
+			type = "active",
 			icon = "ui_icons_spotter_crosshair_gradient",
 			cooldown = 30
 		}
@@ -68,23 +72,15 @@ local PERK_SPOTTER = {
 	functor = nil,
 }
 
-local PERK_SPOTTER_ABILITY_CALLMARK = {
-	id = "npc_perk_spotter_callmark",
-	icon = "ui_icons_spotter_pin_redskull",
-	cooldown = 180
-}
-local PERK_SPOTTER_ABILITY_SPOT = {
-	id = "npc_perk_spotter_spot",
-	icon = "ui_icons_spotter_crosshair_gradient",
-	cooldown = 30
-}
+local CALLMARK = PERK_SPOTTER.feats.PERK_SPOTTER_ABILITY_CALLMARK.id
+local SPOT = PERK_SPOTTER.feats.PERK_SPOTTER_ABILITY_SPOT.id
 
 local function is_archetype_perk(npc_id)
 	local archetype = false
 
 	local npc = db.storage[npc_id] and db.storage[npc_id].object
 	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
-		printf("/ npc %s archetype perk", npc:section())
+		printf("/ npc %s has archetype perk", npc:section())
 		archetype = true
 	end
 
@@ -92,7 +88,7 @@ local function is_archetype_perk(npc_id)
 end
 
 function roll_perk(npc_id)
-	printf("! npc %s roll_perk perk", npc_id)
+	printf("! npc %s rolling chance to have perk", npc_id)
 	return is_archetype_perk(npc_id) or (math.random(100) <= perk_chance)
 end
 
@@ -110,7 +106,7 @@ local function is_spotter(npc)
 end
 
 local master_spotter_id = nil
-function find_master_spotter()
+local function find_master_spotter()
 	-- printf("--find_master_spotter")
 	local master_npc = nil
 	local clist = axr_companions.list_actor_squad_by_id()
@@ -129,12 +125,10 @@ function find_master_spotter()
 		if master_npc:id() ~= master_spotter_id then
 			local clist = axr_companions.list_actor_squad_by_id()
 			for i=1, #clist do
-				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_CALLMARK)
-				z_stalkermon.unregister_ability(clist[i], PERK_SPOTTER_ABILITY_SPOT)
+				zz_stalkermon.Unregister_abilities(clist[i], PERK_SPOTTER.id)
 			end			
 			SM.print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
-			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_CALLMARK)
-			z_stalkermon.register_ability(master_npc:id(), PERK_SPOTTER_ABILITY_SPOT)
+			zz_stalkermon.Register_abilities(master_npc:id(), PERK_SPOTTER.id)
 		end
 	else
 		printf("// No spotters in squad")
@@ -161,40 +155,10 @@ local function schedule_update_master_spotter()
 end
 -----
 
-
-function is_companions_squad_in_danger()
-	--printf("============================================================================================")
-	local squad_is_peaceful = true
-	local clist = axr_companions.list_actor_squad_by_id()
-	for i=1, #clist do
-		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
-		if npc then
-			local is_peaceful = false
-			-- check if is in fight
-			if npc:alive() then
-				is_peaceful = (not npc:best_enemy()) and npc:dont_has_info("npcx_beh_ignore_combat") and true or false
-			end
-			-- printf("companion[%s] is_peaceful %s - dist: %s",k.id, is_peaceful, distance_between(db.actor,npc))
-			-- check if is too far away
-			squad_is_peaceful = squad_is_peaceful and is_peaceful
-			-- printf("current calculation for squad is_peaceful %s", squad_is_peaceful)					
-		end	
-	end	
-	if not squad_is_peaceful then
-		-- printf("squad is under attack or attacking")
-	end
-	-- printf("-- squad is resolved peaceful %s", squad_is_peaceful)
-	--printf("============================================================================================")
-	return not squad_is_peaceful
-end
-
-
-
 local squad_is_peaceful = true
 function actor_on_first_update()
-    squad_is_peaceful = is_companions_squad_in_danger()
+    squad_is_peaceful = not zz_stalkermon.is_companions_squad_in_danger()
 end
-
 
 local tg_update = 0
 local tg_update_step = 1000 --[ms]
@@ -206,7 +170,6 @@ function actor_on_update()
 		end
 		tg_update = tg + tg_update_step
 
-
 		if not squad_is_peaceful and keep_spotting then
 			-- printf("keep_spotting")
 			do_keep_spotting()
@@ -216,7 +179,7 @@ function actor_on_update()
 			update_marks()
 		end
 
-        local in_danger_state = is_companions_squad_in_danger()
+        local in_danger_state = zz_stalkermon.squad_in_danger
 		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
         if squad_is_peaceful and in_danger_state then
 			-- printf("spotter_combat_started")
@@ -340,7 +303,7 @@ function mark_enemy(enemy, npc)
     enemy = enemy or level.get_target_obj()
     -- printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
     if enemy and enemy:alive() and not marks[enemy:id()] then
-		z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_SPOT)
+		zz_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_SPOT)
 		local args = getArgs(PERK_SPOTTER_ABILITY_SPOT.id)
         args.id = enemy:id()
         marker, mark_id = hmm:AddMarker(args)
@@ -445,9 +408,11 @@ function on_key_press(dik)
 		if true then -- not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 				-- printf("- execute spotter_mark_keyhold")
-				local enemy = find_enemy(master_spotter_id)
-				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_CALLMARK)
-				z_stalkermon.activate_ability(master_spotter_id, PERK_SPOTTER_ABILITY_SPOT)
+				if master_spotter_id then
+					local enemy = find_enemy(master_spotter_id)
+					zz_stalkermon.Activate_ability(master_spotter_id, CALLMARK)
+					zz_stalkermon.Activate_ability(master_spotter_id, SPOT)
+				end
 				spotter_mark_issued = true
 				return true
 			end)
@@ -502,8 +467,6 @@ function on_game_start()
     RegisterScriptCallback("spotter_combat_ended",combat_ended)
 
 	on_option_change()
-    RegisterScriptCallback("load_state", load_state)
-    RegisterScriptCallback("save_state", save_state)
 
 	RegisterScriptCallback("stalkermon_squad_update",schedule_update_master_spotter)
 end
