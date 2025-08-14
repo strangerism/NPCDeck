@@ -55,18 +55,6 @@ local function get_npc(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
 
--- SPOTTERS
-
-local Spotters = {}
-
-local function add_spotter(npc_id)
-	Spotters[npc_id] = {}
-end
-
-local function remove_spotter(npc_id)
-	Spotters[npc_id] = nil
-end
-
 -- PERKS
 local SM_MODULE_NAME = "spotter"
 
@@ -171,6 +159,18 @@ function roll_perk(npc_id)
 	return is_archetype_perk(npc_id) or (math.random(100) <= perk_chance)
 end
 
+-- SPOTTERS
+
+local Spotters = {}
+
+local function add_spotter(npc_id)
+	Spotters[npc_id] = {}
+end
+
+local function remove_spotter(npc_id)
+	Spotters[npc_id] = nil
+end
+
 local function is_spotter(npc)
 	local npc_id = npc:id()
 	printf("! npc %s is_spotter", npc_id)
@@ -231,51 +231,6 @@ local function schedule_update_master_spotter()
 end
 -----
 
-local squad_is_peaceful = true
-function actor_on_first_update()
-	zz_stalkermon.register_module(SM_MODULE_NAME, SM_MODULE_PERKS)
-    squad_is_peaceful = not zz_stalkermon.is_companions_squad_in_danger()
-
-end
-
-local tg_update = 0
-local tg_update_step = 1000 --[ms]
-function actor_on_update()
-
-		local tg = time_global()
-		if tg < tg_update then
-			return
-		end
-		tg_update = tg + tg_update_step
-
-		if not squad_is_peaceful and keep_spotting then
-			-- printf("keep_spotting")
-			do_keep_spotting()
-		end
-
-		if not squad_is_peaceful then
-			update_marks()
-		end
-
-        local in_danger_state = zz_stalkermon.squad_in_danger
-		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
-        if squad_is_peaceful and in_danger_state then
-			-- printf("spotter_combat_started")
-            squad_is_peaceful = false
-            SendScriptCallback("spotter_combat_started")
-            return
-        end
-
-        if not squad_is_peaceful and not in_danger_state then
-			-- printf("spotter_combat_ended")
-            squad_is_peaceful = true
-            SendScriptCallback("spotter_combat_ended")
-            return
-        end
-
-		-- printf("spotter_combat_unknown")
-end
-
 local f = getFS()
 
 local function build_npc_barks_lib(npc)
@@ -308,6 +263,8 @@ local function bark(npc)
 	file_to_say.volume = 1.0 --sets how loud the sound should be
 
 end
+
+-- MARKS
 
 local hmm = utils_spotter_hudmarks.get_hud_mark_manager()
 
@@ -408,7 +365,7 @@ local function delete_marked(enemy)
 end
 
 
-function mark_enemy(enemy, npc, feat_id)
+local function mark_enemy(enemy, npc, feat_id)
 	local marker, mark_id
     printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
 	if is_enemy_marked(enemy) then -- replace existing mark
@@ -427,7 +384,7 @@ function mark_enemy(enemy, npc, feat_id)
 	end
 end
 
-function update_marks()
+local function update_marks()
 	for id, marker in pairs(marks) do
 		-- remove mark if expired
 		if not hmm:GetMarker(marker) then
@@ -444,7 +401,7 @@ function update_marks()
 	end
 end
 
-function call_mark(npc)
+local function call_mark(npc)
 
 	local enemy = level.get_target_obj()
 	if enemy and enemy:alive() then
@@ -454,7 +411,9 @@ function call_mark(npc)
 	end
 end
 
-function spot_enemy(npc, be_list)
+-- SPOTTING
+
+local function spot_enemy(npc, be_list)
 	printf("% NPC %s attempt to spot", npc:character_name())
 	local be = npc:best_enemy()
 	if (be and be:alive()) then
@@ -468,7 +427,7 @@ function spot_enemy(npc, be_list)
 	end
 end
 
-function find_enemy(spotter_id)
+local function find_enemy(spotter_id)
 	-- printf("- Find enemy")
 	local be_list = {}
 	if spotter_id then
@@ -504,8 +463,9 @@ function find_enemy(spotter_id)
 	end
 end
 
+-- LIFECYCLE
 
-function combat_started()
+local function combat_started()
     -- printf("- combat_started")
 	if not master_spotter_id then
 		master_spotter_id = find_master_spotter()
@@ -515,15 +475,60 @@ function combat_started()
 	-- printf("-- marker added %s", marker)
 end
 
-function do_keep_spotting()
+local function do_keep_spotting()
 	if can_spot() then
-		printf("- do_keep_spotting")
+		-- printf("- do_keep_spotting")
 		local enemy = find_enemy(master_spotter_id)
 	end
 end
 
-function combat_ended()
+local function combat_ended()
     -- printf("! combat_ended")
+end
+
+local squad_is_peaceful = true
+function actor_on_first_update()
+	zz_stalkermon.register_module(SM_MODULE_NAME, SM_MODULE_PERKS)
+    squad_is_peaceful = not zz_stalkermon.is_companions_squad_in_danger()
+
+end
+
+local tg_update = 0
+local tg_update_step = 1000 --[ms]
+function actor_on_update()
+
+		local tg = time_global()
+		if tg < tg_update then
+			return
+		end
+		tg_update = tg + tg_update_step
+
+		if not squad_is_peaceful and keep_spotting then
+			-- printf("keep_spotting")
+			do_keep_spotting()
+		end
+
+		if not squad_is_peaceful then
+			update_marks()
+		end
+
+        local in_danger_state = zz_stalkermon.squad_in_danger
+		-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
+        if squad_is_peaceful and in_danger_state then
+			-- printf("spotter_combat_started")
+            squad_is_peaceful = false
+            SendScriptCallback("spotter_combat_started")
+            return
+        end
+
+        if not squad_is_peaceful and not in_danger_state then
+			-- printf("spotter_combat_ended")
+            squad_is_peaceful = true
+            SendScriptCallback("spotter_combat_ended")
+            return
+        end
+
+		-- printf("spotter_combat_unknown")
 end
 
 local spotter_mark_issued

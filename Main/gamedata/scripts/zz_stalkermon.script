@@ -154,7 +154,7 @@ end
 
 function Get_perk(npc_id, perk_id)
 	if not stalkers[npc_id] or not stalkers[npc_id]["PERKS"][perk_id] then return end
-	
+
 	return sm_perks[perk_id]
 end
 
@@ -382,6 +382,8 @@ function load_state(m_data)
 		printlog_table("Stalkers", stalkers)
 	end
 end
+
+-- LIFECYCLE
 
 squad_in_danger = true
 function actor_on_first_update()
