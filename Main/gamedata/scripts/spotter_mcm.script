@@ -68,30 +68,90 @@ local function remove_spotter(npc_id)
 end
 
 -- PERKS
+local SM_MODULE_NAME = "spotter"
 
 local PERK_SPOTTER = {
-	id = "npc_perk_spotter",
+	id = "stalkermon_perk_spotter",
+	type = SM.PERK_TYPE.ARCHETYPE,
+	name = "st_stalkermon_perk_spotter",
+	description = "st_stalkermon_perk_spotter_desc",	
+	icon = "ui_icons_spotter_pin_redskull",
+	category 		= "st_stalkermon_perk_archetype",
 	feats = {
-		PERK_SPOTTER_ABILITY_CALLMARK = {
-			id = "npc_perk_spotter_callmark",
-			name = "npc_perk_spotter_callmark",
-			type = "active",
+		stalkermon_perk_spotter_callmark = { 
+			id = "stalkermon_perk_spotter_callmark",
+			name = "st_stalkermon_perk_spotter_callmark",
+			description = "st_stalkermon_perk_spotter_callmark_desc",
+			type = SM.FEAT_TYPE.ACTIVE,
 			icon = "ui_icons_spotter_pin_redskull",
-			cooldown = 180
+			icon_hud = "ui_icons_spotter_pin_redskull",
+			req_level       = 3,
+			max_level       = 4,
+			each_level      = 4,
+			category 		= "st_stalkermon_perk_spotter",
+			stats = {
+				[1] = {
+					cooldown = 180,
+					life = 30
+				},
+				[2] = {
+					cooldown = 180,
+					life = 60
+				},
+				[3] = {
+					cooldown = 150,
+					life = 80
+				},
+				[4] = {
+					cooldown = 120,
+					life = 100
+				}
+			}
 		},
-		PERK_SPOTTER_ABILITY_SPOT = {
-			id = "npc_perk_spotter_spot",
-			name = "npc_perk_spotter_spot",
-			type = "active",
+		stalkermon_perk_spotter_spot = { 
+			id = "stalkermon_perk_spotter_spot",
+			name = "st_stalkermon_perk_spotter_spot",
+			description = "st_stalkermon_perk_spotter_spot_desc",
+			type = SM.FEAT_TYPE.ACTIVE,
 			icon = "ui_icons_spotter_crosshair_gradient",
-			cooldown = 30
+			icon_hud = "ui_icons_spotter_crosshair_gradient",
+			req_level       = 1,
+			max_level       = 4,
+			each_level      = 4,
+			category 		= "st_stalkermon_perk_spotter",			
+			stats = {
+				[1] = {
+					cooldown = 30,
+					life = 10,
+					marks_limit = 1
+				},
+				[2] = {
+					cooldown = 25,
+					life = 10,
+					marks_limit = 2
+				},
+				[3] = {
+					cooldown = 20,
+					life = 15,
+					marks_limit = 3
+				},
+				[4] = {
+					cooldown = 15,
+					life = 15,
+					marks_limit = 4
+				}
+			}
 		}
 	},
 	functor = nil,
 }
 
-local CALLMARK = PERK_SPOTTER.feats.PERK_SPOTTER_ABILITY_CALLMARK.id
-local SPOT = PERK_SPOTTER.feats.PERK_SPOTTER_ABILITY_SPOT.id
+local CALLMARK = PERK_SPOTTER.feats.stalkermon_perk_spotter_callmark.id
+local SPOT = PERK_SPOTTER.feats.stalkermon_perk_spotter_spot.id
+
+local SM_MODULE_PERKS = {
+	stalkermon_perk_spotter = PERK_SPOTTER
+}
 
 local function is_archetype_perk(npc_id)
 	local archetype = false
@@ -116,8 +176,8 @@ local function is_spotter(npc)
 	printf("! npc %s is_spotter", npc_id)
 	if SM.Add_npc(npc_id) then
 		-- It's a new NPC lets roll the perk
-		PERK_SPOTTER.functor = {"spotter_mcm","roll_perk", npc_id}
-		if SM.Roll_perk(npc_id, PERK_SPOTTER) then
+		local functor = {"spotter_mcm","roll_perk", npc_id}
+		if SM.Roll_perk(npc_id, PERK_SPOTTER.id, functor) then
 			SM.print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
 			add_spotter(npc_id)
 			zz_stalkermon.Register_abilities(npc_id, PERK_SPOTTER.id)
@@ -142,7 +202,7 @@ local function find_master_spotter()
 		end		
 	end
 	if master_npc then
-		printf("// found master spotter %s with rank %s", master_npc:character_name(), ranks.get_se_obj_rank_name(master_npc))
+		printf("// found master spotter %s with rank %s", master_npc:character_name(), SM.Get_desc_rank(master_npc))
 		if master_npc:id() ~= master_spotter_id then
 			SM.print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
 		end
@@ -173,7 +233,9 @@ end
 
 local squad_is_peaceful = true
 function actor_on_first_update()
+	zz_stalkermon.register_module(SM_MODULE_NAME, SM_MODULE_PERKS)
     squad_is_peaceful = not zz_stalkermon.is_companions_squad_in_danger()
+
 end
 
 local tg_update = 0
@@ -249,10 +311,12 @@ end
 
 local hmm = utils_spotter_hudmarks.get_hud_mark_manager()
 
-local function getArgs(id)
+local function getArgs(npc_id, feat_id)
+	local rank = SM.Get_feat_rank(npc_id, feat_id) -- this should come from EXP framework
+	local life = PERK_SPOTTER.feats[feat_id].stats[rank].life
 
 	local args = {
-		npc_perk_spotter_callmark = {
+		stalkermon_perk_spotter_callmark = {
 
 			texture         = "ui_icons_spotter_pin_redskull",
 			-- a texture for the icon is required
@@ -268,15 +332,15 @@ local function getArgs(id)
 			-- marker is automatically destroyed if actor gets this far away
 			show_dist         = true,
 			-- show distance indicator by the marker
-			-- func_on_update = (
-			-- 	function(mark, args)
-			-- 		-- printf("func_on_update")
-			-- 		local init_time = mark and mark.init_time or 0
-			-- 		if time_global() - init_time > marker_life*1000 then mark:Destroy() end
-			-- 	end
-			-- 	)
+			func_on_update = (
+				function(mark, args)
+					-- printf("func_on_update")
+					local init_time = mark and mark.init_time or 0
+					if time_global() - init_time > life * 1000 then mark:Destroy() end
+				end
+				)
 		},
-		npc_perk_spotter_spot = {
+		stalkermon_perk_spotter_spot = {
 
 			texture         = "ui_icons_spotter_pin_cursor_chevron_e",
 			-- a texture for the icon is required
@@ -296,12 +360,12 @@ local function getArgs(id)
 				function(mark, args)
 					-- printf("func_on_update")
 					local init_time = mark and mark.init_time or 0
-					if time_global() - init_time > marker_life*1000 then mark:Destroy() end
+					if time_global() - init_time > life * 1000 then mark:Destroy() end
 				end
 				)
 		}	
 	}
-	return args[id]
+	return args[feat_id]
 end
 
 
@@ -316,16 +380,20 @@ end
 
 local marks = {}
 
-local function can_spot()
-	return tableSize(marks) < max_marks
+local function can_spot(npc_id)
+	local rank = SM.Get_feat_rank(npc_id, "stalkermon_perk_spotter_spot") -- this should come from EXP framework
+	local marks_limit = PERK_SPOTTER.feats.stalkermon_perk_spotter_spot.stats[rank].marks_limit
+	return tableSize(marks) < marks_limit
 end
 
 local function is_enemy_marked(enemy)
 	return marks[enemy:id()]
 end
 
-local function maxed_marks()
-	return tableSize(marks) == max_marks
+local function maxed_marks(npc_id)
+	local rank = SM.Get_feat_rank(npc_id, "stalkermon_perk_spotter_spot") -- this should come from EXP framework
+	local marks_limit = PERK_SPOTTER.feats.stalkermon_perk_spotter_spot.stats[rank].marks_limit
+	return tableSize(marks) == marks_limit
 end
 
 local function delete_marked(enemy)
@@ -340,15 +408,15 @@ local function delete_marked(enemy)
 end
 
 
-function mark_enemy(enemy, npc, perk_id)
+function mark_enemy(enemy, npc, feat_id)
 	local marker, mark_id
     printf("- Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
 	if is_enemy_marked(enemy) then -- replace existing mark
 		delete_marked(enemy)
-	elseif maxed_marks() and perk_id == CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
+	elseif maxed_marks(npc:id()) and feat_id == CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
 		delete_marked()
 	end
-	local args = getArgs(perk_id)
+	local args = getArgs(npc:id(), feat_id)
 	args.id = enemy:id()
 	marker, mark_id = hmm:AddMarker(args)
 	marks[enemy:id()] = mark_id
@@ -432,7 +500,7 @@ end
 
 
 function combat_started()
-    -- printf("- TAKE POINT COMBAT [START]")
+    -- printf("- combat_started")
 	if not master_spotter_id then
 		master_spotter_id = find_master_spotter()
 	end
@@ -442,27 +510,25 @@ function combat_started()
 end
 
 function do_keep_spotting()
-	-- printf("do_keep_spotting - active marks %s/%s", tableSize(marks), max_marks)
 	if can_spot() then
-		-- printf("- TAKE POINT COMBAT [TAG]")
+		-- printf("- do_keep_spotting")
 		local enemy = find_enemy(master_spotter_id)
 	end
 end
 
 function combat_ended()
-    -- printf("! TAKE POINT COMBAT [END]")
-	marks = {}
+    -- printf("! combat_ended")
 end
 
 local spotter_mark_issued
 function on_key_press(dik)
 	
-	printf("-- bind %s == hotkey %s", dik, hotkey_dik)
+	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
-		printf("- create spotter_mark_keyhold")
+		-- printf("- create spotter_mark_keyhold")
 		if not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
-				printf("- execute spotter_mark_keyhold")
+				-- printf("- execute spotter_mark_keyhold")
 				if master_spotter_id then
 					local npc = get_npc(master_spotter_id)
 					if npc and npc:alive() then
@@ -478,11 +544,11 @@ end
 
 function on_key_release(dik)
 
-	printf("-- bind %s == hotkey %s", dik, hotkey_dik)
+	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if dik == hotkey_dik then
 		RemoveTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long")
 		if spotter_mark_issued then
-			printf("- consume spotter_mark_keyhold")
+			-- printf("- consume spotter_mark_keyhold")
 			spotter_mark_issued = false
 		else
 			if not zzzz_dynahud then
