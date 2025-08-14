@@ -429,11 +429,17 @@ end
 
 function update_marks()
 	for id, marker in pairs(marks) do
-		local se_obj = id and alife_object(id)
-		if se_obj and (not se_obj:alive()) then
-			printf("!! removing marker %s for dead enemy %s", marker, se_obj.id)
-			hmm:DelMarker(marker)
+		-- remove mark if expired
+		if not hmm:GetMarker(marker) then
 			marks[id] = nil
+		else
+			-- remove mark if dead npc
+			local se_obj = id and alife_object(id)
+			if se_obj and (not se_obj:alive()) then
+				printf("!! removing marker %s for dead enemy %s", marker, se_obj.id)
+				hmm:DelMarker(marker)
+				marks[id] = nil
+			end
 		end
 	end
 end
@@ -511,7 +517,7 @@ end
 
 function do_keep_spotting()
 	if can_spot() then
-		-- printf("- do_keep_spotting")
+		printf("- do_keep_spotting")
 		local enemy = find_enemy(master_spotter_id)
 	end
 end
@@ -526,14 +532,14 @@ function on_key_press(dik)
 	-- printf("-- bind %s == hotkey %s", dik, hotkey_dik)
 	if (dik == hotkey_dik) then
 		-- printf("- create spotter_mark_keyhold")
-		if not squad_is_peaceful then
+		if true then --not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 				-- printf("- execute spotter_mark_keyhold")
 				if master_spotter_id then
 					local npc = get_npc(master_spotter_id)
 					if npc and npc:alive() then
 						call_mark(npc)
-					end					
+					end
 				end
 				spotter_mark_issued = true
 				return true
