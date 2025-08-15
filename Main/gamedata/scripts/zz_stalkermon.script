@@ -50,13 +50,23 @@ end
 
 local sm_perks = {}
 
+local MAX_SECONDARY_PERKS = 3
+local MAX_MAIN_PERKS = 1
+
 PERK_TYPE = {
-	ARCHETYPE = "perk_archetype"
+	ARCHETYPE = "perk_archetype",
+	MAIN = "perk_main",
+	SECONDARY = "perk_secondary"
 }
 
 FEAT_TYPE = {
 	ACTIVE = "feat_active",
 	PASSIVE = "feat_passive"
+}
+
+FEAT_MODE = {
+	AUTO = "feat_auto",
+	MANUAL = "feat_manual"
 }
 
 function add_module_perks(perks)
@@ -98,6 +108,14 @@ local RANK = {
 	legend = 5,
 }
 
+local RANK_DESC = {
+	[1] = "I",
+	[2] = "II",
+	[3] = "III",
+	[4] = "IV",
+	[5] = "V",
+}
+
 local function get_npc(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
@@ -115,6 +133,11 @@ function Get_feat_rank(npc_id, feat_id)
 	end
 
 	return rank and RANK[rank] or 1
+end
+
+function Get_feat_rank_desc(npc_id, feat_id)
+	local rank = Get_feat_rank(npc_id, feat_id)
+	return RANK_DESC[rank]
 end
 
 -- returns true of a new npc is added
@@ -158,6 +181,16 @@ function Get_perk(npc_id, perk_id)
 	return sm_perks[perk_id]
 end
 
+function Get_archetype_perk(npc_id)
+	if not stalkers[npc_id] then return end
+	for i = 1, #stalkers[npc_id]["PERKS"], 1 do
+
+		if stalkers[npc_id]["PERKS"][i].type == PERK_TYPE.ARCHETYPE then
+			return stalkers[npc_id]["PERKS"][i]
+		end
+	end
+end
+
 function Has_perk(npc_id, perk_id)
 
 	if not stalkers[npc_id] then return end
@@ -167,25 +200,38 @@ function Has_perk(npc_id, perk_id)
 	return (perk and (perk.rank >= 0)) or false
 end
 
+-- SQUAD UPDATE
+
+local function roll_perk(npc_id, perk)
+	if not perk.functor then return false end
+	-- printf("-- roll_perk executing perk functor")
+	local functor = perk.functor
+	table.insert(functor, npc_id)
+	-- printlog_table("Functor", functor)
+	return execute_func(unpack(functor))
+end
+
 -- returns true of the perk is rolled
-function Roll_perk(npc_id, perk_id, roll_functor)
+function Roll_perk(npc_id, perk_id)
 	printf("-- npc %s Roll_perk", npc_id)
 	if not sm_perks[perk_id] then return end
 	printf("-- perk %s is available", perk_id)
 	local perk = sm_perks[perk_id]
 	if stalkers[npc_id]["PERKS"][perk.id] then return end
 	printf("-- npc %s never rolled this perk", npc_id)
+	local roll = false
 	stalkers[npc_id]["PERKS"][perk.id] = {}
 	stalkers[npc_id]["PERKS"][perk.id]["id"]  = perk.id
 	stalkers[npc_id]["PERKS"][perk.id]["rank"]  = -1
-	printf("roll_functor %s", roll_functor)
-	local roll = roll_functor and execute_func(unpack(roll_functor))
-	if roll then
+
+	if roll_perk(npc_id, perk) then
 		stalkers[npc_id]["PERKS"][perk.id]["rank"]  = 0  -- 0 stands for acquired
-		return true
+		local npc = get_npc(npc_id)
+		print_tip(perk.roll_success_desc, 10000, npc:character_name(), Get_feat_rank_desc(npc_id, perk_id))
+		roll = true
 	end
 	printlog_table(string.format("Roll_perk NPC %s", npc_id), stalkers[npc_id])
-	return false
+	return roll
 end
 
 function Add_perk(npc_id, perks)
@@ -194,27 +240,116 @@ end
 function Set_perks(npc_id, perks)
 end
 
-function Register_abilities(npc_id, perk_id)
-	printf("- npc %s Register_abilities", npc_id)
-	local perk = Get_perk(npc_id, perk_id)
-	if not perk then return end
-	printf("- npc %s Register_abilities for perk %s", npc_id, perk_id)
-    for _, feat in pairs(perk.feats) do
-		if feat.type == FEAT_TYPE.ACTIVE then
-			add_ability(npc_id, feat)
-		end
+
+-- Shuffle function using Fisher-Yates algorithm
+local function shuffle(tbl)
+	for i = #tbl, 2, -1 do
+		local j = math.random(i)
+		tbl[i], tbl[j] = tbl[j], tbl[i]
 	end
 end
 
-function Unregister_abilities(npc_id, perk_id)
-	printf("! npc %s Unregister_abilities for perk %s", npc_id, perk_id)
-	local perk = Get_perk(npc_id, perk_id)
-	if not perk then return end
-    for _, feat in pairs(perk.feats) do
-		if feat.type == FEAT_TYPE.ACTIVE then
-			remove_ability(npc_id, feat.id)
+local function get_randomized_perk_list(type, archetype)
+	local list = {}
+	for _, perk in pairs(sm_perks) do
+		if perk.type == type then
+			if archetype then
+				--- not implemented
+				if perk.archetype == archetype then
+					table.insert(list, perk)	
+				end
+			else
+				table.insert(list, perk)
+			end
 		end
 	end
+	shuffle(list)
+	return list
+end
+
+local function create_npc_profile(npc_id)
+
+	-- ARCHETYPE
+	-- atm only one perk can be added, of type archetype
+	local archetype_perk_list = get_randomized_perk_list(PERK_TYPE.ARCHETYPE)
+	local i = 1
+	-- loop until succesfully rolls the archetype
+	while not Roll_perk(npc_id, archetype_perk_list[i].id) do
+		i = i + 1
+		if i > #archetype_perk_list then
+			return
+			-- i = 1 
+			-- shuffle(archetype_perk_list)	
+		end
+	end
+	
+	-- -- MAIN PERKS ??
+	-- -- no perks available atm
+	-- local main_perk_list = get_randomized_perk_list(PERK_TYPE.MAIN, Get_archetype_perk(npc_id))
+	-- local i = 1
+	-- local perk_count = 0
+	-- -- loop until max perks count have been succesfully rolled
+	-- while perk_count < MAX_MAIN_PERKS do
+	-- 	if Roll_perk(npc_id, main_perk_list[i].id) then
+	-- 		perk_count = perk_count + 1
+	-- 	end
+	-- 	i = i + 1
+	-- 	if i > #main_perk_list then 
+	-- 		shuffle(main_perk_list)
+	-- 		i = 1
+	-- 	end
+	-- end	
+
+	-- -- SECONDARY PERKS
+	-- -- no perks available atm
+	-- local secondary_perk_list = get_randomized_perk_list(PERK_TYPE.SECONDARY)
+	-- local i = 1
+	-- local perk_count = 0
+	-- -- loop until max perks count have been succesfully rolled
+	-- while perk_count < MAX_SECONDARY_PERKS do
+	-- 	if Roll_perk(npc_id, secondary_perk_list[i].id) then
+	-- 		perk_count = perk_count + 1
+	-- 	end
+	-- 	i = i + 1
+	-- 	if i > #secondary_perk_list then 
+	-- 		shuffle(secondary_perk_list)
+	-- 		i = 1
+	-- 	end
+	-- end	
+end
+
+-- ABILITIES
+function Register_abilities(npc_id)
+	printf("! npc %s Register_abilities", npc_id)
+	if not stalkers[npc_id] then return false end
+	for _, perk in pairs(stalkers[npc_id]["PERKS"]) do
+		printf("! npc %s Register_abilities for perk %s", npc_id, perk.id)
+		local sm_perk = sm_perks[perk.id]
+		if sm_perk and sm_perk.feats then
+			for _, feat in pairs(sm_perk.feats) do
+				if feat.type == FEAT_TYPE.ACTIVE then
+					add_ability(npc_id, feat)
+				end
+			end
+		end
+	end
+	return true
+end
+
+function Unregister_abilities(npc_id)
+	if not stalkers[npc_id] then return false end
+	for _, perk in pairs(stalkers[npc_id]["PERKS"]) do
+		printf("! npc %s Unregister_abilities for perk %s", npc_id, perk.id)
+		local sm_perk = sm_perks[perk.id]
+		if sm_perk and sm_perk.feats then
+			for _, feat in pairs(sm_perk.feats) do
+				if feat.type == FEAT_TYPE.ACTIVE then
+					remove_ability(npc_id, feat.id)
+				end
+			end
+		end
+	end
+	return true		
 end
 
 -- time event function
@@ -354,6 +489,72 @@ local function squad_on_npc_death(squad,se_npc)
 	end
 end
 
+function compute_diff(newclist, currentclist)
+
+	if not currentclist then
+		return newclist, {}
+	end
+
+	-- Convert currentclist to a set
+	local current_set = {}
+	for _, id in ipairs(currentclist) do
+		current_set[id] = true
+	end
+
+	-- Convert newclist to a set
+	local new_set = {}
+	for _, id in ipairs(newclist) do
+		new_set[id] = true
+	end
+
+	-- Find added IDs
+	local added_ids = {}
+	for _, id in ipairs(newclist) do
+		if not current_set[id] then
+			table.insert(added_ids, id)
+		end
+	end
+
+	-- Find removed IDs
+	local removed_ids = {}
+	for _, id in ipairs(currentclist) do
+		if not new_set[id] then
+			table.insert(removed_ids, id)
+		end
+	end
+
+	return added_ids, removed_ids
+end
+
+local current_clist
+local function stalkermon_squad_update()
+	printf("% stalkermon_squad_update")
+	local new_clist = axr_companions.list_actor_squad_by_id()
+
+	local added_ids, removed_ids = compute_diff(new_clist, current_clist)
+
+	-- update new squad members
+	for i=1, #added_ids do
+		local npc = get_npc(added_ids[i])
+		if npc and npc:alive() then
+			local npc_id = npc:id()
+			if Add_npc(npc_id) then
+				-- It's a new NPC lets roll the perks
+				create_npc_profile(npc_id)
+			end
+			Register_abilities(npc_id)
+		end
+	end
+
+	-- update removed squad members
+	for i=1, #removed_ids do
+		local npc = get_npc(removed_ids[i])
+		local npc_id = npc:id()
+		Unregister_abilities(npc_id)
+	end	
+
+	current_clist = new_clist
+end
 
 -- STATE MGMT
 
@@ -420,7 +621,7 @@ function on_game_start()
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback("actor_on_first_update",actor_on_first_update)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
-
+	RegisterScriptCallback("stalkermon_squad_update",stalkermon_squad_update)
     RegisterScriptCallback("load_state", load_state)
-    RegisterScriptCallback("save_state", save_state)	
+    RegisterScriptCallback("save_state", save_state)
 end

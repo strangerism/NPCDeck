@@ -65,12 +65,14 @@ local PERK_SPOTTER = {
 	description = "st_stalkermon_perk_spotter_desc",	
 	icon = "ui_icons_spotter_pin_redskull",
 	category 		= "st_stalkermon_perk_archetype",
+	roll_success_desc = "ui_mcm_spotter_has_perk",
 	feats = {
 		stalkermon_perk_spotter_callmark = { 
 			id = "stalkermon_perk_spotter_callmark",
 			name = "st_stalkermon_perk_spotter_callmark",
 			description = "st_stalkermon_perk_spotter_callmark_desc",
 			type = SM.FEAT_TYPE.ACTIVE,
+			mode = SM.FEAT_MODE.MANUAL,
 			icon = "ui_icons_spotter_pin_redskull",
 			icon_hud = "ui_icons_spotter_pin_redskull",
 			req_level       = 3,
@@ -101,6 +103,7 @@ local PERK_SPOTTER = {
 			name = "st_stalkermon_perk_spotter_spot",
 			description = "st_stalkermon_perk_spotter_spot_desc",
 			type = SM.FEAT_TYPE.ACTIVE,
+			mode = SM.FEAT_MODE.AUTO,
 			icon = "ui_icons_spotter_crosshair_gradient",
 			icon_hud = "ui_icons_spotter_crosshair_gradient",
 			req_level       = 1,
@@ -131,7 +134,7 @@ local PERK_SPOTTER = {
 			}
 		}
 	},
-	functor = nil,
+	functor = {"spotter_mcm","roll_perk"},
 }
 
 local CALLMARK = PERK_SPOTTER.feats.stalkermon_perk_spotter_callmark.id
@@ -141,7 +144,7 @@ local SM_MODULE_PERKS = {
 	stalkermon_perk_spotter = PERK_SPOTTER
 }
 
-local function is_archetype_perk(npc_id)
+local function is_archetype_npc(npc_id)
 	local archetype = false
 
 	local npc = get_npc(npc_id)
@@ -156,7 +159,7 @@ end
 -- called from zz_stalkermon 
 function roll_perk(npc_id)
 	printf("! npc %s rolling chance to have perk", npc_id)
-	return is_archetype_perk(npc_id) or (math.random(100) <= perk_chance)
+	return is_archetype_npc(npc_id) or (math.random(100) <= perk_chance)
 end
 
 -- SPOTTERS
@@ -164,7 +167,9 @@ end
 local Spotters = {}
 
 local function add_spotter(npc_id)
-	Spotters[npc_id] = {}
+	if not Spotters[npc_id] then
+		Spotters[npc_id] = {}
+	end
 end
 
 local function remove_spotter(npc_id)
@@ -173,17 +178,12 @@ end
 
 local function is_spotter(npc)
 	local npc_id = npc:id()
-	printf("! npc %s is_spotter", npc_id)
-	if SM.Add_npc(npc_id) then
-		-- It's a new NPC lets roll the perk
-		local functor = {"spotter_mcm","roll_perk", npc_id}
-		if SM.Roll_perk(npc_id, PERK_SPOTTER.id, functor) then
-			SM.print_tip("ui_mcm_spotter_has_perk", 10000, npc:character_name())
-			add_spotter(npc_id)
-			zz_stalkermon.Register_abilities(npc_id, PERK_SPOTTER.id)
-		end
+	if SM.Has_perk(npc_id, PERK_SPOTTER.id) then
+		add_spotter(npc_id)
+		return true
+	else
+		return false
 	end
-	return SM.Has_perk(npc_id, PERK_SPOTTER.id)
 end
 
 local master_spotter_id = nil
@@ -204,7 +204,7 @@ local function find_master_spotter()
 	if master_npc then
 		printf("// found master spotter %s with rank %s", master_npc:character_name(), SM.Get_desc_rank(master_npc))
 		if master_npc:id() ~= master_spotter_id then
-			SM.print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name())
+			SM.print_tip("ui_mcm_spotter_master", 15000, master_npc:character_name(), SM.Get_feat_rank_desc(master_npc:id(), PERK_SPOTTER.id))
 		end
 	else
 		printf("// No spotters in squad")
@@ -338,8 +338,11 @@ end
 local marks = {}
 
 local function can_spot(npc_id)
+	if not npc_id then npc_id = master_spotter_id end
+
 	local rank = SM.Get_feat_rank(npc_id, "stalkermon_perk_spotter_spot") -- this should come from EXP framework
 	local marks_limit = PERK_SPOTTER.feats.stalkermon_perk_spotter_spot.stats[rank].marks_limit
+	printf("/ Spotting active marks %s/%s", tableSize(marks), marks_limit)
 	return tableSize(marks) < marks_limit
 end
 
@@ -476,7 +479,7 @@ local function combat_started()
 end
 
 local function do_keep_spotting()
-	if can_spot() then
+	if can_spot(master_spotter_id) then
 		-- printf("- do_keep_spotting")
 		local enemy = find_enemy(master_spotter_id)
 	end

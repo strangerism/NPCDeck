@@ -39,10 +39,10 @@
 		<text>The chance a squad member that joins you has, to spawn with the Spotter perk</text>
 	</string>      
 	<string id="ui_mcm_spotter_has_perk">
-		<text>The squad member %s has the Spotter perk</text>
+		<text>The squad member %s has the Spotter perk rank %s</text>
 	</string>   
 	<string id="ui_mcm_spotter_master">
-		<text>%s is the most senior Spotter amongst the squads, and it will take charge of spotting enemies</text>
+		<text>%s is the most senior Spotter (%s) amongst the squads, and it will take charge of the role</text>
 	</string>           
     <string id="ui_mcm_spotter_marker_life">
         <text>Marker life</text>
