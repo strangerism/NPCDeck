@@ -4,23 +4,23 @@ function CreateBuildFolders {
     
     New-Item -Path "build" -ItemType Directory | Out-Null
 
-    New-Item -Path "build/Spotter" -ItemType Directory | Out-Null
+    New-Item -Path "build/NPCDeck" -ItemType Directory | Out-Null
     
 }
 
 function BuildMod {
 
-    $target = "build/Spotter"
-    Copy-Item -Recurse -Force -Path ".\Main\gamedata" -Destination $target -Exclude .bak
+    $target = "build/NPCDeck"
+    Copy-Item -Recurse -Force -Path ".\Main\gamedata", ".\Module\gamedata" -Destination $target -Exclude .bak
 }
 
 CreateBuildFolders
 BuildMod
 
 $compress = @{
-    Path = "build/Spotter/gamedata" 
+    Path = "build/NPCDeck/gamedata" 
     CompressionLevel = "Fastest"
-    DestinationPath = "release/Spotter.zip"
+    DestinationPath = "release/NPCDeck.zip"
 }
 Compress-Archive @compress -Force
 

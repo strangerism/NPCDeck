@@ -1,0 +1,46 @@
+
+--------------- SQUAD UPDATES
+---
+-- ADD
+
+axrc_OG_add_special_task_npc_to_actor_squad = axr_companions.add_special_task_npc_to_actor_squad
+function axr_companions.add_special_task_npc_to_actor_squad(npc)
+	-- printf("-- MP add_special_task_npc_to_actor_squad")
+	axrc_OG_add_special_task_npc_to_actor_squad(npc)
+	SendScriptCallback("npcd_squad_update")
+end
+
+axrc_OG_add_special_squad = axr_companions.add_special_squad
+function axr_companions.add_special_squad(npc)
+	-- printf("-- MP add_special_squad")
+	axrc_OG_add_special_squad(npc)
+	SendScriptCallback("npcd_squad_update")
+end
+
+axrc_OG_add_to_actor_squad = axr_companions.add_to_actor_squad
+function axr_companions.add_to_actor_squad(npc)
+    -- printf("-- MP add_to_actor_squad")
+    axrc_OG_add_to_actor_squad(npc)
+    SendScriptCallback("npcd_squad_update")
+end
+
+-- REMOVE
+
+axrc_OG_remove_from_actor_squad = axr_companions.remove_from_actor_squad
+function axr_companions.remove_from_actor_squad(npc)
+	axrc_OG_remove_from_actor_squad(npc)
+	SendScriptCallback("npcd_squad_update")
+end
+
+axrc_OG_remove_all_from_actor_squad = axr_companions.remove_all_from_actor_squad
+function axr_companions.remove_all_from_actor_squad(npc)
+	axrc_OG_remove_all_from_actor_squad(npc)
+	SendScriptCallback("npcd_squad_update")
+end
+
+
+
+
+
+
+

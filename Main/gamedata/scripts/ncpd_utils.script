@@ -1,0 +1,144 @@
+-- notifications
+
+print_tip = function(text,delay, ...)
+
+    -- local enabled = dynavision_mcm.get_config('configuration/notifications/enable')
+	local enabled = true
+    if enabled then
+		local text = tostring(text)
+		printf(text, ...)
+		if not db.actor then
+			return
+		end
+		
+		local ico = "ui_inGame2_Dengi_otdani"
+		local text_color = utils_xml.get_color("pda_white")
+		local arg_color = utils_xml.get_color("d_green")
+		local function colorize(s)
+			return arg_color .. s .. text_color
+		end
+		local i = 0
+		local t = {...}
+		if #t > 0 then
+			local function sr(a)
+				i = i + 1
+				if (type(t[i]) == 'userdata') then
+					if (t[i].x and t[i].y) then
+						return colorize(vec_to_str(t[i]))
+					end
+					return colorize('userdata')
+				end
+				return colorize(tostring(t[i]))
+			end
+			text = string.gsub(game.translate_string(text), "%%s", sr)
+		else
+			text = game.translate_string(text)
+		end
+		text = text_color .. text
+		if delay == nil then
+			delay = 6000
+		end
+		news_manager.send_tip(db.actor, text, nil, ico, delay)
+	end
+end
+
+local string_format = string.format
+function printlog_table(text, node, ...)
+    
+    text = string_format(text, ...)
+    printf("NPCD: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
+end
+
+function tablelength(T)
+  local count = 0
+  for _ in pairs(T) do count = count + 1 end
+  return count
+end
+
+-- Shuffle function using Fisher-Yates algorithm
+function shuffle(tbl)
+	for i = #tbl, 2, -1 do
+		local j = math.random(i)
+		tbl[i], tbl[j] = tbl[j], tbl[i]
+	end
+end
+
+function get_npc(npc_id)
+	return db.storage[npc_id] and db.storage[npc_id].object
+end
+
+function get_desc_rank(npc)
+	return ranks.get_se_obj_rank_name(npc)
+end
+
+local RANK = {
+	novice = 1,
+	trainee = 1,
+	experienced = 2,
+	professional = 2,
+	veteran = 3,
+	expert = 4,
+	master = 4,
+	legend = 5,
+}
+
+local RANK_DESC = {
+	[1] = "I",
+	[2] = "II",
+	[3] = "III",
+	[4] = "IV",
+	[5] = "V",
+}
+
+-- this should come from EXP framework
+function get_feat_rank(npc_id, feat_id)
+	local npc = get_npc(npc_id)
+	local rank = "novice"
+	if npc and npc:alive() then
+		rank = ranks.get_se_obj_rank_name(npc)
+	end
+
+	return rank and RANK[rank] or 1
+end
+
+function get_feat_rank_desc(npc_id, feat_id)
+	local rank = get_feat_rank(npc_id, feat_id)
+	return RANK_DESC[rank]
+end
+
+function compute_diff(newclist, currentclist)
+
+	if not currentclist then
+		return newclist, {}
+	end
+
+	-- Convert currentclist to a set
+	local current_set = {}
+	for _, id in ipairs(currentclist) do
+		current_set[id] = true
+	end
+
+	-- Convert newclist to a set
+	local new_set = {}
+	for _, id in ipairs(newclist) do
+		new_set[id] = true
+	end
+
+	-- Find added IDs
+	local added_ids = {}
+	for _, id in ipairs(newclist) do
+		if not current_set[id] then
+			table.insert(added_ids, id)
+		end
+	end
+
+	-- Find removed IDs
+	local removed_ids = {}
+	for _, id in ipairs(currentclist) do
+		if not new_set[id] then
+			table.insert(removed_ids, id)
+		end
+	end
+
+	return added_ids, removed_ids
+end

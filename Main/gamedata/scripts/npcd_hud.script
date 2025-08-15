@@ -1,12 +1,8 @@
 
-local SM = zz_stalkermon
-local STATE = zz_stalkermon.ABILITY_STATE
+npcdu = ncpd_utils
 
-function tablelength(T)
-  local count = 0
-  for _ in pairs(T) do count = count + 1 end
-  return count
-end
+local STATE = npcd.ABILITY_STATE
+
 
 local HUD_MODE = {
 	STATIC = "STATIC",
@@ -66,7 +62,7 @@ function axr_companions.UICompanionList:InitControls()
 	local xml = utils_xml.get_hud_xml()
 	self.xml = xml
 	self.xml_sm = CScriptXmlInit()
-	self.xml_sm:ParseFile("ui_stalkermon_hud.xml")
+	self.xml_sm:ParseFile("ui_npcd_hud.xml")
 	self.dialog = xml:InitStatic("companion_list", self)
 	--utils_xml.correct_ratio(self.dialog, true)
 
@@ -85,7 +81,7 @@ function axr_companions.UICompanionList:InitControls()
 		for _,ele in pairs(self.companion_info[i]) do
 			utils_xml.correct_ratio(ele)
 		end		
-		-- stalkermon
+		-- npcd
 		-- self.companion_info[i].name:SetFont(GetFontSmall())  - self.companion_info[i].icon:GetWidth()/2
 		self.companion_info[i].name:SetWndSize(vector2():set( self.companion_info[i].name:GetWidth() + 30, self.companion_info[i].name:GetHeight()))
 		self.companion_info[i].name:SetTextAlignment(0)
@@ -101,9 +97,6 @@ function axr_companions.UICompanionList:InitControls()
 		self.companion_info[i].team_role_shadow:SetWndPos( vector2():set( pos.x + 1 , pos.y + 2 ) )
 		self.companion_info[i].team_role_shadow:SetTextureColor( GetARGB(255, 0, 0, 0) )
 	end
-	-- stalkermon
-	-- self.abilities_ribbon = {}
-	--
 end
 
 og_axr_companions_UI_Update = axr_companions.UICompanionList.Update
@@ -168,17 +161,17 @@ function axr_companions.UICompanionList:Update(force)
 			-- Danger state
 			ele.danger_indicator:Show(npc and npc:best_enemy() and true or false)
 			
-			-- stakermon abilities hud
+			-- npcd abilities hud
 			local npc_id = se_obj.id
-			printf("% npc_id = %s", npc_id)
-			local abi_hud_count = ele.abilities and tablelength(ele.abilities) or 0
+			-- printf("% npc_id = %s", npc_id)
+			local abi_hud_count = ele.abilities and npcdu.tablelength(ele.abilities) or 0
 			if abi_hud_count > 0 then
-				printf("* UICompanionList NPC %s clear HUD abilities", ele.name:GetText())
+				-- printf("* UICompanionList NPC %s clear HUD abilities", ele.name:GetText())
 				for a_id, a_ele in pairs(ele.abilities) do
-					local ability = SM.Get_ability(npc_id, a_id)
+					local ability = npcd.get_npc_ability(npc_id, a_id)
 					
 					if not ability or ability.state == STATE.READY then
-						printf("! NPC %s remove ability %s ", npc_id, a_id)
+						-- printf("! NPC %s remove ability %s ", npc_id, a_id)
 						a_ele.icon:Show(false)
 						a_ele.icon = nil
 						a_ele.cd:Show(false)
@@ -188,16 +181,16 @@ function axr_companions.UICompanionList:Update(force)
 				end
 			end
 			
-			if SM.Has_abilities(npc_id) then
-				printf("* UICompanionList NPC %s has abilities", ele.name:GetText())
+			if npcd.has_npc_abilities(npc_id) then
+				-- printf("* UICompanionList NPC %s has abilities", ele.name:GetText())
 				local index = 2
-				local npc_abilities = SM.Get_abilities(npc_id)
-				-- if npc_abilities then SM.printlog_table("STALKERMON", npc_abilities) end
+				local npc_abilities = npcd.get_npc_abilities(npc_id)
+				-- if npc_abilities then npcdu.printlog_table("NPDC", npc_abilities) end
 				for a_id, ability in pairs(npc_abilities) do
-					printf("* UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
+					-- printf("* UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
 					if ability.state ~= STATE.READY then
 						-- init if it is new or has changed position in the ribbon
-						printf("$ npc %s ability %s state %s/%s",ele.name:GetText(), a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
+						-- printf("/ npc %s ability %s state %s/%s",ele.name:GetText(), a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
 						if not ele.abilities[a_id] or ele.abilities[a_id].index ~= index or (ability.state ~= ele.abilities[a_id].state) then
 							add_ability_to_hud(self, ability, ele, index, ability.state == STATE.COOLDOWN and HUD_MODE.STATIC or HUD_MODE.FLASHING)
 						end
