@@ -1,5 +1,5 @@
 
-npcdu = ncpd_utils
+npcdu = npcd_utils
 
 local STATE = npcd.ABILITY_STATE
 

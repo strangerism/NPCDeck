@@ -1,4 +1,4 @@
-local npcdu = ncpd_utils
+local npcdu = npcd_utils
 
 local FEAT_TYPE = npcd.FEAT_TYPE
 local FEAT_MODE = npcd.FEAT_MODE

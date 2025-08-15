@@ -1,5 +1,5 @@
-npcdu = ncpd_utils
-npcdm = ncpd_manager
+npcdu = npcd_utils
+npcdm = npcd_manager
 
 function on_mcm_load()
     op = { id= "spotter", sh=true ,gr =
