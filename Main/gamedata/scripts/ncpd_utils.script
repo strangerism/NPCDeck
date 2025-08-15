@@ -63,7 +63,7 @@ function shuffle(tbl)
 	end
 end
 
-function get_npc(npc_id)
+function get_npc_obj(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
 
@@ -92,7 +92,7 @@ local RANK_DESC = {
 
 -- this should come from EXP framework
 function get_feat_rank(npc_id, feat_id)
-	local npc = get_npc(npc_id)
+	local npc = get_npc_obj(npc_id)
 	local rank = "novice"
 	if npc and npc:alive() then
 		rank = ranks.get_se_obj_rank_name(npc)

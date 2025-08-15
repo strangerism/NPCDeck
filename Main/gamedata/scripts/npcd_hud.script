@@ -168,7 +168,7 @@ function axr_companions.UICompanionList:Update(force)
 			if abi_hud_count > 0 then
 				-- printf("* UICompanionList NPC %s clear HUD abilities", ele.name:GetText())
 				for a_id, a_ele in pairs(ele.abilities) do
-					local ability = npcd.get_npc_ability(npc_id, a_id)
+					local ability = npcd.get_ability(npc_id, a_id)
 					
 					if not ability or ability.state == STATE.READY then
 						-- printf("! NPC %s remove ability %s ", npc_id, a_id)
@@ -181,10 +181,10 @@ function axr_companions.UICompanionList:Update(force)
 				end
 			end
 			
-			if npcd.has_npc_abilities(npc_id) then
+			if npcd.has_abilities(npc_id) then
 				-- printf("* UICompanionList NPC %s has abilities", ele.name:GetText())
 				local index = 2
-				local npc_abilities = npcd.get_npc_abilities(npc_id)
+				local npc_abilities = npcd.get_abilities(npc_id)
 				-- if npc_abilities then npcdu.printlog_table("NPDC", npc_abilities) end
 				for a_id, ability in pairs(npc_abilities) do
 					-- printf("* UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)

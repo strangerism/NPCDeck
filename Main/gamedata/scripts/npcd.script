@@ -2,7 +2,7 @@ npcdu = ncpd_utils
 
 -- PERKS DECK 
 
-local perks_deck = {}
+local perks = {}
 
 MAX_SECONDARY_PERKS = 3
 MAX_MAIN_PERKS = 1
@@ -23,23 +23,19 @@ FEAT_MODE = {
 	MANUAL = "feat_manual"
 }
 
-function get_perk_deck(perk_id)
-    return perks_deck[perk_id]
-end
-
-function add_module_perks(perks)
-	for _, perk in pairs(perks) do
-		if not perks_deck[perk.id] then
-			perks_deck[perk.id] = perk
+function add_module_perks(module_perks)
+	for _, perk in pairs(module_perks) do
+		if not perks[perk.id] then
+			perks[perk.id] = perk
 		end
 	end 
 
-	npcdu.printlog_table("perks_deck", perks_deck)
+	npcdu.printlog_table("perks", perks)
 end
 
 -- NPCs DECK
 
-local npcs_deck = {}
+local npcs = {}
 
 ABILITY_STATE = {
 	READY = "READY",
@@ -49,57 +45,59 @@ ABILITY_STATE = {
 }
 
 -- returns true of a new npc is added
-function add_npc_deck(npc_id)
-	if npcs_deck[npc_id] then return false end
+function add_npc(npc_id)
+	if npcs[npc_id] then return false end
 	printf("-- npc %s added", npc_id)
-	npcs_deck[npc_id] = {}
-	npcs_deck[npc_id]["id"] = npc_id
-	npcs_deck[npc_id]["Perk"] = {}
-	npcs_deck[npc_id]["Ability"] = {}
+	npcs[npc_id] = {}
+	npcs[npc_id]["id"] = npc_id
+	npcs[npc_id]["Perk"] = {}
+	npcs[npc_id]["Ability"] = {}
 	return true
 end
 
-function set_npcs_deck(npcs)
-    npcs_deck = npcs
+function set_deck(deck)
+    npcs = deck
 end
 
-function remove_npc_deck(npc_id)
-	npcs_deck[npc_id] = nil
+function get_deck()
+    return npcs
 end
 
-function get_npc_deck(npc_id)
-    if not npc_id then return npcs_deck end 
-    return npcs_deck[npc_id]
+function remove_npc(npc_id)
+	if not npc_id then return end
+	npcs[npc_id] = nil
+end
+
+function get_npc(npc_id)
+    if not npc_id then return end
+    return npcs[npc_id]
+end
+
+function get_perk(perk_id, npc_id)
+	if not perk_id then return end -- cannot continue
+	if npc_id and (not npcs[npc_id] or not npcs[npc_id].Perk[perk_id]) then return end -- npc perk query but ncp does not have this perk
+
+	return perks[perk_id]
 end
 
 function get_npc_perks(npc_id)
-	if not npcs_deck[npc_id] then return end
-
-	return npcs_deck[npc_id].Perk
+	if not npc_id or not npcs[npc_id] then return end
+	return npcs[npc_id].Perk
 end
 
-function get_npc_perk(npc_id, perk_id)
-	if not npcs_deck[npc_id] or not npcs_deck[npc_id].Perk[perk_id] then return end
-
-	return perks_deck[perk_id]
-end
-
-function get_npc_archetype_perk(npc_id)
-	if not npcs_deck[npc_id] then return end
-	for i = 1, #npcs_deck[npc_id].Perk, 1 do
-
-		if npcs_deck[npc_id].Perk[i].type == PERK_TYPE.ARCHETYPE then
-			return npcs_deck[npc_id].Perk[i]
+function get_archetype_perk(npc_id)
+	if not npc_id or not npcs[npc_id] then return end
+	for i = 1, #npcs[npc_id].Perk, 1 do
+		if npcs[npc_id].Perk[i].type == PERK_TYPE.ARCHETYPE then
+			local perk_id = npcs[npc_id].Perk[i].id
+			return perks[perk_id]
 		end
 	end
 end
 
-function has_npc_perk(npc_id, perk_id)
-
-	if not npcs_deck[npc_id] then return end
-
-	local perk = npcs_deck[npc_id].Perk[perk_id]
-	
+function has_perk(npc_id, perk_id)
+	if not perk_id or not npc_id or not npcs[npc_id] then return end
+	local perk = npcs[npc_id].Perk[perk_id]
 	return (perk and (perk.rank >= 0)) or false
 end
 
@@ -113,39 +111,39 @@ end
 -- returns true of the perk is rolled
 function roll_npc_perk(npc_id, perk_id)
 	printf("-- npc %s Roll_perk", npc_id)
-	if not perks_deck[perk_id] then return end
+	if not npc_id or not perk_id or not perks[perk_id] then return end
 	printf("-- perk %s is available", perk_id)
-	local perk = perks_deck[perk_id]
-	if npcs_deck[npc_id].Perk[perk.id] then return end
+	local perk = perks[perk_id]
+	if npcs[npc_id].Perk[perk.id] then return end
 	printf("-- npc %s never rolled this perk", npc_id)
 	local result = false
-	npcs_deck[npc_id].Perk[perk.id] = {}
-	npcs_deck[npc_id].Perk[perk.id]["id"]  = perk.id
-	npcs_deck[npc_id].Perk[perk.id]["rank"]  = -1
+	npcs[npc_id].Perk[perk.id] = {}
+	npcs[npc_id].Perk[perk.id]["id"]  = perk.id
+	npcs[npc_id].Perk[perk.id]["rank"]  = -1
 
 	if roll_perk(npc_id, perk.roll_functor) then
-		npcs_deck[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired
-		local npc = npcdu.get_npc(npc_id)
+		npcs[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired
+		local npc = npcdu.get_npc_obj(npc_id)
 		npcdu.print_tip(perk.roll_success_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
 		result = true
 	end
-	npcdu.printlog_table(string.format("Roll_perk NPC %s", npc_id), npcs_deck[npc_id])
+	npcdu.printlog_table(string.format("Roll_perk NPC %s", npc_id), npcs[npc_id])
 	return result
 end
 
-function add_npc_perks(npc_id, perks)
+function add_perks(npc_id, some_perks)
 end
 
-function set_npc_perks(npc_id, perks)
+function set_perks(npc_id, new_perks)
 end
 
-local function get_randomized_perk_list(type, archetype)
+local function get_randomized_perk_list(perk_type, perk_archetype)
 	local list = {}
-	for _, perk in pairs(perks_deck) do
-		if perk.type == type then
-			if archetype then
+	for _, perk in pairs(perks) do
+		if perk.type == perk_type then
+			if perk_archetype then
 				--- not implemented
-				if perk.archetype == archetype then
+				if perk.archetype == perk_archetype then
 					table.insert(list, perk)	
 				end
 			else
@@ -157,7 +155,7 @@ local function get_randomized_perk_list(type, archetype)
 	return list
 end
 
-function create_npc_profile(npc_id)
+function create_profile(npc_id)
 
 	-- ARCHETYPE
 	-- atm only one perk can be added, of type archetype
@@ -208,41 +206,41 @@ function create_npc_profile(npc_id)
 	-- end	
 end
 
-function add_npc_ability(npc_id, feat)
+function add_ability(npc_id, feat)
 	local a_id = feat.id
-	printf("-- npc %s add_npc_ability %s", npc_id, a_id)
-    npcs_deck[npc_id].Ability[a_id] = {}
-	npcs_deck[npc_id].Ability[a_id]["id"] = a_id
-	npcs_deck[npc_id].Ability[a_id]["icon"] = feat.icon_hud
-	npcs_deck[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
+	printf("-- npc %s add_ability %s", npc_id, a_id)
+    npcs[npc_id].Ability[a_id] = {}
+	npcs[npc_id].Ability[a_id]["id"] = a_id
+	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud
+	npcs[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
 	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework should give this
-	npcs_deck[npc_id].Ability[a_id]["cooldown"] = feat.cooldown or feat.stats[rank].cooldown or 360
-	npcs_deck[npc_id].Ability[a_id]["timer"] = -1
+	npcs[npc_id].Ability[a_id]["cooldown"] = feat.cooldown or feat.stats[rank].cooldown or 360
+	npcs[npc_id].Ability[a_id]["timer"] = -1
 end
 
-local function remove_npc_ability(npc_id, feat_id)
+local function remove_ability(npc_id, feat_id)
     local a_id = feat_id
-	npcs_deck[npc_id].Ability[a_id] = nil
+	npcs[npc_id].Ability[a_id] = nil
 end
 
-function has_npc_abilities(npc_id)
-	if not npcs_deck[npc_id] then return false end
+function has_abilities(npc_id)
+	if not npcs[npc_id] then return false end
 
-	return npcdu.tablelength(npcs_deck[npc_id].Ability) > 0
+	return npcdu.tablelength(npcs[npc_id].Ability) > 0
 end
 
-function get_npc_abilities(npc_id)
-	if not npcs_deck[npc_id] then return end
+function get_abilities(npc_id)
+	if not npcs[npc_id] then return end
 	
-	return npcs_deck[npc_id].Ability
+	return npcs[npc_id].Ability
 end
 
-function get_npc_ability(npc_id, perk_id)
-	if not npcs_deck[npc_id] then return end
+function get_ability(npc_id, perk_id)
+	if not npcs[npc_id] then return end
 	
-	return npcs_deck[npc_id].Ability[perk_id]
+	return npcs[npc_id].Ability[perk_id]
 end
 
-function set_npc_ability(npc_id, ability)
-    npcs_deck[npc_id].Ability[ability.id] = ability
+function set_ability(npc_id, ability)
+    npcs[npc_id].Ability[ability.id] = ability
 end

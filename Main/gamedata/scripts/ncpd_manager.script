@@ -8,16 +8,16 @@ local ABILITY_STATE = npcd.ABILITY_STATE
 function register_abilities(npc_id)
 
 	printf("! npc %s register_abilities", npc_id)
-    local npc_deck = npcd.get_npc_deck(npc_id)
+    local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
 		printf("! npc %s register_abilities for perk %s", npc_id, npc_perk.id)
-		local perk_deck = npcd.get_perk_deck(npc_perk.id)
+		local perk_deck = npcd.get_perk(npc_perk.id)
 		if perk_deck and perk_deck.feats then
 			for _, feat in pairs(perk_deck.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
-					npcd.add_npc_ability(npc_id, feat)
+					npcd.add_ability(npc_id, feat)
 				end
 			end
 		end
@@ -29,16 +29,16 @@ end
 function unregister_abilities(npc_id)
 
     printf("! npc %s unregister_abilities", npc_id)
-    local npc_deck = npcd.get_npc_deck(npc_id)
+    local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
 		printf("! npc %s unregister_abilities for perk %s", npc_id, npc_perk.id)
-		local perk_deck = npcd.get_perk_deck(npc_perk.id)
+		local perk_deck = npcd.get_perk(npc_perk.id)
 		if perk_deck and perk_deck.feats then
 			for _, feat in pairs(perk_deck.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
-					npcd.remove_npc_ability(npc_id, feat.id)
+					npcd.remove_ability(npc_id, feat.id)
 				end
 			end
 		end
@@ -49,10 +49,10 @@ end
 -- time event function
 function manage_ability_cooldown(npc_id, feat_id)
 
-    local npc_deck = npcd.get_npc_deck(npc_id)
+    local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return true end  -- npc died?
 
-    local npc_ability = npcd.get_npc_ability(npc_id, feat_id)
+    local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return true end -- ability unregistered?
 
     -- setup cooldown transition
@@ -80,7 +80,7 @@ function manage_ability_cooldown(npc_id, feat_id)
 	npc_ability.timer = npc_ability.timer - 1
 
     -- updating, necessary ??
-    npcd.set_npc_ability(npc_id, npc_ability)
+    npcd.set_ability(npc_id, npc_ability)
 
     -- loop cooldown management event
 	-- CreateTimeEvent("ability_coolddown", tostring(npc_id) .. feat_id .. "_" .. tostring(timer), 1, manage_ability_cooldown, npc_id, feat_id)
@@ -90,10 +90,10 @@ end
 
 function activate_ability(npc_id, feat_id)
 
-    local npc_deck = npcd.get_npc_deck(npc_id)
+    local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return true end  -- npc died?
 
-    local npc_ability = npcd.get_npc_ability(npc_id, feat_id)
+    local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return true end -- ability unregistered?
 
 	if (npc_ability.state == ABILITY_STATE.COOLDOWN) then 
@@ -123,12 +123,12 @@ local function npcd_squad_update()
 
 	-- update new squad members
 	for i=1, #added_ids do
-		local npc = npcdu.get_npc(added_ids[i])
+		local npc = npcdu.get_npc_obj(added_ids[i])
 		if npc and npc:alive() then
 			local npc_id = npc:id()
-			if npcd.add_npc_deck(npc_id) then
+			if npcd.add_npc(npc_id) then
 				-- It's a new NPC lets roll the perks
-				npcd.create_npc_profile(npc_id)
+				npcd.create_profile(npc_id)
 			end
 			register_abilities(npc_id)
 		end
@@ -136,7 +136,7 @@ local function npcd_squad_update()
 
 	-- update removed squad members
 	for i=1, #removed_ids do
-		local npc = npcdu.get_npc(removed_ids[i])
+		local npc = npcdu.get_npc_obj(removed_ids[i])
 		local npc_id = npc:id()
 		unregister_abilities(npc_id)
 	end	
@@ -151,7 +151,7 @@ function squad_on_npc_death(squad,se_npc)
 	if not npc then return end
 	-- printf("squad_on_npc_death name %s", npc and npc:name())
 	local npc_id = npc:id() or 0
-	npcd.remove_npc_deck(npc_id)
+	npcd.remove_npc(npc_id)
 	for id,actor_squad in pairs(axr_companions.companion_squads) do
 		if squad.id == actor_squad.id then
 			SendScriptCallback("npcd_squad_update")
@@ -195,16 +195,16 @@ function save_state(m_data)
         m_data.npcd = {}
     end 
     -- save the state
-    m_data.npcd.npcs_deck = npcd.get_npc_deck()
-	npcdu.printlog_table("NPCDeck", m_data.npcd.npcs_deck)
+    m_data.npcd.npcs = npcd.get_deck()
+	npcdu.printlog_table("NPCDeck", m_data.npcd.npcs)
 end
 
 function load_state(m_data)
 	printf("$ NPCDeck Load State")
-	if m_data.npcd and m_data.npcd.npcs_deck then
+	if m_data.npcd and m_data.npcd.npcs then
         -- cache the state
-        npcd.set_npcs_deck(m_data.npcd.npcs_deck)
-		npcdu.printlog_table("Stalkers", npcd.get_npc_deck())
+        npcd.set_deck(m_data.npcd.npcs)
+		npcdu.printlog_table("NPCDeck", npcd.get_deck())
 	end
 end
 

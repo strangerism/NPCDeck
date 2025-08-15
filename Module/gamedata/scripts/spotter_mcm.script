@@ -52,7 +52,7 @@ end
 
 -- UTILS
 
-local function get_npc(npc_id)
+local function get_npc_obj(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
 
@@ -150,7 +150,7 @@ local SM_MODULE_PERKS = {
 local function is_archetype_npc(npc_id)
 	local archetype = false
 
-	local npc = get_npc(npc_id)
+	local npc = get_npc_obj(npc_id)
 	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
 		printf("/ npc %s has archetype perk", npc:section())
 		archetype = true
@@ -181,7 +181,7 @@ end
 
 local function is_spotter(npc)
 	local npc_id = npc:id()
-	if npcd.has_npc_perk(npc_id, PERK_SPOTTER.id) then
+	if npcd.has_perk(npc_id, PERK_SPOTTER.id) then
 		add_spotter(npc_id)
 		return true
 	else
@@ -195,7 +195,7 @@ local function find_master_spotter()
 	local master_npc = nil
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
-		local npc = get_npc(clist[i])
+		local npc = get_npc_obj(clist[i])
 		if npc and npc:alive() and is_spotter(npc) then
 			if master_npc == nil then
 				master_npc = npc
@@ -445,14 +445,14 @@ local function find_enemy(spotter_id)
 	-- printf("- Find enemy")
 	local be_list = {}
 	if spotter_id then
-		local npc = get_npc(spotter_id)
+		local npc = get_npc_obj(spotter_id)
 		if npc and npc:alive() then
 			spot_enemy(npc, be_list)
 		end
 	else
 		local clist = axr_companions.list_actor_squad_by_id()
 		for i=1, #clist do
-			local npc = get_npc(clist[i])
+			local npc = get_npc_obj(clist[i])
 			if npc and npc:alive() and is_spotter(npc) then
 				spot_enemy(npc, be_list)
 				return
@@ -541,7 +541,7 @@ function on_key_press(dik)
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
 				-- printf("- execute spotter_mark_keyhold")
 				if master_spotter_id then
-					local npc = get_npc(master_spotter_id)
+					local npc = get_npc_obj(master_spotter_id)
 					if npc and npc:alive() then
 						call_mark(npc)
 					end
