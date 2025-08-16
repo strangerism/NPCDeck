@@ -80,6 +80,16 @@ function get_perk(perk_id, npc_id)
 	return perks[perk_id]
 end
 
+function get_perk_feats(perk_id)
+	if not perk_id then return end -- cannot continue
+	return perks[perk_id].feats
+end
+
+function get_perk_feat(perk_id, feat_id)
+	if not perk_id or not perks[perk_id].feats then return end -- cannot continue
+	return perks[perk_id].feats[feat_id]
+end
+
 function get_npc_perks(npc_id)
 	if not npc_id or not npcs[npc_id] then return end
 	return npcs[npc_id].Perk

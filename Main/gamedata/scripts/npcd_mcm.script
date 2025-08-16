@@ -102,8 +102,10 @@ function get_module_menu(module_deck)
 		end
 		-- add feats
 		if perk.feats then
+			table.insert(perk_menu.gr, { id = "divider", type = "line" })
+			table.insert(perk_menu.gr, { id = perk.id .. "_feats", type = "title", align="l", clr = {200, 180, 4, 219}, text = "ui_mcm_st_npcd_feats"})
 			for _, feat in pairs(perk.feats) do
-				table.insert(perk_menu.gr, { id = feat.id .. "_name", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 20 })
+				table.insert(perk_menu.gr, { id = feat.id .. "_name", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=true, })
 				table.insert(perk_menu.gr, { id = feat.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = feat.description} )
 				local list = {}
 				table.insert(list, {feat.type, feat.type})

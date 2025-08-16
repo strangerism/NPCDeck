@@ -1,6 +1,7 @@
 
 local npcdu = npcd_utils
 local npcdm = npcd_manager
+local ID = spotters_mcm.ID
 
 local settings = {}
 
@@ -9,13 +10,6 @@ local settings = {}
 local function get_npc_obj(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
-
-local CALLMARK = PERK_SPOTTER.feats.npcd_perk_spotter_callmark.id
-local SPOT = PERK_SPOTTER.feats.npcd_perk_spotter_spot.id
-
-local SM_MODULE_PERKS = {
-	npcd_perk_spotter = PERK_SPOTTER
-}
 
 local function is_archetype_npc(npc_id)
 	local archetype = false
@@ -51,7 +45,7 @@ end
 
 local function is_spotter(npc)
 	local npc_id = npc:id()
-	if npcd.has_perk(npc_id, PERK_SPOTTER.id) then
+	if npcd.has_perk(npc_id, ID.PERK.SPOTTER) then
 		add_spotter(npc_id)
 		return true
 	else
@@ -77,7 +71,7 @@ local function find_master_spotter()
 	if master_npc then
 		PRINT.log(LOG.ADD, CAT.CONF, "found master spotter %s with rank %s", master_npc:character_name(), npcdu.get_desc_rank(master_npc))
 		if master_npc:id() ~= master_spotter_id then
-			npcdu.print_tip("ui_mcm_npcd_module_spotter_master", 15000, master_npc:character_name(), npcdu.get_feat_rank_desc(master_npc:id(), PERK_SPOTTER.id))
+			npcdu.print_tip("ui_mcm_npcd_module_spotters_notification_master_perk", 15000, master_npc:character_name(), npcdu.get_feat_rank_desc(master_npc:id(), ID.PERK.SPOTTER))
 		end
 	else
 		PRINT.log(LOG.WARN, CAT.CONF, "// No spotters in squad")
@@ -142,11 +136,12 @@ end
 local hmm = utils_spotter_hudmarks.get_hud_mark_manager()
 
 local function getArgs(npc_id, feat_id)
+	PRINT.trace(LOG.INFO, CAT.EXEC,"npc %s getArgs for feat %s", npc_id, feat_id)
 	local rank = npcdu.get_feat_rank(npc_id, feat_id) -- this should come from EXP framework
-	local life = PERK_SPOTTER.feats[feat_id].stats[rank].life
+	local life = spotters_mcm.get_perk_ranked_feat_stat(ID.PERK.SPOTTER, feat_id, rank, "life")
 
 	local args = {
-		npcd_perk_spotter_callmark = {
+		[ID.FEAT.CALLMARK] = {
 
 			texture         = "ui_icons_spotter_pin_redskull",
 			-- a texture for the icon is required
@@ -171,7 +166,7 @@ local function getArgs(npc_id, feat_id)
 				),
 			life = life
 		},
-		npcd_perk_spotter_spot = {
+		[ID.FEAT.SPOT] = {
 
 			texture         = "ui_icons_spotter_pin_cursor_chevron_e",
 			-- a texture for the icon is required
@@ -206,7 +201,7 @@ local function can_spot(npc_id)
 	if not npc_id then npc_id = master_spotter_id end
 
 	local rank = npcdu.get_feat_rank(npc_id, "npcd_perk_spotter_spot") -- this should come from EXP framework
-	local marks_limit = PERK_SPOTTER.feats.npcd_perk_spotter_spot.stats[rank].marks_limit
+	local marks_limit = spotters_mcm.get_perk_ranked_feat_stat(ID.PERK.SPOTTER, ID.FEAT.SPOT, rank, "marks_limit")
 	PRINT.debug(LOG.WARN, CAT.ABILITY, "Spotting active marks %s/%s", current_marks, marks_limit)
 	return current_marks < marks_limit
 end
@@ -217,7 +212,7 @@ end
 
 local function maxed_marks(npc_id)
 	local rank = npcdu.get_feat_rank(npc_id, "npcd_perk_spotter_spot") -- this should come from EXP framework
-	local marks_limit = PERK_SPOTTER.feats.npcd_perk_spotter_spot.stats[rank].marks_limit
+	local marks_limit = spotters_mcm.get_perk_ranked_feat_stat(ID.PERK.SPOTTER, ID.FEAT.SPOT, rank, "marks_limit")
 	return current_marks == marks_limit
 end
 
@@ -247,7 +242,7 @@ local function mark_enemy(enemy, npc, feat_id)
     PRINT.debug(LOG.ADD, CAT.ABILITY, "Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
 	if is_enemy_marked(enemy) then -- replace existing mark
 		delete_marked(enemy)
-	elseif maxed_marks(npc:id()) and feat_id == CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
+	elseif maxed_marks(npc:id()) and feat_id == ID.FEAT.CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
 		delete_marked()
 	end
 	local args = getArgs(npc:id(), feat_id)
@@ -289,8 +284,8 @@ local function call_mark(npc)
 
 	local enemy = level.get_target_obj()
 	if enemy and enemy:alive() then
-		if npcdm.activate_ability(npc:id(), CALLMARK) then
-			mark_enemy(enemy, npc, CALLMARK)
+		if npcdm.activate_ability(npc:id(), ID.FEAT.CALLMARK) then
+			mark_enemy(enemy, npc, ID.FEAT.CALLMARK)
 		end
 	end
 end
@@ -303,8 +298,8 @@ local function spot_enemy(npc, be_list)
 	if (be and be:alive()) then
 		local distance = be:position():distance_to_sqr(npc:position())
 		PRINT.trace(LOG.INFO, CAT.ABILITY,"FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
-		if npcdm.activate_ability(npc:id(), SPOT) then
-			mark_enemy(be, npc, SPOT)
+		if npcdm.activate_ability(npc:id(), ID.FEAT.SPOT) then
+			mark_enemy(be, npc, ID.FEAT.SPOT)
 		end
 		-- -- Add a new element
 		-- table.insert(be_list, {be, distance})
@@ -430,13 +425,13 @@ local function combat_ended()
 end
 
 local function get_npcd_logging()
-	PRINT = npcd_logging.get_printer()
+	PRINT = spotters_mcm.get_printer()
 	LOG = PRINT.LOG
 	CAT = PRINT.CAT
 end 
 
+
 function actor_on_first_update()
-	npcdm.register_module(SM_MODULE_NAME, SM_MODULE_PERKS)
 	get_npcd_logging()
 	on_option_change()
 	PRINT.trace(LOG.START, CAT.EXEC," Spotter actor_on_first_update")
@@ -469,14 +464,13 @@ if AddScriptCallback then
 	AddScriptCallback("schedule_update_master_spotter")
 end
 
-local module_name = spotter_mcm.get_module_name() or "spotter"
 function on_option_change()
-    settings["marker_life"] = npcd_mcm.get_module_setting(module_name, 'marker_life')
-	settings["keep_spotting"] = npcd_mcm.get_module_setting(module_name, 'keep_spotting')
-	settings["play_bark"] = npcd_mcm.get_module_setting(module_name, 'bark')
-    settings["hotkey"] = npcd_mcm.get_module_setting(module_name, 'hotkey')
-    settings["perk_chance"] = npcd_mcm.get_module_setting(module_name, 'perk_spotter_perk_chance')
-	settings["max_marks"] = npcd_mcm.get_module_setting(module_name, 'max_marks')
+    settings["marker_life"] = spotters_mcm.get_main_setting('marker_life')
+	settings["keep_spotting"] = spotters_mcm.get_main_setting('keep_spotting')
+	settings["play_bark"] = spotters_mcm.get_main_setting('bark')
+    settings["hotkey"] = spotters_mcm.get_main_setting('hotkey')
+    settings["perk_chance"] = spotters_mcm.get_perk_setting("perk_spotter", 'perk_chance')
+	settings["max_marks"] = spotters_mcm.get_main_setting('max_marks')
 	PRINT.log_table("Spotters", settings)
 end
 

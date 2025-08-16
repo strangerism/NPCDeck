@@ -247,9 +247,9 @@ function actor_on_update()
 	-- printlog_table("Stalkers", stalkers)
 end
 
-function register_module(module_name, perks)
-	printf("- NPCD Manager register_module %s", module_name)
-	npcd.add_module_perks(perks)
+function register_module(deck)
+	printf("- NPCD Manager register_module %s", deck.module)
+	npcd.add_module_perks(deck.perks)
 end
 
 if AddScriptCallback then

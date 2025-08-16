@@ -80,6 +80,9 @@
 	</string>	
 
 	<!-- Perks menus -->
+	<string id="ui_mcm_st_npcd_feats">
+		<text>Feats list</text>
+	</string>	
 	<string id="ui_mcm_st_npcd_perk_type">
 		<text>Perk type</text>
 	</string>
@@ -89,15 +92,12 @@
 	<string id="ui_mcm_st_npcd_feat_mode">
 		<text>Feat mode</text>
 	</string>	
-
 	<string id="ui_mcm_lst_st_npcd_perk_type_archetype">
 		<text>Archetype</text>
 	</string>	
-
 	<string id="ui_mcm_lst_st_npcd_perk_type_main">
 		<text>Main</text>
 	</string>
-
 	<string id="opt_str_lst_st_npcd_perk_type_secondary">
 		<text>Secondary</text>
 	</string>	
