@@ -8,19 +8,19 @@ MAX_SECONDARY_PERKS = 3
 MAX_MAIN_PERKS = 1
 
 PERK_TYPE = {
-	ARCHETYPE = "perk_archetype",
-	MAIN = "perk_main",
-	SECONDARY = "perk_secondary"
+	ARCHETYPE = "st_npcd_perk_type_archetype",
+	MAIN = "st_npcd_perk_type_main",
+	SECONDARY = "st_npcd_perk_type_secondary"
 }
 
 FEAT_TYPE = {
-	ACTIVE = "feat_active",
-	PASSIVE = "feat_passive"
+	ACTIVE = "st_npcd_feat_type_active",
+	PASSIVE = "st_npcd_feat_type_passive"
 }
 
 FEAT_MODE = {
-	AUTO = "feat_auto",
-	MANUAL = "feat_manual"
+	AUTO = "st_npcd_feat_mode_auto",
+	MANUAL = "st_npcd_feat_mode_manual"
 }
 
 function add_module_perks(module_perks)

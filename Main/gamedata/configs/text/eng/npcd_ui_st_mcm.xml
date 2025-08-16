@@ -70,12 +70,51 @@
 	<string id="ui_mcm_npcd_logs_ui_exec_logs">
 		<text>UI execution Logs</text>
 	</string>			
-
 	<!-- Module menus  -->
 	<string id="ui_mcm_menu_npcd_module">
 		<text>NPCD Modules</text>
-	</string>	
-		<string id="ui_mcm_menu_npcd_module_title">
+	</string>
+
+	<string id="ui_mcm_menu_npcd_module_title">
 		<text>NPC Deck Modules</text>
-	</string>		
+	</string>	
+
+	<!-- Perks menus -->
+	<string id="ui_mcm_st_npcd_perk_type">
+		<text>Perk type</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feat_type">
+		<text>Feat type</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feat_mode">
+		<text>Feat mode</text>
+	</string>	
+
+	<string id="ui_mcm_lst_st_npcd_perk_type_archetype">
+		<text>Archetype</text>
+	</string>	
+
+	<string id="ui_mcm_lst_st_npcd_perk_type_main">
+		<text>Main</text>
+	</string>
+
+	<string id="opt_str_lst_st_npcd_perk_type_secondary">
+		<text>Secondary</text>
+	</string>	
+
+	<string id="ui_mcm_lst_st_npcd_feat_type_active">
+		<text>Active</text>
+	</string>
+
+	<string id="ui_mcm_lst_st_npcd_feat_type_passive">
+		<text>Passive</text>
+	</string>	
+
+	<string id="ui_mcm_lst_st_npcd_feat_mode_auto">
+		<text>Auto</text>
+	</string>	
+
+	<string id="ui_mcm_lst_st_npcd_feat_mode_manual">
+		<text>Manual</text>
+	</string>	
 </string_table>

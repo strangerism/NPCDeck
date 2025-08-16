@@ -1,7 +1,4 @@
 
-local PERK_TYPE = npcd.PERK_TYPE
-local FEAT_TYPE = npcd.FEAT_TYPE
-local FEAT_MODE = npcd.FEAT_MODE
 local npcdu = npcd_utils
 local npcdm = npcd_manager
 
@@ -12,90 +9,6 @@ local settings = {}
 local function get_npc_obj(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
-
--- PERKS
-local SM_MODULE_NAME = "spotter"
-
-local PERK_SPOTTER = {
-	id = "npcd_perk_spotter",
-	type = PERK_TYPE.ARCHETYPE,
-	name = "st_npcd_perk_spotter",
-	description = "st_npcd_perk_spotter_desc",	
-	icon = "ui_icons_spotter_pin_redskull",
-	category 		= "st_npcd_perk_archetype",
-	roll_success_desc = "ui_mcm_npcd_module_spotter_has_perk",
-	feats = {
-		npcd_perk_spotter_callmark = { 
-			id = "npcd_perk_spotter_callmark",
-			name = "st_npcd_perk_spotter_callmark",
-			description = "st_npcd_perk_spotter_callmark_desc",
-			type = FEAT_TYPE.ACTIVE,
-			mode = FEAT_MODE.MANUAL,
-			icon = "ui_icons_spotter_pin_redskull",
-			icon_hud = "ui_icons_spotter_pin_redskull",
-			req_level       = 3,
-			max_level       = 4,
-			each_level      = 4,
-			category 		= "st_npcd_perk_spotter",
-			stats = {
-				[1] = {
-					cooldown = 180,
-					life = 30
-				},
-				[2] = {
-					cooldown = 180,
-					life = 60
-				},
-				[3] = {
-					cooldown = 150,
-					life = 80
-				},
-				[4] = {
-					cooldown = 120,
-					life = 100
-				}
-			},
-			activation_functor = {"spotter","callmark"},
-		},
-		npcd_perk_spotter_spot = { 
-			id = "npcd_perk_spotter_spot",
-			name = "st_npcd_perk_spotter_spot",
-			description = "st_npcd_perk_spotter_spot_desc",
-			type = FEAT_TYPE.ACTIVE,
-			mode = FEAT_MODE.AUTO,
-			icon = "ui_icons_spotter_crosshair_gradient",
-			icon_hud = "ui_icons_spotter_crosshair_gradient",
-			req_level       = 1,
-			max_level       = 4,
-			each_level      = 4,
-			category 		= "st_npcd_perk_spotter",			
-			stats = {
-				[1] = {
-					cooldown = 30,
-					life = 10,
-					marks_limit = 1
-				},
-				[2] = {
-					cooldown = 25,
-					life = 10,
-					marks_limit = 2
-				},
-				[3] = {
-					cooldown = 20,
-					life = 15,
-					marks_limit = 3
-				},
-				[4] = {
-					cooldown = 15,
-					life = 15,
-					marks_limit = 4
-				}
-			},
-			activation_functor = {"spotter_mcm","spot"},
-		}
-	},
-	roll_functor = {"spotter","roll_perk"},
-}
 
 local CALLMARK = PERK_SPOTTER.feats.npcd_perk_spotter_callmark.id
 local SPOT = PERK_SPOTTER.feats.npcd_perk_spotter_spot.id
@@ -562,7 +475,7 @@ function on_option_change()
 	settings["keep_spotting"] = npcd_mcm.get_module_setting(module_name, 'keep_spotting')
 	settings["play_bark"] = npcd_mcm.get_module_setting(module_name, 'bark')
     settings["hotkey"] = npcd_mcm.get_module_setting(module_name, 'hotkey')
-    settings["perk_chance"] = npcd_mcm.get_module_setting(module_name, 'perk_chance')
+    settings["perk_chance"] = npcd_mcm.get_module_setting(module_name, 'perk_spotter_perk_chance')
 	settings["max_marks"] = npcd_mcm.get_module_setting(module_name, 'max_marks')
 	PRINT.log_table("Spotters", settings)
 end

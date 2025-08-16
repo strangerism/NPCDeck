@@ -2,70 +2,99 @@
 
 <!-- MCM Menu -->
 <string_table>
-    <string id="ui_mcm_npcd_module_spotter_title">
-        <text>Spotters Configuration</text>
+    <string id="ui_mcm_npcd_module_spotters_title">
+        <text>Spotters module main configuration</text>
     </string>
-     <string id="ui_mcm_npcd_module_menu_spotter">
+    <string id="ui_mcm_npcd_module_spotters_desc">
+        <text>What is Spotters? Spotters will be explained one day</text>
+    </string>    
+     <string id="ui_mcm_npcd_module_menu_spotters">
         <text>Spotters</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_general_help0">
+     <string id="ui_mcm_npcd_module_menu_spotters_main">
+        <text>Main</text>
+    </string>
+    <string id="ui_mcm_npcd_module_spotters_main_help0">
         <text>When a squad joins you there is a slim chance that one of its member has the Spotter perk. This stalker will have this perk until he dies, so keep tabs on him</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_general_help0">
+    <string id="ui_mcm_npcd_module_spotters_main_help0">
         <text>Upon joining you will be notified if a squad member has the Spotter perk with a news notification on your pda</text>
     </string>          
-    <string id="ui_mcm_npcd_module_spotter_general_help1">
+    <string id="ui_mcm_npcd_module_spotters_main_help1">
         <text>A squad member with the Spotter perk will mark the first enemy he sees whenever he or the squad enters in combat. This is followed by a voice cue (bark) from the squad member</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_general_help2">
+    <string id="ui_mcm_npcd_module_spotters_main_help2">
         <text>The marker will stays on the enemy, until dispelled by the life timer or when getting too close or too far away from it</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_general_help3">
+    <string id="ui_mcm_npcd_module_spotters_main_help3">
         <text>When multiple spotting, the next spot is done only after the previous spotted enemy is killed</text>
     </string>      
-    <string id="ui_mcm_npcd_module_spotter_general_help4">
+    <string id="ui_mcm_npcd_module_spotters_main_help4">
         <text>Hold hotkey (default companion wheel key C) to call new marks. You can change this below</text>
     </string>      
-    <string id="ui_mcm_npcd_module_spotter_hotkey">
+    <string id="ui_mcm_npcd_module_spotters_main_hotkey">
         <text>Call Mark hotkey</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_hotkey_desc">
+    <string id="ui_mcm_npcd_module_spotters_main_hotkey_desc">
         <text>Hold this key to call a new mark</text>
     </string>    
-	<string id="ui_mcm_npcd_module_spotter_perk_chance">
+	<string id="ui_mcm_npcd_module_spotters_perk_spotter_perk_chance">
 		<text>Perk chance</text>
 	</string>    
-	<string id="ui_mcm_npcd_module_spotter_perk_chance_desc">
+	<string id="ui_mcm_npcd_module_spotters_main_perk_chance_desc">
 		<text>The chance a squad member that joins you has, to spawn with the Spotter perk</text>
-	</string>      
-	<string id="ui_mcm_npcd_module_spotter_has_perk">
-		<text>The squad member %s has the Spotter perk rank %s</text>
-	</string>   
-	<string id="ui_mcm_npcd_module_spotter_master">
-		<text>%s is the most senior Spotter (%s) amongst the squads, and it will take charge of the role</text>
-	</string>           
-    <string id="ui_mcm_npcd_module_spotter_marker_life">
+	</string>                
+    <string id="ui_mcm_npcd_module_spotters_main_marker_life">
         <text>Marker life</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_marker_life_desc">
+    <string id="ui_mcm_npcd_module_spotters_main_marker_life_desc">
         <text>Time in seconds the marker is shown</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_keep_spotting">
+    <string id="ui_mcm_npcd_module_spotters_main_keep_spotting">
         <text>Keep spotting</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_keep_spotting_desc">
+    <string id="ui_mcm_npcd_module_spotters_main_keep_spotting_desc">
         <text>Your squad will keep spotting after the first enemy. Beware!! You are entering skill issue territory</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_max_marks">
+    <string id="ui_mcm_npcd_module_spotters_main_max_marks">
         <text>Max simultaneous marks</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_max_marks_desc">
+    <string id="ui_mcm_npcd_module_spotters_main_max_marks_desc">
         <text>If you enable keep spotting, the Spotter in your squad will keep adding new marks unless this limit of active marks is reached</text>
     </string>        
-    <string id="ui_mcm_npcd_module_spotter_bark">
+    <string id="ui_mcm_npcd_module_spotters_main_bark">
         <text>NPC Bark</text>
     </string>
-    <string id="ui_mcm_npcd_module_spotter_bark_desc">
+    <string id="ui_mcm_npcd_module_spotters_main_bark_desc">
         <text>The squad member that calls the mark, issues a voice bark as well</text>
-    </string>                 
+    </string>
+    <!-- PERKS MCM -->
+     <string id="ui_mcm_npcd_module_menu_spotters_perks_spotter">
+        <text>Spotter</text>
+    </string>    
+     <string id="st_npcd_perk_spotter">
+        <text>Spotter</text>
+    </string>
+     <string id="st_npcd_perk_spotter_desc">
+        <text>Spotter Description</text>
+    </string>
+    <string id="st_npcd_perk_spotter_spot">
+        <text>Spot</text>
+    </string>
+    <string id="st_npcd_perk_spotter_spot_desc">
+        <text>Spot description</text>
+    </string>
+    <string id="st_npcd_perk_spotter_callmark">
+        <text>Call mark</text>
+    </string>
+    <string id="st_npcd_perk_spotter_callmark_desc">
+        <text>Call mark description</text>
+    </string>    
+    <!-- In game Notifications -->
+	<string id="ui_mcm_npcd_module_spotters_notification_has_perk">
+		<text>The squad member %s has the Spotter perk rank %s</text>
+	</string>   
+	<string id="ui_mcm_npcd_module_spotters_notification_master_perk">
+		<text>%s is the most senior Spotter (%s) amongst the squads, and it will take charge of the role</text>
+	</string>     
 </string_table>

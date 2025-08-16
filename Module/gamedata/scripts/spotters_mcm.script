@@ -1,0 +1,135 @@
+local NPCD = npcd
+local PERK_TYPE = NPCD.PERK_TYPE
+local FEAT_TYPE = NPCD.FEAT_TYPE
+local FEAT_MODE = NPCD.FEAT_MODE
+local npcdu = npcd_utils
+
+local function get_perks()
+
+	local module_perks = {
+		PERK_SPOTTER = {
+			id = "perk_spotter",
+			type = PERK_TYPE.ARCHETYPE,
+			name = "st_npcd_perk_spotter",
+			description = "st_npcd_perk_spotter_desc",
+			mcm_menu_name = "ui_mcm_npcd_module_menu_spotters_perks_spotter",
+			mcm_menu = {
+				{ id = "perk_chance", type = "track", val = 2, min = 1, max = 100, step = 1, def = 10},
+			},
+			icon = "ui_icons_spotter_pin_redskull",
+			category 		= "st_npcd_perk_archetype",
+			roll_success_desc = "ui_mcm_npcd_module_spotter_has_perk",
+			feats = {
+				npcd_perk_spotter_callmark = { 
+					id = "perk_spotter_callmark",
+					name = "st_npcd_perk_spotter_callmark",
+					description = "st_npcd_perk_spotter_callmark_desc",
+					type = FEAT_TYPE.ACTIVE,
+					mode = FEAT_MODE.MANUAL,
+					icon = "ui_icons_spotter_pin_redskull",
+					icon_hud = "ui_icons_spotter_pin_redskull",
+					req_level       = 3,
+					max_level       = 4,
+					each_level      = 4,
+					category 		= "st_npcd_perk_spotter",
+					stats = {
+						[1] = {
+							cooldown = 180,
+							life = 30
+						},
+						[2] = {
+							cooldown = 180,
+							life = 60
+						},
+						[3] = {
+							cooldown = 150,
+							life = 80
+						},
+						[4] = {
+							cooldown = 120,
+							life = 100
+						}
+					},
+					activation_functor = {"spotters","callmark"},
+				},
+				npcd_perk_spotter_spot = { 
+					id = "perk_spotter_spot",
+					name = "st_npcd_perk_spotter_spot",
+					description = "st_npcd_perk_spotter_spot_desc",
+					type = FEAT_TYPE.ACTIVE,
+					mode = FEAT_MODE.AUTO,
+					icon = "ui_icons_spotter_crosshair_gradient",
+					icon_hud = "ui_icons_spotter_crosshair_gradient",
+					req_level       = 1,
+					max_level       = 4,
+					each_level      = 4,
+					category 		= "st_npcd_perk_spotter",			
+					stats = {
+						[1] = {
+							cooldown = 30,
+							life = 10,
+							marks_limit = 1
+						},
+						[2] = {
+							cooldown = 25,
+							life = 10,
+							marks_limit = 2
+						},
+						[3] = {
+							cooldown = 20,
+							life = 15,
+							marks_limit = 3
+						},
+						[4] = {
+							cooldown = 15,
+							life = 15,
+							marks_limit = 4
+						}
+					},
+					activation_functor = {"spotters_mcm","spot"},
+				}
+			},
+			roll_functor = {"spotters","roll_perk"},
+		}
+	}
+	return module_perks
+end
+
+local function get_main_menu()
+	local main = {
+		{ id = "help1", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_npcd_module_spotters_main_help1"},
+		{ id = "help2", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_npcd_module_spotters_main_help2"},
+		{ id = "help3", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_npcd_module_spotters_main_help3"},
+		{ id = "help4", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_npcd_module_spotters_main_help4"},
+		{ id = "hotkey", type = "key_bind", val = 2, def = DIK_keys.DIK_C },
+		{ id = "divider", type = "line" },
+		-- { id = "perk_chance"  	, type = "track"    , val = 2, min = 1, max = 100, step = 1, def = 10},
+		{ id = "marker_life"  	, type = "track"    , val = 2, min = 1, max = 60, step = 1, def = 15},
+		{ id = "keep_spotting"  	, type ="check", val=1,def=false},
+		{ id = "max_marks"  	, type = "track"    , val = 2, min = 1, max = 5, step = 1, def = 1},
+		{ id = "bark"  	, type ="check", val=1,def=true},
+	}
+	return main
+end
+
+local deck = {
+    title = "Spotters Perks Deck",
+    module= "spotters",
+    id="spotters",
+    mcm_menu_name = "ui_mcm_npcd_module_menu_spotters",
+    mcm_menu_title = "ui_mcm_npcd_module_spotters_title",
+    mcm_menu_desc = "ui_mcm_npcd_module_spotters_desc",
+	perks = get_perks(),
+	mcm_menu = get_main_menu(),
+}
+
+local function get_deck()
+	return deck
+end
+
+function on_mcm_load()
+	local deck = get_deck()
+	op = { id = deck.id, text = deck.mcm_menu_name, gr = npcd_mcm.get_module_menu(deck) }
+	npcdu.printlog_table("MCM Module Menu", op)
+    return op, "npcd_module"
+end

@@ -1,9 +1,9 @@
+local npcdu = npcd_utils
+
 npcd_default_settings = {
 
 	["enable"]		= false
 }
-
-	
 
 function on_mcm_load()
 
@@ -67,21 +67,58 @@ function npcd_module_installed(script)
 end
 
 function get_module_menu(module_deck)
-    local gr = {
+
+	-- npcdu.printlog_table("MCM Module Deck", module_deck)
+	local module_options = {}
+
+	-- main menu
+    local main_options = {
         { id = "title", type = "slide", link = "ui_options_slider_player", text = module_deck.mcm_menu_title, size = {512,50}, spacing = 20 },
         { id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = module_deck.mcm_menu_desc }
     }
+	table.insert(main_options, { id = "divider", type = "line" })
+	for i = 1, #module_deck.mcm_menu do
+		table.insert(main_options, module_deck.mcm_menu[i] )
+	end
+	local main_menu = { id="main", text="ui_mcm_npcd_module_menu_spotters_main", sh=true, gr=main_options}
+	table.insert(module_options, main_menu)
 
-	-- for i = 1, #module_deck.sets do
-	-- 	table.insert(gr, { id = module_deck.sets[i].id, type = "check", val = 1, def = false } )
-	-- end
-    for k,v in pairs(module_deck.options) do
-        table.insert(gr, { id = v.id, type = "check", val = 1, def = false } )
-    end
-    return gr
+	-- perks menus
+	printf("$[NPCD] building %s perk menus", npcdu.tablelength(module_deck.perks))
+	for _, perk in pairs(module_deck.perks) do
+		printf("-[NPCD] perk menu %s", perk.id)
+		local perk_menu = {id = perk.id, text=perk.mcm_menu_name, sh=true, gr={}}
+		-- create perk menu
+		table.insert(perk_menu.gr, { id = perk.id .. "_name", type = "slide", link = "ui_options_slider_player", text = perk.name, size = {512,50}, spacing = 20 })
+		table.insert(perk_menu.gr, { id = perk.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = perk.description} )
+		local list = {}
+		table.insert(list, {perk.type, perk.type})
+		table.insert(perk_menu.gr, { id = perk.id .. "_type" , hint = "st_npcd_perk_type", type= "list", val = 0, def=perk.type, content= list, })
+		-- add settings
+		if perk.mcm_menu then
+			for _, setting in pairs(perk.mcm_menu) do
+				table.insert(perk_menu.gr, setting)
+			end
+		end
+		-- add feats
+		if perk.feats then
+			for _, feat in pairs(perk.feats) do
+				table.insert(perk_menu.gr, { id = feat.id .. "_name", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 20 })
+				table.insert(perk_menu.gr, { id = feat.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = feat.description} )
+				local list = {}
+				table.insert(list, {feat.type, feat.type})
+				table.insert(perk_menu.gr, { id = feat.id .. "_type" , hint = "st_npcd_feat_type", type= "list", val = 0, def=feat.type, content= list, })
+				list = {}
+				table.insert(list, {feat.mode, feat.mode})
+				table.insert(perk_menu.gr, { id = feat.id .. "_mode" , hint = "st_npcd_feat_mode", type= "list", val = 0, def=feat.mode, content= list, })
+			end
+		end
+		-- adding perk menu to module options
+		table.insert(module_options, perk_menu)
+	end
+
+	return module_options
 end
 
 function on_game_start()
-	-- RegisterScriptCallback("on_option_change", on_option_change)
-	-- on_option_change()
 end
