@@ -1,0 +1,588 @@
+
+local PERK_TYPE = npcd.PERK_TYPE
+local FEAT_TYPE = npcd.FEAT_TYPE
+local FEAT_MODE = npcd.FEAT_MODE
+local npcdu = npcd_utils
+local npcdm = npcd_manager
+
+local settings = {}
+
+-- UTILS
+
+local function get_npc_obj(npc_id)
+	return db.storage[npc_id] and db.storage[npc_id].object
+end
+
+-- PERKS
+local SM_MODULE_NAME = "spotter"
+
+local PERK_SPOTTER = {
+	id = "npcd_perk_spotter",
+	type = PERK_TYPE.ARCHETYPE,
+	name = "st_npcd_perk_spotter",
+	description = "st_npcd_perk_spotter_desc",	
+	icon = "ui_icons_spotter_pin_redskull",
+	category 		= "st_npcd_perk_archetype",
+	roll_success_desc = "ui_mcm_npcd_module_spotter_has_perk",
+	feats = {
+		npcd_perk_spotter_callmark = { 
+			id = "npcd_perk_spotter_callmark",
+			name = "st_npcd_perk_spotter_callmark",
+			description = "st_npcd_perk_spotter_callmark_desc",
+			type = FEAT_TYPE.ACTIVE,
+			mode = FEAT_MODE.MANUAL,
+			icon = "ui_icons_spotter_pin_redskull",
+			icon_hud = "ui_icons_spotter_pin_redskull",
+			req_level       = 3,
+			max_level       = 4,
+			each_level      = 4,
+			category 		= "st_npcd_perk_spotter",
+			stats = {
+				[1] = {
+					cooldown = 180,
+					life = 30
+				},
+				[2] = {
+					cooldown = 180,
+					life = 60
+				},
+				[3] = {
+					cooldown = 150,
+					life = 80
+				},
+				[4] = {
+					cooldown = 120,
+					life = 100
+				}
+			},
+			activation_functor = {"spotter","callmark"},
+		},
+		npcd_perk_spotter_spot = { 
+			id = "npcd_perk_spotter_spot",
+			name = "st_npcd_perk_spotter_spot",
+			description = "st_npcd_perk_spotter_spot_desc",
+			type = FEAT_TYPE.ACTIVE,
+			mode = FEAT_MODE.AUTO,
+			icon = "ui_icons_spotter_crosshair_gradient",
+			icon_hud = "ui_icons_spotter_crosshair_gradient",
+			req_level       = 1,
+			max_level       = 4,
+			each_level      = 4,
+			category 		= "st_npcd_perk_spotter",			
+			stats = {
+				[1] = {
+					cooldown = 30,
+					life = 10,
+					marks_limit = 1
+				},
+				[2] = {
+					cooldown = 25,
+					life = 10,
+					marks_limit = 2
+				},
+				[3] = {
+					cooldown = 20,
+					life = 15,
+					marks_limit = 3
+				},
+				[4] = {
+					cooldown = 15,
+					life = 15,
+					marks_limit = 4
+				}
+			},
+			activation_functor = {"spotter_mcm","spot"},
+		}
+	},
+	roll_functor = {"spotter","roll_perk"},
+}
+
+local CALLMARK = PERK_SPOTTER.feats.npcd_perk_spotter_callmark.id
+local SPOT = PERK_SPOTTER.feats.npcd_perk_spotter_spot.id
+
+local SM_MODULE_PERKS = {
+	npcd_perk_spotter = PERK_SPOTTER
+}
+
+local function is_archetype_npc(npc_id)
+	local archetype = false
+
+	local npc = get_npc_obj(npc_id)
+	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
+		PRINT.debug(LOG.INFO, CAT.CONF, "npc %s has archetype perk", npc:section())
+		archetype = true
+	end
+
+	return archetype
+end
+
+-- called from npcd
+function roll_perk(npc_id)
+	PRINT.debug(LOG.INFO, CAT.EXEC, "npc %s rolling chance to have perk", npc_id)
+	return is_archetype_npc(npc_id) or (math.random(100) <= settings.perk_chance)
+end
+
+-- SPOTTERS
+
+local Spotters = {}
+
+local function add_spotter(npc_id)
+	if not Spotters[npc_id] then
+		Spotters[npc_id] = {}
+	end
+end
+
+local function remove_spotter(npc_id)
+	Spotters[npc_id] = nil
+end
+
+local function is_spotter(npc)
+	local npc_id = npc:id()
+	if npcd.has_perk(npc_id, PERK_SPOTTER.id) then
+		add_spotter(npc_id)
+		return true
+	else
+		return false
+	end
+end
+
+local master_spotter_id = nil
+local function find_master_spotter()
+	PRINT.trace(LOG.START, CAT.EXEC, "find_master_spotter")
+	local master_npc = nil
+	local clist = axr_companions.list_actor_squad_by_id()
+	for i=1, #clist do
+		local npc = get_npc_obj(clist[i])
+		if npc and npc:alive() and is_spotter(npc) then
+			if master_npc == nil then
+				master_npc = npc
+			elseif master_npc:rank() < npc:rank() then
+				master_npc = npc
+			end
+		end		
+	end
+	if master_npc then
+		PRINT.log(LOG.ADD, CAT.CONF, "found master spotter %s with rank %s", master_npc:character_name(), npcdu.get_desc_rank(master_npc))
+		if master_npc:id() ~= master_spotter_id then
+			npcdu.print_tip("ui_mcm_npcd_module_spotter_master", 15000, master_npc:character_name(), npcdu.get_feat_rank_desc(master_npc:id(), PERK_SPOTTER.id))
+		end
+	else
+		PRINT.log(LOG.WARN, CAT.CONF, "// No spotters in squad")
+	end
+	
+	return master_npc and master_npc:id() or nil
+end
+
+---- SQUAD UPDATES
+
+update_master_spotter_requested = false
+local function schedule_update_master_spotter()
+	PRINT.trace(LOG.START, CAT.EXEC, "schedule_update_master_spotter")
+	if not update_master_spotter_requested then
+		PRINT.debug(LOG.INFO, CAT.EXEC, "update_master_spotter_requested")
+		update_master_spotter_requested = true
+		CreateTimeEvent("spotter", "schedule_update_master_spotter", 1, function()
+			PRINT.debug(LOG.RUN, CAT.EXEC,"execute spotter_mark_keyhold")
+			master_spotter_id = find_master_spotter()
+			update_master_spotter_requested = false
+			return true
+		end)		
+	end
+end
+-----
+
+local f = getFS()
+
+local function build_npc_barks_lib(npc)
+	local npc_id = npc:id()
+	add_spotter(npc_id)
+	Spotters[npc_id]["bark"] = {}
+	local num = 1
+	while f:exist("$game_sounds$",npc:sound_prefix().."fight\\enemy\\enemy_"..num..".ogg") do
+		PRINT.trace(LOG.ADD, CAT.CONF, "adding sound ["..npc:sound_prefix().."fight\\enemy\\enemy_"..num.."] to table id = "..num)
+		Spotters[npc_id]["bark"][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
+		num = num + 1
+	end
+end
+
+local function bark(npc)
+	if not npc then return end
+	local female_visual = npc:get_visual_name():find("fstalker")
+	local female_voice = npc:sound_prefix():find("woman")
+	PRINT.trace(LOG.INFO, CAT.EXEC, "NPC id %s, name %s, section %s, sound_prefix %s, female_voice %s, female_visual %s", npc:id(), npc:name(), npc:section(), npc:sound_prefix(), female_voice, female_visual)
+	local npc_id = npc:id()
+	if female_visual or female_voice then
+		file_to_say = xr_sound.get_safe_sound_object( "spotters\\command_fireatwill_" .. math.random(3))
+	else
+		if not Spotters[npc_id] or not Spotters[npc_id]["bark"] then
+			build_npc_barks_lib(npc)
+		end
+		file_to_say = xr_sound.get_safe_sound_object(Spotters[npc_id]["bark"][math.random(#Spotters[npc_id]["bark"])]) --sets the file to play			
+	end
+	file_to_say:play(db.actor,0,sound_object.s2d) --plays it
+	file_to_say.volume = 1.0 --sets how loud the sound should be
+
+end
+
+-- MARKS
+
+local hmm = utils_spotter_hudmarks.get_hud_mark_manager()
+
+local function getArgs(npc_id, feat_id)
+	local rank = npcdu.get_feat_rank(npc_id, feat_id) -- this should come from EXP framework
+	local life = PERK_SPOTTER.feats[feat_id].stats[rank].life
+
+	local args = {
+		npcd_perk_spotter_callmark = {
+
+			texture         = "ui_icons_spotter_pin_redskull",
+			-- a texture for the icon is required
+			width           = 24,
+			height          = 24,
+			-- the size of the texture	
+			xmlfile         = "ui_hud_marker.xml",
+			-- The marker XML structure
+			bone            = "bip01_head",
+			near_end_dist   = 2,
+			-- marker is automatically destroyed if actor gets this close
+			far_end_dist     = 300,
+			-- marker is automatically destroyed if actor gets this far away
+			show_dist         = true,
+			-- show distance indicator by the marker
+			func_on_update = (
+				function(mark, args)
+					-- printf("func_on_update")
+					local init_time = mark and mark.init_time or 0
+					if time_global() - init_time > life * 1000 then mark:Destroy() end
+				end
+				),
+			life = life
+		},
+		npcd_perk_spotter_spot = {
+
+			texture         = "ui_icons_spotter_pin_cursor_chevron_e",
+			-- a texture for the icon is required
+			width           = 24,
+			height          = 24,
+			-- the size of the texture	
+			xmlfile         = "ui_hud_marker.xml",
+			-- The marker XML structure
+			bone            = "bip01_head",
+			near_end_dist   = 2,
+			-- marker is automatically destroyed if actor gets this close
+			far_end_dist     = 100,
+			-- marker is automatically destroyed if actor gets this far away
+			show_dist         = true,
+			-- show distance indicator by the marker
+			func_on_update = (
+				function(mark, args)
+					-- printf("func_on_update")
+					local init_time = mark and mark.init_time or 0
+					if time_global() - init_time > life * 1000 then mark:Destroy() end
+				end
+				),
+			life = life
+		},
+	}
+	return args[feat_id]
+end
+
+local marks = {}
+local current_marks = 0
+local function can_spot(npc_id)
+	if not npc_id then npc_id = master_spotter_id end
+
+	local rank = npcdu.get_feat_rank(npc_id, "npcd_perk_spotter_spot") -- this should come from EXP framework
+	local marks_limit = PERK_SPOTTER.feats.npcd_perk_spotter_spot.stats[rank].marks_limit
+	PRINT.debug(LOG.WARN, CAT.ABILITY, "Spotting active marks %s/%s", current_marks, marks_limit)
+	return current_marks < marks_limit
+end
+
+local function is_enemy_marked(enemy)
+	return marks[enemy:id()]
+end
+
+local function maxed_marks(npc_id)
+	local rank = npcdu.get_feat_rank(npc_id, "npcd_perk_spotter_spot") -- this should come from EXP framework
+	local marks_limit = PERK_SPOTTER.feats.npcd_perk_spotter_spot.stats[rank].marks_limit
+	return current_marks == marks_limit
+end
+
+local function add_mark(args, npc_id)
+	local _, mark_id = hmm:AddMarker(args)
+	marks[args.id] = { id = mark_id, npc_id = npc_id }
+	PRINT.debug(LOG.ADD, CAT.ABILITY, "npc %s added mark %s for enemy %s with life of %s", npc_id, mark_id, args.id, args.life)
+end
+
+local function delete_mark(id)
+	PRINT.debug(LOG.REMOVE, CAT.ABILITY, "delete_mark %s", id)
+	hmm:DelMarker(marks[id].id)
+	marks[id] = nil
+end
+
+local function delete_marked(enemy)
+	local id
+	if not enemy then
+		id = math.random(npcdu.tablelength(marks))
+	else
+		id = enemy:id()
+	end
+	delete_mark(id)
+end
+
+local function mark_enemy(enemy, npc, feat_id)
+    PRINT.debug(LOG.ADD, CAT.ABILITY, "Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
+	if is_enemy_marked(enemy) then -- replace existing mark
+		delete_marked(enemy)
+	elseif maxed_marks(npc:id()) and feat_id == CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
+		delete_marked()
+	end
+	local args = getArgs(npc:id(), feat_id)
+	args.id = enemy:id()
+	add_mark(args, npc:id())
+	if settings.play_bark then
+		bark(npc)
+	end
+end
+
+local function update_marks()
+	for id, marker in pairs(marks) do
+		-- remove mark if expired
+		if not hmm:GetMarker(marker.id) then
+			marks[id] = nil
+		else
+			-- remove mark if dead npc
+			local se_obj = id and alife_object(id)
+			if se_obj and (not se_obj:alive()) then
+				PRINT.debug(LOG.REMOVE, CAT.ABILITY, " removing marker %s for dead enemy %s", marker.id, se_obj.id)
+				delete_mark(id)
+			end
+		end
+	end
+	current_marks = npcdu.tablelength(marks)
+end
+
+local function clear_marks(npc_id)
+	PRINT.debug(LOG.REMOVE, CAT.ABILITY, "clear npc %s marks", npc_id)
+	for id, marker in pairs(marks) do
+		if marker.npc_id == npc_id then
+			delete_mark(id)	
+		end
+	end
+	current_marks = 0
+end
+
+local function call_mark(npc)
+
+	local enemy = level.get_target_obj()
+	if enemy and enemy:alive() then
+		if npcdm.activate_ability(npc:id(), CALLMARK) then
+			mark_enemy(enemy, npc, CALLMARK)
+		end
+	end
+end
+
+-- SPOTTING
+
+local function spot_enemy(npc, be_list)
+	PRINT.trace(LOG.START, CAT.ABILITY, " NPC %s attempt to spot", npc:character_name())
+	local be = npc:best_enemy()
+	if (be and be:alive()) then
+		local distance = be:position():distance_to_sqr(npc:position())
+		PRINT.trace(LOG.INFO, CAT.ABILITY,"FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
+		if npcdm.activate_ability(npc:id(), SPOT) then
+			mark_enemy(be, npc, SPOT)
+		end
+		-- -- Add a new element
+		-- table.insert(be_list, {be, distance})
+	end
+end
+
+local function find_enemy(spotter_id)
+	PRINT.trace(LOG.RUN, CAT.EXEC,"Find enemy")
+	local be_list = {}
+	if spotter_id then
+		local npc = get_npc_obj(spotter_id)
+		if npc and npc:alive() then
+			spot_enemy(npc, be_list)
+		end
+	else
+		local clist = axr_companions.list_actor_squad_by_id()
+		for i=1, #clist do
+			local npc = get_npc_obj(clist[i])
+			if npc and npc:alive() and is_spotter(npc) then
+				spot_enemy(npc, be_list)
+				return
+			end
+		end
+
+		-- local min_be = nil
+		-- local min_distance = math.huge  -- Start with a very large number
+
+		-- for _, pair in ipairs(be_list) do
+		-- 	local be = pair[1]
+		-- 	local distance = pair[2]
+
+		-- 	if distance < min_distance then
+		-- 		min_distance = distance
+		-- 		min_be = be
+		-- 	end
+		-- end
+
+		-- printf("-- ENEMY %s with smallest distance %s:", min_be and min_be:id(), min_distance)
+		-- return min_be		
+	end
+end
+
+
+--- KEYBINDS
+
+local spotter_mark_issued
+function on_key_press(dik)
+	
+	PRINT.trace(LOG.INFO, CAT.KEYBINDS,"bind %s == hotkey %s", dik, settings.hotkey)
+	if (dik == settings.hotkey) then
+		PRINT.debug(LOG.INFO, CAT.KEYBINDS,"create spotter_mark_keyhold")
+		if true then --not squad_is_peaceful then
+			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
+				PRINT.debug(LOG.START, CAT.KEYBINDS,"execute spotter_mark_keyhold")
+				if master_spotter_id then
+					local npc = get_npc_obj(master_spotter_id)
+					if npc and npc:alive() then
+						call_mark(npc)
+					end
+				end
+				spotter_mark_issued = true
+				return true
+			end)
+		end
+	end
+end
+
+function on_key_release(dik)
+
+	PRINT.trace(LOG.INFO, CAT.KEYBINDS," bind %s == hotkey %s", dik, settings.hotkey)
+	if dik == settings.hotkey then
+		RemoveTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long")
+		if spotter_mark_issued then
+			PRINT.debug(LOG.STOP, CAT.KEYBINDS,"consume spotter_mark_keyhold")
+			spotter_mark_issued = false
+		else
+			if not zzzz_dynahud then
+				axr_companions.on_key_release(dik)
+			end
+		end
+	end
+
+end
+
+-- female_npc = {}
+-- RegisterScriptCallback("on_specific_character_init", function(character_id, data)
+-- 	printf("%% character_id %s", character_id)
+-- 	if data.snd_config:find("(woman|female)") then
+-- 		printf("% %s is a woman", character_id)
+-- 		female_npc[character_id] = true
+-- 	end
+-- end)
+
+-- LIFECYCLE
+
+function squad_on_npc_death(squad,se_npc)
+	remove_spotter(se_npc.id)
+	clear_marks(se_npc.id)
+end
+
+local squad_is_peaceful = true
+local function combat_started()
+    PRINT.trace(LOG.START, CAT.EXEC," combat_started")
+	squad_is_peaceful = false
+
+	if not master_spotter_id then
+		master_spotter_id = find_master_spotter()
+	end
+	-- do the first spotting
+	local enemy = find_enemy(master_spotter_id)
+end
+
+local function do_keep_spotting()
+	if can_spot(master_spotter_id) then
+		PRINT.trace(LOG.START, CAT.EXEC," do_keep_spotting")
+		local enemy = find_enemy(master_spotter_id)
+	end
+end
+
+local function combat_ended()
+    PRINT.trace(LOG.STOP, CAT.EXEC," combat_ended")
+	squad_is_peaceful = true
+end
+
+local function get_npcd_logging()
+	PRINT = npcd_logging.get_printer()
+	LOG = PRINT.LOG
+	CAT = PRINT.CAT
+end 
+
+function actor_on_first_update()
+	npcdm.register_module(SM_MODULE_NAME, SM_MODULE_PERKS)
+	get_npcd_logging()
+	on_option_change()
+	PRINT.trace(LOG.START, CAT.EXEC," Spotter actor_on_first_update")
+end
+
+local tg_update = 0
+local tg_update_step = 1000 --[ms]
+function actor_on_update()
+
+		local tg = time_global()
+		if tg < tg_update then
+			return
+		end
+		tg_update = tg + tg_update_step
+
+		PRINT.trace(LOG.INFO, CAT.EXEC,"spotter update ")
+
+		if not squad_is_peaceful then
+			update_marks()
+
+			if settings.keep_spotting then
+				do_keep_spotting()
+			end			
+		end
+end
+
+----
+
+if AddScriptCallback then
+	AddScriptCallback("schedule_update_master_spotter")
+end
+
+local module_name = spotter_mcm.get_module_name() or "spotter"
+function on_option_change()
+    settings["marker_life"] = npcd_mcm.get_module_setting(module_name, 'marker_life')
+	settings["keep_spotting"] = npcd_mcm.get_module_setting(module_name, 'keep_spotting')
+	settings["play_bark"] = npcd_mcm.get_module_setting(module_name, 'bark')
+    settings["hotkey"] = npcd_mcm.get_module_setting(module_name, 'hotkey')
+    settings["perk_chance"] = npcd_mcm.get_module_setting(module_name, 'perk_chance')
+	settings["max_marks"] = npcd_mcm.get_module_setting(module_name, 'max_marks')
+	PRINT.log_table("Spotters", settings)
+end
+
+function on_game_start()
+	printf("$ Spotter on_game_start")
+    RegisterScriptCallback("npcd_actor_on_first_update", actor_on_first_update)
+	RegisterScriptCallback("npcd_on_log_update", get_npcd_logging)
+	RegisterScriptCallback("actor_on_update",actor_on_update)
+	RegisterScriptCallback('on_option_change', on_option_change)
+
+	if not zzzz_dynahud then
+		UnregisterScriptCallback("on_key_release",axr_companions.on_key_release)
+	end	
+	RegisterScriptCallback("on_key_release", on_key_release)
+	RegisterScriptCallback("on_key_press", on_key_press)
+
+    RegisterScriptCallback("npcd_squad_combat_started",combat_started)
+    RegisterScriptCallback("npcd_squad_combat_ended",combat_ended)
+
+	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
+	RegisterScriptCallback("npcd_squad_update",schedule_update_master_spotter)
+end

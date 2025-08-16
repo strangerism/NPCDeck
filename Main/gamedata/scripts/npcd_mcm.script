@@ -1,0 +1,87 @@
+npcd_default_settings = {
+
+	["enable"]		= false
+}
+
+	
+
+function on_mcm_load()
+
+		op = { id= "general", sh=true, text="ui_mcm_npcd_general", gr ={
+				{ id = "title",type= "slide",link= "ui_options_slider_player",text="ui_mcm_npcd_general_title",size= {512,50},spacing= 20 },
+				{ id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_general_desc" },
+				{ id = "enable", type = "check", val = 1, def=true},
+				},
+			}
+	return op, "npcd"
+end
+
+function on_option_change()
+    -- if ui_mcm then
+    --     npe_default_settings["enable"] = ui_mcm.get("npe/general/enable")
+    -- end
+end
+
+function get_setting(module_name, var_name)
+	printf("//[NPCD][MCM] npcd_get_setting %s %s", module_name, var_name)
+	-- Get MCM setting
+	if ui_mcm then 
+		return ui_mcm.get("npcd/" .. module_name .. "/" .. var_name)
+	end
+	
+end
+
+function set_setting(module_name, var_name, value)
+	printf("-[NPCD][MCM] npcd_set_setting %s %s", module_name, var_name)
+	-- Set MCM setting
+	if ui_mcm then 
+		ui_mcm.set("npcd/" .. module_name .. "/" .. var_name, value)
+	end
+
+end
+
+function get_module_setting(module_name, var_name)
+
+	-- Get MCM setting
+	if ui_mcm then 
+		return ui_mcm.get("npcd_module/" .. module_name .. "/" .. var_name)
+	end
+	
+end
+
+function set_module_setting(module_name, var_name, value)
+
+	-- Set MCM setting
+	if ui_mcm then 
+		ui_mcm.set("npcd_module/" .. module_name .. "/" .. var_name, value)
+	end
+
+end
+
+function npcd_module_installed(script)
+	if script then
+		return script.module_installed or nil
+	else
+		return false
+	end
+end
+
+function get_module_menu(module_deck)
+    local gr = {
+        { id = "title", type = "slide", link = "ui_options_slider_player", text = module_deck.mcm_menu_title, size = {512,50}, spacing = 20 },
+        { id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = module_deck.mcm_menu_desc }
+    }
+
+	-- for i = 1, #module_deck.sets do
+	-- 	table.insert(gr, { id = module_deck.sets[i].id, type = "check", val = 1, def = false } )
+	-- end
+    for k,v in pairs(module_deck.options) do
+        table.insert(gr, { id = v.id, type = "check", val = 1, def = false } )
+    end
+    return gr
+end
+
+function on_game_start()
+	-- RegisterScriptCallback("on_option_change", on_option_change)
+	-- on_option_change()
+end

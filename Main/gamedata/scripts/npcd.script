@@ -116,19 +116,15 @@ function roll_npc_perk(npc_id, perk_id)
 	local perk = perks[perk_id]
 	if npcs[npc_id].Perk[perk.id] then return end
 	printf("-- npc %s never rolled this perk", npc_id)
-	local result = false
-	npcs[npc_id].Perk[perk.id] = {}
-	npcs[npc_id].Perk[perk.id]["id"]  = perk.id
-	npcs[npc_id].Perk[perk.id]["rank"]  = -1
-
 	if roll_perk(npc_id, perk.roll_functor) then
-		npcs[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired
+		npcs[npc_id].Perk[perk.id] = {}
+		npcs[npc_id].Perk[perk.id]["id"]  = perk.id
+		npcs[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired TODO revise this
 		local npc = npcdu.get_npc_obj(npc_id)
 		npcdu.print_tip(perk.roll_success_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
-		result = true
+		npcdu.printlog_table(string.format("Roll_perk NPC %s", npc_id), npcs[npc_id])
+		return true
 	end
-	npcdu.printlog_table(string.format("Roll_perk NPC %s", npc_id), npcs[npc_id])
-	return result
 end
 
 function add_perks(npc_id, some_perks)
