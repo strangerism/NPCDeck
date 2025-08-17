@@ -36,11 +36,11 @@ function add_ability_to_hud(self, ability, companion_hud, index, mode)
 	-- ability icon
 	if mode == HUD_MODE.STATIC then
 		Printer:Trace(LOG.INFO, CAT.UI,"Init STATIC npc %s ability %s", npc_id, a_id)
-		ui_ability.icon = self.xml_sm:InitStatic("abilities:static", companion_hud.base)
+		ui_ability.icon = self.npcd_xml:InitStatic("abilities:static", companion_hud.base)
 		ui_ability.state = STATE.COOLDOWN
 	else
 		Printer:Trace(LOG.INFO, CAT.UI,"Init FLASHING npc %s ability %s", npc_id, a_id)
-		ui_ability.icon = self.xml_sm:InitStatic("abilities:flashing", companion_hud.base)
+		ui_ability.icon = self.npcd_xml:InitStatic("abilities:flashing", companion_hud.base)
 		ui_ability.state = STATE.READING
 	end
 	ui_ability.icon:InitTexture(ability.icon)
@@ -50,7 +50,7 @@ function add_ability_to_hud(self, ability, companion_hud, index, mode)
 	-- Printer:Trace(LOG.INFO, CAT.UI,"ability %s x = %s", ability.id, x)
 	ui_ability.icon:SetWndPos( vector2():set( 0-x , 0 ) )
 	-- ability cooldown							
-	ui_ability.cd = self.xml_sm:InitProgressBar("abilities:cooldown", ui_ability.icon)
+	ui_ability.cd = self.npcd_xml:InitProgressBar("abilities:cooldown", ui_ability.icon)
 	ui_ability.cd:SetWndSize(vector2():set(ui_ability.icon:GetWidth(), ui_ability.icon:GetHeight() ))
 	-- set ratio
 	utils_xml.correct_ratio(ui_ability.icon)
@@ -64,66 +64,40 @@ end
 
 og_axr_companions_UI_InitControls = axr_companions.UICompanionList.InitControls
 function axr_companions.UICompanionList:InitControls()
-	printf("-- UICompanionList:InitControls")
+	og_axr_companions_UI_InitControls(self)
 	local xml = utils_xml.get_hud_xml()
-	self.xml = xml
-	self.xml_sm = CScriptXmlInit()
-	self.xml_sm:ParseFile("ui_npcd_hud.xml")
-	self.dialog = xml:InitStatic("companion_list", self)
-	--utils_xml.correct_ratio(self.dialog, true)
-
-	self.companion_info = {}
+	self.npcd_xml = CScriptXmlInit()
+	self.npcd_xml:ParseFile("ui_npcd_hud.xml")
 	for i=1,8 do
-		self.companion_info[i]                   = {}
-		self.companion_info[i].base              = xml:InitStatic("companion_list:slot", self.dialog)
-		self.companion_info[i].background        = xml:InitStatic("companion_list:slot:background", self.companion_info[i].base)
-		self.companion_info[i].icon        		 = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
-		self.companion_info[i].danger_indicator  = xml:InitStatic("companion_list:slot:danger_indicator", self.companion_info[i].base)
-		self.companion_info[i].team_role_shadow  = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
-		self.companion_info[i].team_role         = xml:InitStatic("companion_list:slot:team_role", self.companion_info[i].base)
-		self.companion_info[i].distance          = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
-		self.companion_info[i].prog_health       = xml:InitProgressBar("companion_list:slot:health", self.companion_info[i].base)
 		self.companion_info[i].name          	 = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
-		for _,ele in pairs(self.companion_info[i]) do
-			utils_xml.correct_ratio(ele)
-		end		
-		-- npcd
-		-- self.companion_info[i].name:SetFont(GetFontSmall())  - self.companion_info[i].icon:GetWidth()/2
+
 		self.companion_info[i].name:SetWndSize(vector2():set( self.companion_info[i].name:GetWidth() + 30, self.companion_info[i].name:GetHeight()))
 		self.companion_info[i].name:SetTextAlignment(0)
 		self.companion_info[i].name:SetWndPos( vector2():set( self.companion_info[i].distance:GetWndPos().x , self.companion_info[i].distance:GetWndPos().y + self.companion_info[i].icon:GetHeight()/2 ) )
-		self.companion_info[i].abilities = {} -- = xml:InitStatic("companion_list:slot:icon", self.companion_info[i].base)
-		-- self.companion_info[i].abilities:SetWndSize(vector2():set( 100, 25 ))
-
-		--
-		local h = self.companion_info[i].background:GetHeight()
-		self.companion_info[i].distance:SetFont(GetFontSmall())
-		self.companion_info[i].base:SetWndPos( vector2():set( 0 , (8-i)*(h+10) ) )
-		local pos = self.companion_info[i].team_role:GetWndPos()
-		self.companion_info[i].team_role_shadow:SetWndPos( vector2():set( pos.x + 1 , pos.y + 2 ) )
-		self.companion_info[i].team_role_shadow:SetTextureColor( GetARGB(255, 0, 0, 0) )
+		utils_xml.correct_ratio(self.companion_info[i].name)
+		self.companion_info[i].abilities = {}
 	end
 end
 
 og_axr_companions_UI_Update = axr_companions.UICompanionList.Update
 function axr_companions.UICompanionList:Update(force)
-	CUIScriptWnd.Update(self)
+	og_axr_companions_UI_Update(self, force)
 	
-	local tg = time_global()
-	if force then
-		self._tmr = tg - 1
-	end
-	if self._tmr >= tg then
-		return
-	end
-	self._tmr = tg + 1000
+	-- local tg = time_global()
+	-- if force then
+	-- 	self._tmr = tg - 1
+	-- end
+	-- if self._tmr >= tg then
+	-- 	return
+	-- end
+	-- self._tmr = tg + 1000
 	
 	self.ratio  = utils_xml.screen_ratio()
 	self.scale  = 0.75
 	self.index  = 0
 	self.W      = 40
 	self.offset = 10
-	-- printf("-- UICompanionList:Update")
+
 	local to_show = main_hud_shown()
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1,8 do
@@ -133,40 +107,10 @@ function axr_companions.UICompanionList:Update(force)
 			local npc = st and st.object
 			local ele = self.companion_info[i]
 			ele.npc_id = se_obj.id
-			-- Icon
-			local icon_name = npc and npc:character_icon() or se_obj:character_icon()
-			icon_name = icon_name and icon_name ~= "" and icon_name or "ui\\ui_noise"
-			ele.icon:InitTexture(icon_name)
-			
-			-- Distance
-			ele.distance:SetText(string.format("%.2f M", se_obj.position:distance_to(db.actor:position())))
-			
+
 			-- Name
 			ele.name:SetText(npc:character_name())
 
-			-- Leader and relation status
-			local squad = se_obj.group_id and se_obj.group_id ~= 65535 and alife_object(se_obj.group_id)
-			if (squad and squad:commander_id() == se_obj.id) then
-				ele.team_role:InitTexture("ui_minimap_squad_leader")
-				ele.team_role_shadow:InitTexture("ui_minimap_squad_leader")
-			else
-				ele.team_role:InitTexture("ui_minimap_point")
-				ele.team_role_shadow:InitTexture("ui_minimap_point")
-			end
-			
-			local community = npc and npc:character_community()
-			local clr = community and self.clr_list[community] or self.clr_list["def"]
-			ele.team_role:SetTextureColor(clr)
-			
-			-- Health
-			if (npc) then 
-				local health = clamp( round_idp(npc.health,1),0,1)
-				ele.prog_health:SetProgressPos( health )
-			end
-			
-			-- Danger state
-			ele.danger_indicator:Show(npc and npc:best_enemy() and true or false)
-			
 			-- npcd abilities hud
 			local npc_id = se_obj.id
 			-- Printer:Trace(LOG.INFO, CAT.UI,"npc_id = %s", npc_id)
