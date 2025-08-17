@@ -1,6 +1,12 @@
 
 npcdu = npcd_utils
 
+function set_printer(main_printer)
+	Printer = main_printer
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+
 local STATE = npcd.ABILITY_STATE
 
 
@@ -22,18 +28,18 @@ function add_ability_to_hud(self, ability, companion_hud, index, mode)
 		companion_hud.abilities[a_id].cd = nil
 	end
 
-	printf("-- Init npc %s ability %s", npc_id, a_id)
+	Printer:Trace(LOG.INFO, CAT.UI,"Init npc %s ability %s", npc_id, a_id)
 	companion_hud.abilities[a_id] = {}
 	local ui_ability = companion_hud.abilities[a_id]
 	-- ability index: stores the position where it is created, in the ability ribbon. If it happens to change it will be re-initialized to the new position   
 	ui_ability.index = index
 	-- ability icon
 	if mode == HUD_MODE.STATIC then
-		printf("-- Init STATIC npc %s ability %s", npc_id, a_id)
+		Printer:Trace(LOG.INFO, CAT.UI,"Init STATIC npc %s ability %s", npc_id, a_id)
 		ui_ability.icon = self.xml_sm:InitStatic("abilities:static", companion_hud.base)
 		ui_ability.state = STATE.COOLDOWN
 	else
-		printf("-- Init FLASHING npc %s ability %s", npc_id, a_id)
+		Printer:Trace(LOG.INFO, CAT.UI,"Init FLASHING npc %s ability %s", npc_id, a_id)
 		ui_ability.icon = self.xml_sm:InitStatic("abilities:flashing", companion_hud.base)
 		ui_ability.state = STATE.READING
 	end
@@ -41,7 +47,7 @@ function add_ability_to_hud(self, ability, companion_hud, index, mode)
 	ui_ability.icon:SetWndSize(vector2():set(ui_ability.icon:GetWidth() * self.scale, ui_ability.icon:GetHeight() * self.scale ))
 	-- position
 	local x = (index-1)*(self.W + self.offset) * self.scale
-	-- printf("ability %s x = %s", ability.id, x)
+	-- Printer:Trace(LOG.INFO, CAT.UI,"ability %s x = %s", ability.id, x)
 	ui_ability.icon:SetWndPos( vector2():set( 0-x , 0 ) )
 	-- ability cooldown							
 	ui_ability.cd = self.xml_sm:InitProgressBar("abilities:cooldown", ui_ability.icon)
@@ -163,15 +169,15 @@ function axr_companions.UICompanionList:Update(force)
 			
 			-- npcd abilities hud
 			local npc_id = se_obj.id
-			-- printf("% npc_id = %s", npc_id)
+			-- Printer:Trace(LOG.INFO, CAT.UI,"npc_id = %s", npc_id)
 			local abi_hud_count = ele.abilities and npcdu.tablelength(ele.abilities) or 0
 			if abi_hud_count > 0 then
-				-- printf("* UICompanionList NPC %s clear HUD abilities", ele.name:GetText())
+				-- Printer:Trace(LOG.INFO, CAT.UI,"UICompanionList NPC %s clear HUD abilities", ele.name:GetText())
 				for a_id, a_ele in pairs(ele.abilities) do
 					local ability = npcd.get_ability(npc_id, a_id)
 					
 					if not ability or ability.state == STATE.READY then
-						-- printf("! NPC %s remove ability %s ", npc_id, a_id)
+						Printer:Trace(LOG.REMOVE, CAT.UI,"! NPC %s remove ability %s ", npc_id, a_id)
 						a_ele.icon:Show(false)
 						a_ele.icon = nil
 						a_ele.cd:Show(false)
@@ -182,20 +188,20 @@ function axr_companions.UICompanionList:Update(force)
 			end
 			
 			if npcd.has_abilities(npc_id) then
-				-- printf("* UICompanionList NPC %s has abilities", ele.name:GetText())
+				-- Printer:Trace(LOG.INFO, CAT.UI,"UICompanionList NPC %s has abilities", ele.name:GetText())
 				local index = 2
 				local npc_abilities = npcd.get_abilities(npc_id)
-				-- if npc_abilities then npcdu.printlog_table("NPDC", npc_abilities) end
+				-- if npc_abilities then Printer:LogTable("NPDC", npc_abilities) end
 				for a_id, ability in pairs(npc_abilities) do
-					-- printf("* UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
+					-- Printer:Trace(LOG.INFO, CAT.UI,"UICompanionList NPC abilitiy %s state %s", ability.id, ability.state)
 					if ability.state ~= STATE.READY then
 						-- init if it is new or has changed position in the ribbon
-						-- printf("/ npc %s ability %s state %s/%s",ele.name:GetText(), a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
+						Printer:Trace(LOG.INFO, CAT.UI,"npc %s ability %s state %s/%s",ele.name:GetText(), a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
 						if not ele.abilities[a_id] or ele.abilities[a_id].index ~= index or (ability.state ~= ele.abilities[a_id].state) then
 							add_ability_to_hud(self, ability, ele, index, ability.state == STATE.COOLDOWN and HUD_MODE.STATIC or HUD_MODE.FLASHING)
 						end
 						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
-						-- printf("update CD bar=%s",bar)
+						Printer:Trace(LOG.INFO, CAT.UI,"update CD bar=%s",bar)
 						ele.abilities[a_id].cd:SetProgressPos(bar)
 						--
 						index = index + 1

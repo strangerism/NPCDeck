@@ -1,4 +1,16 @@
 local npcdu = npcd_utils
+local npcd = npcd
+local npcd_logging = npcd_logging
+local npcd_hud = npcd_hud
+local ResetTimeEvent = ResetTimeEvent
+local RemoveTimeEvent = RemoveTimeEvent
+local CreateTimeEvent = CreateTimeEvent
+local axr_companions = axr_companions
+local distance_between = distance_between
+local SendScriptCallback = SendScriptCallback
+local AddScriptCallback = AddScriptCallback
+local RegisterScriptCallback = RegisterScriptCallback
+local db = db
 
 local FEAT_TYPE = npcd.FEAT_TYPE
 local FEAT_MODE = npcd.FEAT_MODE
@@ -7,12 +19,12 @@ local ABILITY_STATE = npcd.ABILITY_STATE
 --------------- ABILITIES
 function register_abilities(npc_id)
 
-	printf("! npc %s register_abilities", npc_id)
+	Printer:Debug(LOG.ADD, CAT.NPC,"npc %s register_abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
-		printf("! npc %s register_abilities for perk %s", npc_id, npc_perk.id)
+		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s register_abilities for perk %s", npc_id, npc_perk.id)
 		local perk_deck = npcd.get_perk(npc_perk.id)
 		if perk_deck and perk_deck.feats then
 			for _, feat in pairs(perk_deck.feats) do
@@ -22,18 +34,18 @@ function register_abilities(npc_id)
 			end
 		end
 	end
-	npcdu.printlog_table("Registered Abilities", npc_deck.Ability)
+	Printer:LogTable("Registered Abilities", npc_deck.Ability)
 	return true
 end
 
 function unregister_abilities(npc_id)
 
-    printf("! npc %s unregister_abilities", npc_id)
+    Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s unregister_abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
-		printf("! npc %s unregister_abilities for perk %s", npc_id, npc_perk.id)
+		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s unregister_abilities for perk %s", npc_id, npc_perk.id)
 		local perk_deck = npcd.get_perk(npc_perk.id)
 		if perk_deck and perk_deck.feats then
 			for _, feat in pairs(perk_deck.feats) do
@@ -57,7 +69,7 @@ function manage_ability_cooldown(npc_id, feat_id)
 
     -- setup cooldown transition
 	if npc_ability.state == ABILITY_STATE.READY then
-		printf("npc %s manage_ability %s init cooldown %s", npc_id, feat_id, npc_ability.cooldown)
+		Printer:Debug(LOG.START, CAT.FEAT,"npc %s manage_ability %s init cooldown %s", npc_id, feat_id, npc_ability.cooldown)
 		npc_ability.state = ABILITY_STATE.COOLDOWN
 		npc_ability.timer = npc_ability.cooldown
 	end
@@ -66,7 +78,7 @@ function manage_ability_cooldown(npc_id, feat_id)
 	if npc_ability.timer <= -5 then
 		npc_ability.timer = -999
 		npc_ability.state = ABILITY_STATE.READY
-		printf("! ending time event %s", npc_id)
+		Printer:Debug(LOG.STOP, CAT.FEAT,"ending time event %s", npc_id)
 		return true
 	elseif npc_ability.timer == 0 then -- ability cooldown ended is, going to reading up
 		npc_ability.state = ABILITY_STATE.READING
@@ -76,15 +88,14 @@ function manage_ability_cooldown(npc_id, feat_id)
 	local timer = npc_ability.timer
 	local cooldown = npc_ability.cooldown
 	local state = npc_ability.state
-	printf("// npc %s manage_ability %s state %s timer %s/%s", npc_id, feat_id, state, timer, cooldown)
+	Printer:Debug(LOG.RUN, CAT.FEAT,"npc %s manage_ability %s state %s timer %s/%s", npc_id, feat_id, state, timer, cooldown)
 	npc_ability.timer = npc_ability.timer - 1
 
     -- updating, necessary ??
     npcd.set_ability(npc_id, npc_ability)
 
     -- loop cooldown management event
-	-- CreateTimeEvent("ability_coolddown", tostring(npc_id) .. feat_id .. "_" .. tostring(timer), 1, manage_ability_cooldown, npc_id, feat_id)
-    ResetTimeEvent("npcd_ability_coolddown", tostring(npc_id) .. feat_id, 1)
+	ResetTimeEvent("npcd_ability_coolddown", tostring(npc_id) .. feat_id, 1)
 	return false
 end
 
@@ -97,16 +108,16 @@ function activate_ability(npc_id, feat_id)
 	if not npc_ability then return true end -- ability unregistered?
 
 	if (npc_ability.state == ABILITY_STATE.COOLDOWN) then 
-		printf("! npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
 		return false
 	elseif (npc_ability.state == ABILITY_STATE.READING) then
-		printf("! npc %s activates ability %s on READING", npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s activates ability %s on READING", npc_id, feat_id)
 		npc_ability.state = ABILITY_STATE.READY
 	end
 
     RemoveTimeEvent("npcd_ability_coolddown", tostring(npc_id) .. feat_id)
 
-    printf("! npc %s activate_ability %s", npc_id, feat_id)
+    Printer:Debug(LOG.INFO, CAT.NPC,"npc %s activate_ability %s", npc_id, feat_id)
 
 	CreateTimeEvent("npcd_ability_coolddown", tostring(npc_id) .. feat_id, 0.5, manage_ability_cooldown, npc_id, feat_id)
 	return true
@@ -116,7 +127,7 @@ end
 
 local current_clist
 local function npcd_squad_update()
-	printf("% npcd_squad_update")
+	Printer:Debug(LOG.INFO, CAT.NPC,"npcd_squad_update")
 	local new_clist = axr_companions.list_actor_squad_by_id()
 
 	local added_ids, removed_ids = npcdu.compute_diff(new_clist, current_clist)
@@ -149,7 +160,7 @@ end
 function squad_on_npc_death(squad,se_npc)
 	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
 	if not npc then return end
-	-- printf("squad_on_npc_death name %s", npc and npc:name())
+	Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death name %s", npc and npc:name())
 	local npc_id = npc:id() or 0
 	npcd.remove_npc(npc_id)
 	for id,actor_squad in pairs(axr_companions.companion_squads) do
@@ -162,7 +173,6 @@ end
 --------------- SQUAD STATE
 
 function is_companions_squad_in_danger()
-	--printf("============================================================================================")
 	local squad_is_peaceful = true
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
@@ -173,38 +183,37 @@ function is_companions_squad_in_danger()
 			if npc:alive() then
 				is_peaceful = (not npc:best_enemy()) and npc:dont_has_info("npcx_beh_ignore_combat") and true or false
 			end
-			-- printf("companion[%s] is_peaceful %s - dist: %s",k.id, is_peaceful, distance_between(db.actor,npc))
+			-- Printer:Trace(LOG.INFO, CAT.NPC,"companion[%s] is_peaceful %s - dist: %s",clist[i], is_peaceful, distance_between(db.actor,npc))
 			-- check if is too far away
 			squad_is_peaceful = squad_is_peaceful and is_peaceful
-			-- printf("current calculation for squad is_peaceful %s", squad_is_peaceful)					
+			Printer:Trace(LOG.INFO, CAT.NPC,"current calculation for squad is_peaceful %s", squad_is_peaceful)					
 		end	
 	end	
 	if not squad_is_peaceful then
-		-- printf("squad is under attack or attacking")
+		Printer:Trace(LOG.INFO, CAT.NPC,"squad is under attack or attacking")
 	end
-	-- printf("-- squad is resolved peaceful %s", squad_is_peaceful)
-	--printf("============================================================================================")
+	Printer:Trace(LOG.INFO, CAT.NPC,"-- squad is resolved peaceful %s", squad_is_peaceful)
 	return not squad_is_peaceful
 end
 
 --------------- STATE MGMT
 
 function save_state(m_data)
-	printf("$ NPCDeck Save State")
+	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck Save State")
     if not m_data.npcd then
         m_data.npcd = {}
     end 
     -- save the state
     m_data.npcd.npcs = npcd.get_deck()
-	npcdu.printlog_table("NPCDeck", m_data.npcd.npcs)
+	Printer:LogTable("NPCDeck", m_data.npcd.npcs)
 end
 
 function load_state(m_data)
-	printf("$ NPCDeck Load State")
+	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck Load State")
 	if m_data.npcd and m_data.npcd.npcs then
         -- cache the state
         npcd.set_deck(m_data.npcd.npcs)
-		npcdu.printlog_table("NPCDeck", npcd.get_deck())
+		Printer:LogTable("NPCDeck", npcd.get_deck())
 	end
 end
 
@@ -212,8 +221,7 @@ end
 
 local squad_is_peaceful = true
 function actor_on_first_update()
-	printf("-- NPCD Manager actor_on_first_update")	
-    -- squad_is_peaceful = not (is_companions_squad_in_danger())
+	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")	
 end
 
 
@@ -228,16 +236,16 @@ function actor_on_update()
 	tg_update = tg + tg_update_step
 
 	local in_danger_state = is_companions_squad_in_danger()
-	-- printf("squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
+	Printer:Trace(LOG.INFO, CAT.NPC,"squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
 	if squad_is_peaceful and in_danger_state then
-		printf("npcd_squad_combat_started")
+		Printer:Debug(LOG.START, CAT.EXEC,"npcd_squad_combat_started")
 		squad_is_peaceful = false
 		SendScriptCallback("npcd_squad_combat_started")
 		return
 	end
 
 	if not squad_is_peaceful and not in_danger_state then
-		printf("npcd_squad_combat_ended")
+		Printer:Debug(LOG.STOP, CAT.EXEC,"npcd_squad_combat_ended")
 		squad_is_peaceful = true
 		SendScriptCallback("npcd_squad_combat_ended")
 		return
@@ -248,8 +256,19 @@ function actor_on_update()
 end
 
 function register_module(deck)
-	printf("- NPCD Manager register_module %s", deck.module)
+	printf("-[NPCD][Main] Manager register_module %s", deck.module)
 	npcd.add_module_perks(deck.perks)
+end
+
+local function get_npcd_logging()
+	if not Printer then
+		Printer = npcd_logging.get_npcd_printer()
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()	
+	Printer:Log(LOG.INFO, CAT.EXEC,"Logging initialized")
+	npcd.set_printer(Printer)
+	npcd_hud.set_printer(Printer)
 end
 
 if AddScriptCallback then
@@ -259,7 +278,8 @@ if AddScriptCallback then
 end
 
 function on_game_start()
-	printf("-- NPCD Manager on_game_start")
+	printf("-[NPCD][Main] Manager on_game_start")
+	RegisterScriptCallback("npcd_on_log_update", get_npcd_logging)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)

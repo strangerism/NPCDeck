@@ -445,10 +445,7 @@ local function get_npcd_logging()
 	Printer:Log(LOG.INFO, CAT.EXEC," Logging initialized")
 end
 
-
 function actor_on_first_update()
-	printf("$[NPCD][EXE] Spotter actor_on_first_update")
-	-- get_npcd_logging()
 	on_option_change()
 	Printer:Trace(LOG.START, CAT.EXEC," Spotter actor_on_first_update")
 end

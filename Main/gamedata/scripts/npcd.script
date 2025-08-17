@@ -1,4 +1,11 @@
-npcdu = npcd_utils
+local npcdu = npcd_utils
+local execute_func = execute_func
+
+function set_printer(main_printer)
+	Printer = main_printer
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
 
 -- PERKS DECK 
 
@@ -29,8 +36,7 @@ function add_module_perks(module_perks)
 			perks[perk.id] = perk
 		end
 	end 
-
-	npcdu.printlog_table("perks", perks)
+	-- Printer:LogTable("Deck Perks", perks)
 end
 
 -- NPCs DECK
@@ -47,7 +53,7 @@ ABILITY_STATE = {
 -- returns true of a new npc is added
 function add_npc(npc_id)
 	if npcs[npc_id] then return false end
-	printf("-- npc %s added", npc_id)
+	Printer:Log(LOG.ADD, CAT.CONF,"npc %s added", npc_id)
 	npcs[npc_id] = {}
 	npcs[npc_id]["id"] = npc_id
 	npcs[npc_id]["Perk"] = {}
@@ -113,7 +119,7 @@ end
 
 
 local function roll_perk(npc_id, functor)
-	-- PRINT.trace(LOG.INFO, CAT.CONF, "executing npc %s roll", npc_id)
+	Printer:Log(LOG.INFO, CAT.CONF,"executing npc %s roll", npc_id)
 	if not functor then return false end
 	table.insert(functor, npc_id)
 	-- PRINT.log_table("roll_functor", functor)
@@ -122,19 +128,19 @@ end
 
 -- returns true of the perk is rolled
 function roll_npc_perk(npc_id, perk_id)
-	printf("-- npc %s Roll_perk", npc_id)
+	Printer:Log(LOG.INFO, CAT.CONF,"npc %s Roll_perk", npc_id)
 	if not npc_id or not perk_id or not perks[perk_id] then return end
-	printf("-- perk %s is available", perk_id)
+	Printer:Log(LOG.INFO, CAT.CONF,"perk %s is available", perk_id)
 	local perk = perks[perk_id]
 	if npcs[npc_id].Perk[perk.id] then return end
-	printf("-- npc %s never rolled this perk", npc_id)
+	Printer:Log(LOG.INFO, CAT.CONF,"npc %s never rolled this perk", npc_id)
 	if roll_perk(npc_id, perk.roll_functor) then
 		npcs[npc_id].Perk[perk.id] = {}
 		npcs[npc_id].Perk[perk.id]["id"]  = perk.id
 		npcs[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired TODO revise this
 		local npc = npcdu.get_npc_obj(npc_id)
 		npcdu.print_tip(perk.roll_success_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
-		npcdu.printlog_table(string.format("Roll_perk NPC %s", npc_id), npcs[npc_id])
+		Printer:LogTable(string.format("Roll_perk NPC %s", npc_id), npcs[npc_id])
 		return true
 	end
 end
@@ -216,7 +222,7 @@ end
 
 function add_ability(npc_id, feat)
 	local a_id = feat.id
-	printf("-- npc %s add_ability %s", npc_id, a_id)
+	Printer:Log(LOG.ADD, CAT.CONF,"npc %s add_ability %s", npc_id, a_id)
     npcs[npc_id].Ability[a_id] = {}
 	npcs[npc_id].Ability[a_id]["id"] = a_id
 	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud

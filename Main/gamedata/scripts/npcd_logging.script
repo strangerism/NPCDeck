@@ -58,62 +58,26 @@ local function printtrace(module,type,category,msg,...) -- debug logging
 end
 
 
-function print_table(t, indent)
-    if not t then
-        return
-    end
-    indent = indent or ''
-    for key, value in pairs(t) do
-        if type(value) == 'table' then
-            printlog("",LOG.INFO, CAT.CONF, indent .. '' .. key .. ':')
-            print_table(value, indent .. '  ')
-        else
-            printlog("",LOG.INFO, CAT.CONF, indent .. key .. ': ' .. tostring(value))
-        end
-    end
-end
-
-
 local string_format = string.format
-function printlog_table(text, node, ...)
+function printlog_table(module, text, node, ...)
     
     text = string_format(text, ...)
-    printlog("",LOG.INFO, CAT.CONF, "TABLE: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
-end
-
-function debug_table(t, indent)
-    if not t then
-        return
-    end
-    indent = indent or ''
-    for key, value in pairs(t) do
-        if type(value) == 'table' then
-            printdebug("",LOG.INFO, CAT.CONF,indent .. '' .. key .. ':')
-            debug_table(value, indent .. '  ')
-        else
-            printdebug("",LOG.INFO, CAT.CONF,indent .. key .. ': ' .. tostring(value))
-        end
-    end
-end
-
-function print_functor(functor)
-    for i, v in ipairs(functor) do
-        if type(v) == "table" then
-            printtrace("",LOG.INFO, CAT.EXEC,"Table at index " .. i .. ":")
-            print_functor(v)
-        else
-            printtrace("",LOG.INFO, CAT.EXEC,"Element at index " .. i .. ": " .. v)
-        end
-    end
+    printlog(module,LOG.INFO, CAT.CONF, "TABLE: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
 end
 
 class "NPCDPrinter"
 function NPCDPrinter:__init(module)
     if not module then module = "default" end
-     
+    if module == "ncpd" then module = "" end
+
     self.module          = module
-    self.module_desc     = game.translate_string("ui_mcm_npcd_module_menu_" .. module)
-    self.enabled         = npcd_mcm.get_module_setting(module, "main/logs")
+    if module == "ncpd" or module == "default" then
+        self.module_desc     = game.translate_string("ui_mcm_npcd_logging_" .. module)
+        self.enabled         = npcd_mcm.get_setting("logs", module) or true
+    else
+        self.module_desc     = game.translate_string("ui_mcm_npcd_module_menu_" .. module)
+        npcd_mcm.get_module_setting(module, "main/logs")
+    end
     
     printlog(self.module_desc, LOG.ADD, CAT.CONF, "Initializing NPCD Printer for module %s", module)
     printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", module, self.enabled)
@@ -142,7 +106,7 @@ function NPCDPrinter:Trace(type,category,msg,...)
 end
 function NPCDPrinter:LogTable(text, node, ...)
     if self.enabled then
-        printlog_table(text, node, ...)
+        printlog_table(self.module_desc,text, node, ...)
     end
 end
 function NPCDPrinter:GetLogTypes()
@@ -154,6 +118,10 @@ end
 
 function get_module_printer(module)
     return NPCDPrinter(module)
+end
+
+function get_npcd_printer()
+    return NPCDPrinter("NPCD")
 end
 
 function update_logs()

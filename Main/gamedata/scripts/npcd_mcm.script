@@ -7,9 +7,9 @@ npcd_default_settings = {
 
 function on_mcm_load()
 
-		op = { id= "general", sh=true, text="ui_mcm_npcd_general", gr ={
-				{ id = "title",type= "slide",link= "ui_options_slider_player",text="ui_mcm_npcd_general_title",size= {512,50},spacing= 20 },
-				{ id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_general_desc" },
+		op = { id= "main", sh=true, text="ui_mcm_npcd_main", gr ={
+				{ id = "title",type= "slide",link= "ui_options_slider_player",text="ui_mcm_npcd_main_title",size= {512,50},spacing= 20 },
+				{ id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_main_desc" },
 				{ id = "enable", type = "check", val = 1, def=true},
 				},
 			}
@@ -68,7 +68,7 @@ end
 
 function get_module_menu(module_deck)
 
-	-- npcdu.printlog_table("MCM Module Deck", module_deck)
+	-- Printer:LogTable("MCM Module Deck", module_deck)
 	local module_options = {}
 
 	-- build main menu

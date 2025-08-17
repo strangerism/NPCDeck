@@ -4,20 +4,20 @@
 	<string id="ui_mcm_menu_npcd">
 		<text>NPCD</text>
 	</string>
-<!-- general menu	 -->
-	<string id="ui_mcm_npcd_general">
+<!-- main menu	 -->
+	<string id="ui_mcm_npcd_main">
 		<text>General</text>
 	</string>		
-	<string id="ui_mcm_npcd_general_title">
+	<string id="ui_mcm_npcd_main_title">
 		<text>General Settings</text>
 	</string>
-	<string id="ui_mcm_npcd_general_desc">
+	<string id="ui_mcm_npcd_main_desc">
 		<text>NPC Deck (NPCD) - a framework for NPC RPG deck builders by Strangerism</text>
 	</string>			
-	<string id="ui_mcm_npcd_general_enable">
+	<string id="ui_mcm_npcd_main_enable">
 		<text>Enable</text>
 	</string>
-	<string id="ui_mcm_npcd_general_enable_desc">
+	<string id="ui_mcm_npcd_main_enable_desc">
 		<text>Enable/Disable all the NPDC installed modules</text>
 	</string>										
 
@@ -30,12 +30,24 @@
 	</string>
 	<string id="ui_mcm_npcd_logs_help1">
 		<text>Enable logs only when developing npcd modules or troubleshooting issue. Leave it all disabled otherwise</text>
-	</string>				
+	</string>	
+	<string id="ui_mcm_npcd_logs_npcd">
+		<text>Enable main logger</text>
+	</string>
+	<string id="ui_mcm_npcd_logs_npcd_desc">
+		<text>Enables the main NPCD logger used by the whole framework</text>
+	</string>	
+	<string id="ui_mcm_npcd_logs_default">
+		<text>Enable default module logger</text>
+	</string>
+	<string id="ui_mcm_npcd_logs_default_desc">
+		<text>Enables the default NPCD logger that all modules gets if they don't customize the NPCD logger</text>
+	</string>
 	<string id="ui_mcm_npcd_logs_logging_level">
 		<text>Logging Level</text>
 	</string>
 	<string id="ui_mcm_npcd_logs_logging_level_desc">
-		<text>Determine the level of logging on the console</text>
+		<text>Determine the level of logging on the console. %c[d_red]OFF%c[white] disables all logs</text>
 	</string>	
 	<string id="ui_mcm_npcd_logs_title_cat">
 		<text>Logs Categories</text>
@@ -52,8 +64,8 @@
 	<string id="ui_mcm_npcd_logs_npc_logs">
 		<text>NPC Logs</text>
 	</string>
-	<string id="ui_mcm_npcd_logs_ability_logs">
-		<text>Abilities Logs</text>
+	<string id="ui_mcm_npcd_logs_feat_logs">
+		<text>Feats Logs</text>
 	</string>
 	<string id="ui_mcm_npcd_logs_exec_logs">
 		<text>Executions Logs</text>
@@ -69,17 +81,18 @@
 	</string>
 	<string id="ui_mcm_npcd_logs_ui_exec_logs">
 		<text>UI execution Logs</text>
-	</string>			
+	</string>
+	<!-- Logger strings -->
+     <string id="ui_mcm_npcd_logger_ncpd">
+        <text>Main</text>
+    </string>	
+     <string id="ui_mcm_npcd_logger_default">
+        <text>Module</text>
+    </string>		
 	<!-- Module menus  -->
 	<string id="ui_mcm_menu_npcd_module">
 		<text>NPCD Modules</text>
 	</string>
-	<string id="ui_mcm_menu_npcd_module_title">
-		<text>NPC Deck Modules</text>
-	</string>
-     <string id="ui_mcm_npcd_module_menu_default">
-        <text>Default</text>
-    </string>	
      <string id="ui_mcm_npcd_module_menu_main">
         <text>Main</text>
     </string>		
