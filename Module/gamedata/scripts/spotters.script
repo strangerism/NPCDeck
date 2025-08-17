@@ -437,6 +437,7 @@ local function combat_ended()
 end
 
 local function get_npcd_logging()
+	printf("[NPCD][CONF] Spotter get_npcd_logging")
 	PRINT = spotters_mcm.get_printer()
 	LOG = PRINT.LOG
 	CAT = PRINT.CAT
@@ -444,7 +445,8 @@ end
 
 
 function actor_on_first_update()
-	get_npcd_logging()
+	printf("$[NPCD][EXE] Spotter actor_on_first_update")
+	-- get_npcd_logging()
 	on_option_change()
 	PRINT.trace(LOG.START, CAT.EXEC," Spotter actor_on_first_update")
 end
@@ -489,7 +491,7 @@ end
 
 function on_game_start()
 	printf("$ Spotter on_game_start")
-    RegisterScriptCallback("npcd_actor_on_first_update", actor_on_first_update)
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("npcd_on_log_update", get_npcd_logging)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback('on_option_change', on_option_change)

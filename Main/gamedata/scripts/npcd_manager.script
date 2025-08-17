@@ -260,7 +260,7 @@ end
 
 function on_game_start()
 	printf("-- NPCD Manager on_game_start")
-	RegisterScriptCallback("npcd_actor_on_first_update", actor_on_first_update)
+	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
 	RegisterScriptCallback("npcd_squad_update",npcd_squad_update)

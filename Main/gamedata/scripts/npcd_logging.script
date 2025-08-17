@@ -139,7 +139,7 @@ function get_printer()
     return PRINT
 end
 
-local function update_logs()
+function update_logs()
 
     LEVEL = tonumber(npcd_mcm.get_setting("logs", "logging_level"))
     printf("[NPCD] Log level: %s", tostring(LEVEL))
@@ -164,14 +164,14 @@ end
 
 local function actor_on_first_update()
     printlog(RUN, CONF,"Actor on first update")
-    SendScriptCallback("npcd_actor_on_first_update")
+    -- SendScriptCallback("npcd_actor_on_first_update")
 end
 if AddScriptCallback then
     AddScriptCallback("npcd_on_log_update")
-    AddScriptCallback("npcd_actor_on_first_update")
+    -- AddScriptCallback("npcd_actor_on_first_update")
 end
 function on_game_start()
+    printf("[NPCD][LOGGING] on_game_start")
     RegisterScriptCallback("on_option_change", mcm_on_option_change)
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
-    update_logs()
 end
