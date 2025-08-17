@@ -113,10 +113,10 @@ end
 
 
 local function roll_perk(npc_id, functor)
-	PRINT.trace(LOG.INFO, CAT.CONF, "executing npc %s roll", npc_id)
+	-- PRINT.trace(LOG.INFO, CAT.CONF, "executing npc %s roll", npc_id)
 	if not functor then return false end
 	table.insert(functor, npc_id)
-	PRINT.log_table("roll_functor", functor)
+	-- PRINT.log_table("roll_functor", functor)
 	return execute_func(unpack(functor))
 end
 

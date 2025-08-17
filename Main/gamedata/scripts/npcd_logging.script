@@ -30,12 +30,13 @@ KEYBINDS = { tag = "[KEYBINDS]", enabled = false}
 UI = { tag = "[UI]", enabled = false}
 UI_EXEC = { tag = "[UI_EXEC]", enabled = false}
 
-function printlog(type,category,msg,...)
+local function printlog(module,type,category,msg,...)
     if LEVEL > 0 then
         msg = msg or " "
+        module = ( module and ("[" .. module .. "]") ) or ""
         if not category.enabled then return end
         if type then
-            msg = type.tag .. APP.tag .. category.tag  .. msg
+            msg = type.tag .. APP.tag .. module .. category.tag  .. msg
         else
             msg = APP.tag .. category.tag  .. msg
         end
@@ -45,12 +46,12 @@ function printlog(type,category,msg,...)
     end
 end
 
-function printdebug(type,category, msg,...) -- debug logging
-	if LEVEL > 1 then printlog(type,category, msg,...) end
+local function printdebug(module,type,category,msg,...) -- debug logging
+	if LEVEL > 1 then printlog(module,type,category,msg,...) end
 end
 
-function printtrace(type,category, msg,...) -- debug logging
-	if LEVEL > 2 then printlog(type,category, msg,...) end
+local function printtrace(module,type,category,msg,...) -- debug logging
+	if LEVEL > 2 then printlog(module,type,category,msg,...) end
 end
 
 
@@ -61,10 +62,10 @@ function print_table(t, indent)
     indent = indent or ''
     for key, value in pairs(t) do
         if type(value) == 'table' then
-            printlog(INFO, CONF, indent .. '' .. key .. ':')
+            printlog("",INFO, CONF, indent .. '' .. key .. ':')
             print_table(value, indent .. '  ')
         else
-            printlog(INFO, CONF, indent .. key .. ': ' .. tostring(value))
+            printlog("",INFO, CONF, indent .. key .. ': ' .. tostring(value))
         end
     end
 end
@@ -74,7 +75,7 @@ local string_format = string.format
 function printlog_table(text, node, ...)
     
     text = string_format(text, ...)
-    printlog(INFO, CONF, "TABLE: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
+    printlog("",INFO, CONF, "TABLE: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
 end
 
 function debug_table(t, indent)
@@ -84,10 +85,10 @@ function debug_table(t, indent)
     indent = indent or ''
     for key, value in pairs(t) do
         if type(value) == 'table' then
-            printdebug(INFO, CONF,indent .. '' .. key .. ':')
+            printdebug("",INFO, CONF,indent .. '' .. key .. ':')
             debug_table(value, indent .. '  ')
         else
-            printdebug(INFO, CONF,indent .. key .. ': ' .. tostring(value))
+            printdebug("",INFO, CONF,indent .. key .. ': ' .. tostring(value))
         end
     end
 end
@@ -95,12 +96,34 @@ end
 function print_functor(functor)
     for i, v in ipairs(functor) do
         if type(v) == "table" then
-            printtrace(INFO, EXEC,"Table at index " .. i .. ":")
+            printtrace("",INFO, EXEC,"Table at index " .. i .. ":")
             print_functor(v)
         else
-            printtrace(INFO, EXEC,"Element at index " .. i .. ": " .. v)
+            printtrace("",INFO, EXEC,"Element at index " .. i .. ": " .. v)
         end
     end
+end
+
+class "NPCDPrinter"
+function NPCDPrinter:__init(module)
+    printlog(module,ADD,CONF, "Initializing NPCD Printer for module %s", module)
+    self.module          = module
+end
+function NPCDPrinter:Log(type,category,msg,...)
+    printlog(self.module,type,category,msg,...)
+end
+function NPCDPrinter:Debug(type,category,msg,...)
+    printdebug(self.module,type,category,msg,...)
+end
+function NPCDPrinter:Trace(type,category,msg,...)
+    printtrace(self.module,type,category,msg,...)
+end
+function NPCDPrinter:LogTable(text, node, ...)
+    printlog_table(text, node, ...)
+end
+
+function get_module_printer(module)
+    return NPCDPrinter(module)
 end
 
 PRINT = {
@@ -163,7 +186,7 @@ local function mcm_on_option_change()
 end
 
 local function actor_on_first_update()
-    printlog(RUN, CONF,"Actor on first update")
+    printlog("Logging",RUN, CONF,"Actor on first update")
     -- SendScriptCallback("npcd_actor_on_first_update")
 end
 if AddScriptCallback then
