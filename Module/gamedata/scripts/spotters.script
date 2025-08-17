@@ -15,6 +15,7 @@ local function is_archetype_npc(npc_id)
 	local archetype = false
 
 	local npc = get_npc_obj(npc_id)
+	PRINT.trace(LOG.INFO, CAT.CONF, "npc %s", npc:section())
 	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
 		PRINT.debug(LOG.INFO, CAT.CONF, "npc %s has archetype perk", npc:section())
 		archetype = true
@@ -53,14 +54,25 @@ local function is_spotter(npc)
 	end
 end
 
+function tracelog_squad(msg)
+	PRINT.trace(LOG.START, CAT.CONF, msg)
+	local clist = axr_companions.list_actor_squad_by_id()
+	for i=1, #clist do
+		local npc = get_npc_obj(clist[i])
+		PRINT.trace(LOG.INFO, CAT.CONF, "npc %s", npc and npc:character_name())
+	end	
+end
+
 local master_spotter_id = nil
 local function find_master_spotter()
 	PRINT.trace(LOG.START, CAT.EXEC, "find_master_spotter")
+	tracelog_squad("SQUAD")
 	local master_npc = nil
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
 		local npc = get_npc_obj(clist[i])
 		if npc and npc:alive() and is_spotter(npc) then
+			PRINT.log(LOG.INFO, CAT.CONF, "npc %s with rank %s -- master %s with rank %s", npc:character_name(), npcdu.get_desc_rank(npc), master_npc and master_npc:character_name(), master_npc and npcdu.get_desc_rank(master_npc))
 			if master_npc == nil then
 				master_npc = npc
 			elseif master_npc:rank() < npc:rank() then
@@ -441,21 +453,22 @@ local tg_update = 0
 local tg_update_step = 1000 --[ms]
 function actor_on_update()
 
-		local tg = time_global()
-		if tg < tg_update then
-			return
-		end
-		tg_update = tg + tg_update_step
+	local tg = time_global()
+	if tg < tg_update then
+		return
+	end
+	tg_update = tg + tg_update_step
 
-		PRINT.trace(LOG.INFO, CAT.EXEC,"spotter update ")
+	PRINT.trace(LOG.INFO, CAT.EXEC,"spotter update ")
 
-		if not squad_is_peaceful then
-			update_marks()
+	if not squad_is_peaceful then
+		update_marks()
 
-			if settings.keep_spotting then
-				do_keep_spotting()
-			end			
-		end
+		if settings.keep_spotting then
+			do_keep_spotting()
+		end			
+	end
+	-- log_squad()
 end
 
 ----
