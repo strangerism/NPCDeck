@@ -76,14 +76,17 @@
 	<string id="ui_mcm_npcd_logs_cooldown_logs">
 		<text>Cooldowns Logs</text>
 	</string>
+	<string id="ui_mcm_npcd_logs_keybinds_logs">
+		<text>Keybinds Logs</text>
+	</string>	
 	<string id="ui_mcm_npcd_logs_ui_logs">
 		<text>UI Logs</text>
 	</string>
-	<string id="ui_mcm_npcd_logs_ui_exec_logs">
+	<string id="ui_mcm_npcd_logs_ui_action_logs">
 		<text>UI execution Logs</text>
 	</string>
 	<!-- Logger strings -->
-     <string id="ui_mcm_npcd_logger_ncpd">
+     <string id="ui_mcm_npcd_logger_npcd">
         <text>Main</text>
     </string>	
      <string id="ui_mcm_npcd_logger_default">

@@ -24,8 +24,9 @@ function on_mcm_load()
         {id = "exec_logs", type = "check", val = 1, def=false},
         {id = "activ_logs", type = "check", val = 1, def=false},
         {id = "cooldown_logs", type = "check", val = 1, def=false},
+        {id = "keybinds_logs", type = "check", val = 1, def=false},
         {id = "ui_logs", type = "check", val = 1, def=false},
-        {id = "ui_exec_logs", type = "check", val = 1, def=false},
+        {id = "ui_action_logs", type = "check", val = 1, def=false},
         },
     }
 

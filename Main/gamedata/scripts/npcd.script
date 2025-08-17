@@ -81,7 +81,7 @@ end
 
 function get_perk(perk_id, npc_id)
 	if not perk_id then return end -- cannot continue
-	if npc_id and (not npcs[npc_id] or not npcs[npc_id].Perk[perk_id]) then return end -- npc perk query but ncp does not have this perk
+	if npc_id and (not npcs[npc_id] or not npcs[npc_id].Perk[perk_id]) then return end -- npc perk query but npc does not have this perk
 
 	return perks[perk_id]
 end
@@ -225,7 +225,9 @@ function add_ability(npc_id, feat)
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s add_ability %s", npc_id, a_id)
     npcs[npc_id].Ability[a_id] = {}
 	npcs[npc_id].Ability[a_id]["id"] = a_id
+	npcs[npc_id].Ability[a_id]["mode"] = feat.mode
 	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud
+	npcs[npc_id].Ability[a_id]["icon_slot"] = feat.icon_slot
 	npcs[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
 	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework should give this
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.cooldown or feat.stats[rank].cooldown or 360
