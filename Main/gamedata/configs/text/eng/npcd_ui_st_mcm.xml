@@ -74,11 +74,33 @@
 	<string id="ui_mcm_menu_npcd_module">
 		<text>NPCD Modules</text>
 	</string>
-
 	<string id="ui_mcm_menu_npcd_module_title">
 		<text>NPC Deck Modules</text>
-	</string>	
-
+	</string>
+     <string id="ui_mcm_npcd_module_menu_default">
+        <text>Default</text>
+    </string>	
+     <string id="ui_mcm_npcd_module_menu_main">
+        <text>Main</text>
+    </string>		
+	<string id="ui_mcm_npcd_module_enable">
+		<text>Enable</text>
+	</string>
+	<string id="ui_mcm_npcd_module_enable_desc">
+		<text>NOT IMPLEMENTED</text>
+	</string>
+	<string id="ui_mcm_npcd_module_uninstall">
+		<text>Uninstall</text>
+	</string>
+	<string id="ui_mcm_npcd_module_uninstall_desc">
+		<text>Safe module uninstall. %c[d_red]BEWARE!%c[white] All perks from this module will be removed from any NPC that have them and their perk profile will be rerolled</text>
+	</string>		
+	<string id="ui_mcm_npcd_module_logs">
+		<text>Logging</text>
+	</string>
+	<string id="ui_mcm_npcd_module_logs_desc">
+		<text>Enables the module logging</text>
+	</string>			
 	<!-- Perks menus -->
 	<string id="ui_mcm_st_npcd_feats">
 		<text>Feats list</text>

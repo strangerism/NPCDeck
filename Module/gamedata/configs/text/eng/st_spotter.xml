@@ -11,9 +11,6 @@
      <string id="ui_mcm_npcd_module_menu_spotters">
         <text>Spotters</text>
     </string>
-     <string id="ui_mcm_npcd_module_menu_spotters_main">
-        <text>Main</text>
-    </string>
     <string id="ui_mcm_npcd_module_spotters_main_help0">
         <text>When a squad joins you there is a slim chance that one of its member has the Spotter perk. This stalker will have this perk until he dies, so keep tabs on him</text>
     </string>

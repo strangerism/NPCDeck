@@ -130,7 +130,7 @@ end
 
 -- use NPCD printer for logging
 function get_printer()
-	return npcd_logging.PRINT
+	return npcd_logging.get_module_printer(deck.module)
 end
 
 -- use IDs for quick reference in query apis

@@ -7,28 +7,31 @@ APP = { tag = "[NPCD]"}
 LEVEL = 0
 
 -- log types
-INFO = { tag = ""}
-START = { tag = "$"}
-STOP = { tag = "%"}
-ERROR = { tag = "!"}
-WARN = { tag = "~"}
-ADD = { tag = "-"}
-REMOVE = { tag = "*"}
-RUN = { tag = "//"}
-
+LOG = {
+    INFO = { tag = ""},
+    START = { tag = "$"},
+    STOP = { tag = "%"},
+    ERROR = { tag = "!"},
+    WARN = { tag = "~"},
+    ADD = { tag = "-"},
+    REMOVE = { tag = "*"},
+    RUN = { tag = "//"},
+}
 -- categories
-CONF = { tag = "[CONF]", enabled = false}
-PERK = { tag = "[PERK]", enabled = false}
-NPC = { tag = "[NPC]", enabled = false}
-FEAT = { tag = "[FEAT]", enabled = false}
-EXEC = { tag = "[EXEC]", enabled = false}
-ACTIV = { tag = "[ACTIV]", enabled = false}
-COOLDOWN = { tag = "[COOLDOWN]", enabled = false}
-KEYBINDS = { tag = "[KEYBINDS]", enabled = false}
--- EVENT = { tag = "[EVENT]", enabled = false}
--- ACTION = { tag = "[ACTION]", enabled = false}
-UI = { tag = "[UI]", enabled = false}
-UI_EXEC = { tag = "[UI_EXEC]", enabled = false}
+CAT = {
+    CONF = { tag = "[CONF]", enabled = false},
+    PERK = { tag = "[PERK]", enabled = false},
+    NPC = { tag = "[NPC]", enabled = false},
+    FEAT = { tag = "[FEAT]", enabled = false},
+    EXEC = { tag = "[EXEC]", enabled = false},
+    ACTIV = { tag = "[ACTIV]", enabled = false},
+    COOLDOWN = { tag = "[COOLDOWN]", enabled = false},
+    KEYBINDS = { tag = "[KEYBINDS]", enabled = false},
+    -- EVENT = { tag = "[EVENT]", enabled = false}
+    -- ACTION = { tag = "[ACTION]", enabled = false}
+    UI = { tag = "[UI]", enabled = false},
+    UI_EXEC = { tag = "[UI_EXEC]", enabled = false},
+}
 
 local function printlog(module,type,category,msg,...)
     if LEVEL > 0 then
@@ -62,10 +65,10 @@ function print_table(t, indent)
     indent = indent or ''
     for key, value in pairs(t) do
         if type(value) == 'table' then
-            printlog("",INFO, CONF, indent .. '' .. key .. ':')
+            printlog("",LOG.INFO, CAT.CONF, indent .. '' .. key .. ':')
             print_table(value, indent .. '  ')
         else
-            printlog("",INFO, CONF, indent .. key .. ': ' .. tostring(value))
+            printlog("",LOG.INFO, CAT.CONF, indent .. key .. ': ' .. tostring(value))
         end
     end
 end
@@ -75,7 +78,7 @@ local string_format = string.format
 function printlog_table(text, node, ...)
     
     text = string_format(text, ...)
-    printlog("",INFO, CONF, "TABLE: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
+    printlog("",LOG.INFO, CAT.CONF, "TABLE: | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
 end
 
 function debug_table(t, indent)
@@ -85,10 +88,10 @@ function debug_table(t, indent)
     indent = indent or ''
     for key, value in pairs(t) do
         if type(value) == 'table' then
-            printdebug("",INFO, CONF,indent .. '' .. key .. ':')
+            printdebug("",LOG.INFO, CAT.CONF,indent .. '' .. key .. ':')
             debug_table(value, indent .. '  ')
         else
-            printdebug("",INFO, CONF,indent .. key .. ': ' .. tostring(value))
+            printdebug("",LOG.INFO, CAT.CONF,indent .. key .. ': ' .. tostring(value))
         end
     end
 end
@@ -96,70 +99,61 @@ end
 function print_functor(functor)
     for i, v in ipairs(functor) do
         if type(v) == "table" then
-            printtrace("",INFO, EXEC,"Table at index " .. i .. ":")
+            printtrace("",LOG.INFO, CAT.EXEC,"Table at index " .. i .. ":")
             print_functor(v)
         else
-            printtrace("",INFO, EXEC,"Element at index " .. i .. ": " .. v)
+            printtrace("",LOG.INFO, CAT.EXEC,"Element at index " .. i .. ": " .. v)
         end
     end
 end
 
 class "NPCDPrinter"
 function NPCDPrinter:__init(module)
-    printlog(module,ADD,CONF, "Initializing NPCD Printer for module %s", module)
+    if not module then module = "default" end
+     
     self.module          = module
+    self.module_desc     = game.translate_string("ui_mcm_npcd_module_menu_" .. module)
+    self.enabled         = npcd_mcm.get_module_setting(module, "main/logs")
+    
+    printlog(self.module_desc, LOG.ADD, CAT.CONF, "Initializing NPCD Printer for module %s", module)
+    printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", module, self.enabled)
+    RegisterScriptCallback('npcd_on_log_update', self)
 end
+function NPCDPrinter:npcd_on_log_update()
+    printlog(self.module_desc, LOG.INFO, CAT.CONF, "Updating NPCD Printer module %s", self.module)
+    self.enabled = npcd_mcm.get_module_setting(self.module, "main/logs")
+    printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", self.module, self.enabled)
+end
+
 function NPCDPrinter:Log(type,category,msg,...)
-    printlog(self.module,type,category,msg,...)
+    if self.enabled then
+        printlog(self.module_desc,type,category,msg,...)        
+    end
 end
 function NPCDPrinter:Debug(type,category,msg,...)
-    printdebug(self.module,type,category,msg,...)
+    if self.enabled then
+        printdebug(self.module_desc,type,category,msg,...)
+    end
 end
 function NPCDPrinter:Trace(type,category,msg,...)
-    printtrace(self.module,type,category,msg,...)
+    if self.enabled then
+        printtrace(self.module_desc,type,category,msg,...)
+    end
 end
 function NPCDPrinter:LogTable(text, node, ...)
-    printlog_table(text, node, ...)
+    if self.enabled then
+        printlog_table(text, node, ...)
+    end
+end
+function NPCDPrinter:GetLogTypes()
+    return LOG
+end
+function NPCDPrinter:GetLogCategories()
+    return CAT
 end
 
 function get_module_printer(module)
     return NPCDPrinter(module)
-end
-
-PRINT = {
-    log = printlog,
-    debug = printdebug,
-    trace = printtrace,
-    table = print_table,
-    log_table = printlog_table,
-    debug_table = debug_table,
-    functor = print_functor,
-    LOG = {
-        INFO = INFO,
-        START = START,
-        STOP = STOP,
-        ERROR = ERROR,
-        WARN = WARN,
-        ADD = ADD,
-        REMOVE = REMOVE,
-        RUN = RUN,
-    },
-    CAT = {
-        CONF = CONF,
-        PERK = PERK,
-        NPC = NPC,
-        FEAT = FEAT,
-        EXEC = EXEC,
-        ACTIV = ACTIV,
-        COOLDOWN = COOLDOWN,
-        KEYBINDS = KEYBINDS,
-        UI = UI,
-        UI_EXEC = UI_EXEC,
-    }
-}
-
-function get_printer()
-    return PRINT
 end
 
 function update_logs()
@@ -167,16 +161,16 @@ function update_logs()
     LEVEL = tonumber(npcd_mcm.get_setting("logs", "logging_level"))
     printf("[NPCD] Log level: %s", tostring(LEVEL))
     -- categories
-    CONF.enabled = npcd_mcm.get_setting("logs", "conf_logs")
-    PERK.enabled = npcd_mcm.get_setting("logs", "perk_logs")
-    NPC.enabled = npcd_mcm.get_setting("logs", "npc_logs")
-    FEAT.enabled = npcd_mcm.get_setting("logs", "feat_logs")
-    EXEC.enabled = npcd_mcm.get_setting("logs", "exec_logs")
-    ACTIV.enabled = npcd_mcm.get_setting("logs", "activ_logs")
-    COOLDOWN.enabled = npcd_mcm.get_setting("logs", "cooldown_logs")
-    KEYBINDS.enabled = npcd_mcm.get_setting("logs", "keybinds_logs")
-    UI.enabled = npcd_mcm.get_setting("logs", "ui_logs")
-    UI_EXEC.enabled = npcd_mcm.get_setting("logs", "ui_exec_logs")
+    CAT.CONF.enabled = npcd_mcm.get_setting("logs", "conf_logs")
+    CAT.PERK.enabled = npcd_mcm.get_setting("logs", "perk_logs")
+    CAT.NPC.enabled = npcd_mcm.get_setting("logs", "npc_logs")
+    CAT.FEAT.enabled = npcd_mcm.get_setting("logs", "feat_logs")
+    CAT.EXEC.enabled = npcd_mcm.get_setting("logs", "exec_logs")
+    CAT.ACTIV.enabled = npcd_mcm.get_setting("logs", "activ_logs")
+    CAT.COOLDOWN.enabled = npcd_mcm.get_setting("logs", "cooldown_logs")
+    CAT.KEYBINDS.enabled = npcd_mcm.get_setting("logs", "keybinds_logs")
+    CAT.UI.enabled = npcd_mcm.get_setting("logs", "ui_logs")
+    CAT.UI_EXEC.enabled = npcd_mcm.get_setting("logs", "ui_exec_logs")
 
     SendScriptCallback("npcd_on_log_update")
 end
@@ -186,7 +180,7 @@ local function mcm_on_option_change()
 end
 
 local function actor_on_first_update()
-    printlog("Logging",RUN, CONF,"Actor on first update")
+    printlog("Logging",LOG.RUN, CAT.CONF,"Actor on first update")
     -- SendScriptCallback("npcd_actor_on_first_update")
 end
 if AddScriptCallback then

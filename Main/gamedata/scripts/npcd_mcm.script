@@ -71,24 +71,32 @@ function get_module_menu(module_deck)
 	-- npcdu.printlog_table("MCM Module Deck", module_deck)
 	local module_options = {}
 
-	-- main menu
+	-- build main menu
     local main_options = {
         { id = "title", type = "slide", link = "ui_options_slider_player", text = module_deck.mcm_menu_title, size = {512,50}, spacing = 20 },
         { id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = module_deck.mcm_menu_desc }
     }
 	table.insert(main_options, { id = "divider", type = "line" })
+	-- add module custom main setting
 	for i = 1, #module_deck.mcm_menu do
 		table.insert(main_options, module_deck.mcm_menu[i] )
 	end
-	local main_menu = { id="main", text="ui_mcm_npcd_module_menu_spotters_main", sh=true, gr=main_options}
+	-- add module default main setting
+	table.insert(main_options, { id = "divider", type = "line" })
+	table.insert(main_options, { id = "enable", hint = "npcd_module_enable", val = 1, type = "check", def = true })
+	table.insert(main_options, { id = "logs", hint = "npcd_module_logs", val = 1, type = "check", def = false })
+	table.insert(main_options, { id = "uninstall", hint = "npcd_module_uninstall", val = 1, type = "check", def = false })
+
+	-- add main menu to module menu
+	local main_menu = { id="main", text="ui_mcm_npcd_module_menu_main", sh=true, gr=main_options}
 	table.insert(module_options, main_menu)
 
-	-- perks menus
+	-- build perks menus
 	printf("[NPCD][CONF] building %s perk menus", npcdu.tablelength(module_deck.perks))
 	for _, perk in pairs(module_deck.perks) do
 		printf("[NPCD][CONF] perk menu %s", perk.id)
 		local perk_menu = {id = perk.id, text=perk.mcm_menu_name, sh=true, gr={}}
-		-- create perk menu
+		-- build  perk menu
 		table.insert(perk_menu.gr, { id = perk.id .. "_name", type = "slide", link = "ui_options_slider_player", text = perk.name, size = {512,50}, spacing = 20 })
 		table.insert(perk_menu.gr, { id = perk.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = perk.description} )
 		local list = {}

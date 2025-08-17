@@ -437,10 +437,11 @@ local function combat_ended()
 end
 
 local function get_npcd_logging()
-	Printer = npcd_logging.get_module_printer("spotters")
-	PRINT = spotters_mcm.get_printer()
-	LOG = PRINT.LOG
-	CAT = PRINT.CAT
+	if not Printer then
+		Printer = spotters_mcm.get_printer()
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()	
 	Printer:Log(LOG.INFO, CAT.EXEC," Logging initialized")
 end
 
