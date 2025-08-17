@@ -18,7 +18,7 @@ function on_mcm_load()
         {id = "conf_logs", type = "check", val = 1, def=false},
         {id = "perk_logs", type = "check", val = 1, def=false},
         {id = "npc_logs", type = "check", val = 1, def=false},
-        {id = "ability_logs", type = "check", val = 1, def=false},
+        {id = "feat_logs", type = "check", val = 1, def=false},
         {id = "exec_logs", type = "check", val = 1, def=false},
         {id = "activ_logs", type = "check", val = 1, def=false},
         {id = "cooldown_logs", type = "check", val = 1, def=false},

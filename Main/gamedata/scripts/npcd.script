@@ -113,8 +113,10 @@ end
 
 
 local function roll_perk(npc_id, functor)
+	PRINT.trace(LOG.INFO, CAT.CONF, "executing npc %s roll", npc_id)
 	if not functor then return false end
 	table.insert(functor, npc_id)
+	PRINT.log_table("roll_functor", functor)
 	return execute_func(unpack(functor))
 end
 
@@ -224,7 +226,7 @@ function add_ability(npc_id, feat)
 	npcs[npc_id].Ability[a_id]["timer"] = -1
 end
 
-local function remove_ability(npc_id, feat_id)
+function remove_ability(npc_id, feat_id)
     local a_id = feat_id
 	npcs[npc_id].Ability[a_id] = nil
 end

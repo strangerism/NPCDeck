@@ -84,9 +84,9 @@ function get_module_menu(module_deck)
 	table.insert(module_options, main_menu)
 
 	-- perks menus
-	printf("$[NPCD] building %s perk menus", npcdu.tablelength(module_deck.perks))
+	printf("[NPCD][CONF] building %s perk menus", npcdu.tablelength(module_deck.perks))
 	for _, perk in pairs(module_deck.perks) do
-		printf("-[NPCD] perk menu %s", perk.id)
+		printf("[NPCD][CONF] perk menu %s", perk.id)
 		local perk_menu = {id = perk.id, text=perk.mcm_menu_name, sh=true, gr={}}
 		-- create perk menu
 		table.insert(perk_menu.gr, { id = perk.id .. "_name", type = "slide", link = "ui_options_slider_player", text = perk.name, size = {512,50}, spacing = 20 })

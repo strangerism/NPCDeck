@@ -20,7 +20,7 @@ RUN = { tag = "//"}
 CONF = { tag = "[CONF]", enabled = false}
 PERK = { tag = "[PERK]", enabled = false}
 NPC = { tag = "[NPC]", enabled = false}
-ABILITY = { tag = "[ABILITY]", enabled = false}
+FEAT = { tag = "[FEAT]", enabled = false}
 EXEC = { tag = "[EXEC]", enabled = false}
 ACTIV = { tag = "[ACTIV]", enabled = false}
 COOLDOWN = { tag = "[COOLDOWN]", enabled = false}
@@ -125,7 +125,7 @@ PRINT = {
         CONF = CONF,
         PERK = PERK,
         NPC = NPC,
-        ABILITY = ABILITY,
+        FEAT = FEAT,
         EXEC = EXEC,
         ACTIV = ACTIV,
         COOLDOWN = COOLDOWN,
@@ -147,7 +147,7 @@ local function update_logs()
     CONF.enabled = npcd_mcm.get_setting("logs", "conf_logs")
     PERK.enabled = npcd_mcm.get_setting("logs", "perk_logs")
     NPC.enabled = npcd_mcm.get_setting("logs", "npc_logs")
-    ABILITY.enabled = npcd_mcm.get_setting("logs", "ability_logs")
+    FEAT.enabled = npcd_mcm.get_setting("logs", "feat_logs")
     EXEC.enabled = npcd_mcm.get_setting("logs", "exec_logs")
     ACTIV.enabled = npcd_mcm.get_setting("logs", "activ_logs")
     COOLDOWN.enabled = npcd_mcm.get_setting("logs", "cooldown_logs")

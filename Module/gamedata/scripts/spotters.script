@@ -15,9 +15,9 @@ local function is_archetype_npc(npc_id)
 	local archetype = false
 
 	local npc = get_npc_obj(npc_id)
-	PRINT.trace(LOG.INFO, CAT.CONF, "npc %s", npc:section())
+	PRINT.trace(LOG.INFO, CAT.NPC, "npc %s", npc:section())
 	if npc and npc:section() == "devushka" or npc:section() == "esc_2_12_stalker_fanat" then
-		PRINT.debug(LOG.INFO, CAT.CONF, "npc %s has archetype perk", npc:section())
+		PRINT.debug(LOG.INFO, CAT.NPC, "npc %s has archetype perk", npc:section())
 		archetype = true
 	end
 
@@ -26,7 +26,7 @@ end
 
 -- called from npcd
 function roll_perk(npc_id)
-	PRINT.debug(LOG.INFO, CAT.EXEC, "npc %s rolling chance to have perk", npc_id)
+	PRINT.debug(LOG.INFO, CAT.NPC, "npc %s rolling chance to have perk", npc_id)
 	return is_archetype_npc(npc_id) or (math.random(100) <= settings.perk_chance)
 end
 
@@ -55,24 +55,24 @@ local function is_spotter(npc)
 end
 
 function tracelog_squad(msg)
-	PRINT.trace(LOG.START, CAT.CONF, msg)
+	PRINT.trace(LOG.INFO, CAT.NPC, msg)
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
 		local npc = get_npc_obj(clist[i])
-		PRINT.trace(LOG.INFO, CAT.CONF, "npc %s", npc and npc:character_name())
+		PRINT.trace(LOG.INFO, CAT.NPC, "npc %s", npc and npc:character_name())
 	end	
 end
 
 local master_spotter_id = nil
 local function find_master_spotter()
-	PRINT.trace(LOG.START, CAT.EXEC, "find_master_spotter")
+	PRINT.trace(LOG.START, CAT.NPC, "find_master_spotter")
 	tracelog_squad("SQUAD")
 	local master_npc = nil
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1, #clist do
 		local npc = get_npc_obj(clist[i])
 		if npc and npc:alive() and is_spotter(npc) then
-			PRINT.log(LOG.INFO, CAT.CONF, "npc %s with rank %s -- master %s with rank %s", npc:character_name(), npcdu.get_desc_rank(npc), master_npc and master_npc:character_name(), master_npc and npcdu.get_desc_rank(master_npc))
+			PRINT.log(LOG.INFO, CAT.NPC, "npc %s with rank %s -- master %s with rank %s", npc:character_name(), npcdu.get_desc_rank(npc), master_npc and master_npc:character_name(), master_npc and npcdu.get_desc_rank(master_npc))
 			if master_npc == nil then
 				master_npc = npc
 			elseif master_npc:rank() < npc:rank() then
@@ -81,12 +81,12 @@ local function find_master_spotter()
 		end		
 	end
 	if master_npc then
-		PRINT.log(LOG.ADD, CAT.CONF, "found master spotter %s with rank %s", master_npc:character_name(), npcdu.get_desc_rank(master_npc))
+		PRINT.log(LOG.ADD, CAT.NPC, "found master spotter %s with rank %s", master_npc:character_name(), npcdu.get_desc_rank(master_npc))
 		if master_npc:id() ~= master_spotter_id then
 			npcdu.print_tip("ui_mcm_npcd_module_spotters_notification_master_perk", 15000, master_npc:character_name(), npcdu.get_feat_rank_desc(master_npc:id(), ID.PERK.SPOTTER))
 		end
 	else
-		PRINT.log(LOG.WARN, CAT.CONF, "// No spotters in squad")
+		PRINT.log(LOG.WARN, CAT.NPC, "// No spotters in squad")
 	end
 	
 	return master_npc and master_npc:id() or nil
@@ -96,7 +96,7 @@ end
 
 update_master_spotter_requested = false
 local function schedule_update_master_spotter()
-	PRINT.trace(LOG.START, CAT.EXEC, "schedule_update_master_spotter")
+	PRINT.trace(LOG.INFO, CAT.EXEC, "schedule_update_master_spotter")
 	if not update_master_spotter_requested then
 		PRINT.debug(LOG.INFO, CAT.EXEC, "update_master_spotter_requested")
 		update_master_spotter_requested = true
@@ -118,7 +118,7 @@ local function build_npc_barks_lib(npc)
 	Spotters[npc_id]["bark"] = {}
 	local num = 1
 	while f:exist("$game_sounds$",npc:sound_prefix().."fight\\enemy\\enemy_"..num..".ogg") do
-		PRINT.trace(LOG.ADD, CAT.CONF, "adding sound ["..npc:sound_prefix().."fight\\enemy\\enemy_"..num.."] to table id = "..num)
+		PRINT.trace(LOG.ADD, CAT.NPC, "adding sound ["..npc:sound_prefix().."fight\\enemy\\enemy_"..num.."] to table id = "..num)
 		Spotters[npc_id]["bark"][num] = npc:sound_prefix().."fight\\enemy\\enemy_"..num
 		num = num + 1
 	end
@@ -214,7 +214,7 @@ local function can_spot(npc_id)
 
 	local rank = npcdu.get_feat_rank(npc_id, "npcd_perk_spotter_spot") -- this should come from EXP framework
 	local marks_limit = spotters_mcm.get_perk_ranked_feat_stat(ID.PERK.SPOTTER, ID.FEAT.SPOT, rank, "marks_limit")
-	PRINT.debug(LOG.WARN, CAT.ABILITY, "Spotting active marks %s/%s", current_marks, marks_limit)
+	PRINT.debug(LOG.WARN, CAT.FEAT, "Spotting active marks %s/%s", current_marks, marks_limit)
 	return current_marks < marks_limit
 end
 
@@ -231,11 +231,11 @@ end
 local function add_mark(args, npc_id)
 	local _, mark_id = hmm:AddMarker(args)
 	marks[args.id] = { id = mark_id, npc_id = npc_id }
-	PRINT.debug(LOG.ADD, CAT.ABILITY, "npc %s added mark %s for enemy %s with life of %s", npc_id, mark_id, args.id, args.life)
+	PRINT.debug(LOG.INFO, CAT.FEAT, "npc %s added mark %s for enemy %s with life of %s", npc_id, mark_id, args.id, args.life)
 end
 
 local function delete_mark(id)
-	PRINT.debug(LOG.REMOVE, CAT.ABILITY, "delete_mark %s", id)
+	PRINT.debug(LOG.REMOVE, CAT.EXEC, "delete_mark %s", id)
 	hmm:DelMarker(marks[id].id)
 	marks[id] = nil
 end
@@ -251,7 +251,7 @@ local function delete_marked(enemy)
 end
 
 local function mark_enemy(enemy, npc, feat_id)
-    PRINT.debug(LOG.ADD, CAT.ABILITY, "Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
+    PRINT.debug(LOG.ADD, CAT.FEAT, "Mark enemy %s by npc %s", enemy and enemy:id(), npc and npc:name())
 	if is_enemy_marked(enemy) then -- replace existing mark
 		delete_marked(enemy)
 	elseif maxed_marks(npc:id()) and feat_id == ID.FEAT.CALLMARK then -- marks maxed but CALLMARK, replace random existing mark
@@ -274,7 +274,7 @@ local function update_marks()
 			-- remove mark if dead npc
 			local se_obj = id and alife_object(id)
 			if se_obj and (not se_obj:alive()) then
-				PRINT.debug(LOG.REMOVE, CAT.ABILITY, " removing marker %s for dead enemy %s", marker.id, se_obj.id)
+				PRINT.debug(LOG.REMOVE, CAT.EXEC, " removing marker %s for dead enemy %s", marker.id, se_obj.id)
 				delete_mark(id)
 			end
 		end
@@ -283,7 +283,7 @@ local function update_marks()
 end
 
 local function clear_marks(npc_id)
-	PRINT.debug(LOG.REMOVE, CAT.ABILITY, "clear npc %s marks", npc_id)
+	PRINT.debug(LOG.REMOVE, CAT.EXEC, "clear npc %s marks", npc_id)
 	for id, marker in pairs(marks) do
 		if marker.npc_id == npc_id then
 			delete_mark(id)	
@@ -305,11 +305,11 @@ end
 -- SPOTTING
 
 local function spot_enemy(npc, be_list)
-	PRINT.trace(LOG.START, CAT.ABILITY, " NPC %s attempt to spot", npc:character_name())
+	PRINT.trace(LOG.INFO, CAT.FEAT, " NPC %s attempt to spot", npc:character_name())
 	local be = npc:best_enemy()
 	if (be and be:alive()) then
 		local distance = be:position():distance_to_sqr(npc:position())
-		PRINT.trace(LOG.INFO, CAT.ABILITY,"FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
+		PRINT.trace(LOG.INFO, CAT.FEAT,"FOUND ENEMY: %s %s distance %s", be:id(), be:name(), distance)
 		if npcdm.activate_ability(npc:id(), ID.FEAT.SPOT) then
 			mark_enemy(be, npc, ID.FEAT.SPOT)
 		end
@@ -319,7 +319,7 @@ local function spot_enemy(npc, be_list)
 end
 
 local function find_enemy(spotter_id)
-	PRINT.trace(LOG.RUN, CAT.EXEC,"Find enemy")
+	PRINT.trace(LOG.INFO, CAT.EXEC,"Find enemy")
 	local be_list = {}
 	if spotter_id then
 		local npc = get_npc_obj(spotter_id)
@@ -365,7 +365,7 @@ function on_key_press(dik)
 		PRINT.debug(LOG.INFO, CAT.KEYBINDS,"create spotter_mark_keyhold")
 		if true then --not squad_is_peaceful then
 			CreateTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long", 0.5, function()
-				PRINT.debug(LOG.START, CAT.KEYBINDS,"execute spotter_mark_keyhold")
+				PRINT.debug(LOG.RUN, CAT.KEYBINDS,"execute spotter_mark_keyhold")
 				if master_spotter_id then
 					local npc = get_npc_obj(master_spotter_id)
 					if npc and npc:alive() then
@@ -385,7 +385,7 @@ function on_key_release(dik)
 	if dik == settings.hotkey then
 		RemoveTimeEvent("spotter_mark_keypress", "spotter_mark_keypress_long")
 		if spotter_mark_issued then
-			PRINT.debug(LOG.STOP, CAT.KEYBINDS,"consume spotter_mark_keyhold")
+			PRINT.debug(LOG.INFO, CAT.KEYBINDS,"consume spotter_mark_keyhold")
 			spotter_mark_issued = false
 		else
 			if not zzzz_dynahud then
@@ -426,7 +426,7 @@ end
 
 local function do_keep_spotting()
 	if can_spot(master_spotter_id) then
-		PRINT.trace(LOG.START, CAT.EXEC," do_keep_spotting")
+		PRINT.trace(LOG.INFO, CAT.EXEC," do_keep_spotting")
 		local enemy = find_enemy(master_spotter_id)
 	end
 end
