@@ -197,6 +197,15 @@ function add_ability_to_actionbar_slot(self, ability, slot_hud, index, mode)
 
 	clear_actionbar_slot(slot_hud, ability.state)
 	slot_hud.ability = {}
+
+	-- slot background
+	if ability.state == ABILITY_STATE.COOLDOWN then
+		slot_hud.background:Show(false)
+		slot_hud.background:InitTexture("ui_npcd_hud_slot_cooldown")
+	else
+		slot_hud.background:Show(false)
+		slot_hud.background:InitTexture("ui_npcd_hud_slot_ready")
+	end
 	if mode == HUD_MODE.STATIC then
 		Printer:Trace(LOG.INFO, CAT.UI_ACTION,"Init STATIC action slot %s with ability %s", index, ability.id)
 		slot_hud.ability.icon = self.xml:InitStatic("action_bar:slot:static", slot_hud.base)
@@ -208,6 +217,7 @@ function add_ability_to_actionbar_slot(self, ability, slot_hud, index, mode)
 	end
 	slot_hud.ability.icon:InitTexture(ability.icon_slot)
 	slot_hud.ability.icon:SetWndSize(vector2():set(slot_hud.ability.icon:GetWidth() * self.scale, slot_hud.ability.icon:GetHeight() * self.scale ))
+	
 	-- ability cooldown							
 	slot_hud.ability.cd = self.xml:InitProgressBar("action_bar:slot:cooldown", slot_hud.ability.icon)
 	slot_hud.ability.cd:SetWndSize(vector2():set(slot_hud.ability.icon:GetWidth(), slot_hud.ability.icon:GetHeight()))
@@ -224,6 +234,7 @@ function add_ability_to_actionbar_slot(self, ability, slot_hud, index, mode)
 	utils_xml.correct_ratio(slot_hud.ability.hotkey_mode)
 	utils_xml.correct_ratio(slot_hud.ability.hotkey_bind)
 	-- show
+	slot_hud.background:Show(true)
 	slot_hud.ability.icon:Show(true)
 	slot_hud.ability.cd:Show(true)
 	slot_hud.ability.hotkey_mode:Show(true)
@@ -266,7 +277,7 @@ function UINPCDActionBar:InitControls()
 	self.index  = 0
 
 	self.scale  = 1
-	self.W      = 50
+	self.W      = 55
 	self.offset = 2
 	--- init NPCD companions hud extra elements and action slots (max slots is 8, 1 for each potential npc in squad)
 	for i=1,8 do
@@ -306,7 +317,7 @@ function UINPCDActionBar:Update(force)
 	local clist = axr_companions.list_actor_squad_by_id()
 	-- update the actionbar
 	for i=1,8 do
-		if to_show and #clist > 0 then
+		if to_show then -- and #clist > 0 then
 			Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
 			local slot_hud = self.action_slot[i]
 			if actionbar_slotlist[i] then

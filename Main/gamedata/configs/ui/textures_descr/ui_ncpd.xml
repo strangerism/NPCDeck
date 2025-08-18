@@ -1,0 +1,9 @@
+<w>
+	<file name ="ui\ui_actor_hint_wnd">
+        <texture id = "ui_npcd_hud_slot_cooldown" x="138" y="460" width="86" height="51" />
+        <texture id = "ui_npcd_hud_slot_ready" x="138" y="406" width="86" height="51" />
+        <texture id = "ui_npcd_hud_slot_cooldown_small" x="228" y="540" width="38" height="51" />
+        <texture id = "ui_npcd_hud_slot_ready_small" x="228" y="484" width="38" height="51" />
+        <texture id = "ui_npcd_hud_progress" x="6" y="834" width="78" height="55" />  
+    </file>
+</w>
