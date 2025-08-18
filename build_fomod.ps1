@@ -11,7 +11,7 @@ function CreateBuildFolders {
 function BuildMod {
 
     $target = "build/NPCDeck"
-    Copy-Item -Recurse -Force -Path ".\Main\gamedata", ".\Module\gamedata" -Destination $target -Exclude .bak
+    Copy-Item -Recurse -Force -Path ".\Main\gamedata", ".\Module\*\gamedata" -Destination $target -Exclude .bak
 }
 
 CreateBuildFolders

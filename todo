@@ -1,4 +1,4 @@
-archetipes
+ideas for archetypes
 
 - medic
     * defibrillate   
@@ -21,14 +21,26 @@ archetipes
     - avoid random encounter, decreses travel cd, decrease travel cost  
 - brawler
     - distract npc with aggro
-- scout:
-    - scout: leave squad to go scout random smarts and meet at near friendly base?
+- scout
+    - scout: leaves squad to go scout random smarts and meet at near friendly base?
     - awareness: aoe mark in (previous visited?) smarts location of all item of interests  
 
 
+- stuff to do
+
+- implement enable NPCD
+- add generation of deck npcs to mcm menu
+- implements enable/uninstall modules
+- add generation of perks stats in mcm menu
+- add npc stats (power, recovery)
+- add active feat to use npc power
+- add power consumption to feat stat
+- add power regen ??? 
+- add activation (seconds) stat to feat
+- add ACTIVATING state to feat
 
 
-    addons to look
+- addons to look
 
     https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-rpg-1-3
 
