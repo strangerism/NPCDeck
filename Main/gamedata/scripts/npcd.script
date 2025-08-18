@@ -2,6 +2,7 @@ local npcdu = npcd_utils
 local execute_func = execute_func
 
 function set_printer(main_printer)
+	printf("-[NPCD][Main] NPCS set_printer")
 	Printer = main_printer
 	LOG = Printer:GetLogTypes()
 	CAT = Printer:GetLogCategories()
@@ -251,12 +252,20 @@ function get_abilities(npc_id)
 	return npcs[npc_id].Ability
 end
 
-function get_ability(npc_id, perk_id)
+function get_ability(npc_id, feat_id)
 	if not npcs[npc_id] then return end
 	
-	return npcs[npc_id].Ability[perk_id]
+	return npcs[npc_id].Ability[feat_id]
 end
 
 function set_ability(npc_id, ability)
     npcs[npc_id].Ability[ability.id] = ability
+end
+
+function actor_on_first_update()
+	printf("-[NPCD][Main] NPCS actor_on_first_update")
+end
+function on_game_start()
+	printf("-[NPCD][Main] NPCS on_game_start")
+	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

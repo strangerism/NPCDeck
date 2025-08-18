@@ -130,5 +130,10 @@ function get_module_menu(module_deck)
 	return module_options
 end
 
+function actor_on_first_update()
+	printf("-[NPCD][Main] MCM actor_on_first_update")
+end
 function on_game_start()
+	printf("-[NPCD][Main] MCM on_game_start")
+	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

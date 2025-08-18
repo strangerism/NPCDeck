@@ -8,7 +8,6 @@ local CreateTimeEvent = CreateTimeEvent
 local axr_companions = axr_companions
 local distance_between = distance_between
 local SendScriptCallback = SendScriptCallback
-local AddScriptCallback = AddScriptCallback
 local RegisterScriptCallback = RegisterScriptCallback
 local db = db
 
@@ -153,6 +152,7 @@ local function npcd_squad_update()
 	end	
 
 	current_clist = new_clist
+	SendScriptCallback("npcd_hud_squad_update")
 end
 
 -- DEATH
@@ -215,6 +215,7 @@ function load_state(m_data)
         npcd.set_deck(m_data.npcd.npcs)
 		Printer:LogTable("NPCDeck", npcd.get_deck())
 	end
+	SendScriptCallback("npcd_on_loaded_state")
 end
 
 -- LIFECYCLE
@@ -261,6 +262,7 @@ function register_module(deck)
 end
 
 local function get_npcd_logging()
+	printf("-[NPCD][Main] Manager get_npcd_logging")
 	if not Printer then
 		Printer = npcd_logging.get_npcd_printer()
 	end 
@@ -269,12 +271,6 @@ local function get_npcd_logging()
 	Printer:Log(LOG.INFO, CAT.EXEC,"Logging initialized")
 	npcd.set_printer(Printer)
 	npcd_hud.set_printer(Printer)
-end
-
-if AddScriptCallback then
-	AddScriptCallback("npcd_squad_update")
-	AddScriptCallback("npcd_squad_combat_started")
-	AddScriptCallback("npcd_squad_combat_ended")
 end
 
 function on_game_start()

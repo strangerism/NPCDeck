@@ -39,8 +39,16 @@ function axr_companions.remove_all_from_actor_squad(npc)
 end
 
 
+axrc_OG_activate_hud = axr_companions.activate_hud
+function axr_companions.activate_hud()
+	printf("ARXC MP activate_hud")
+	axrc_OG_activate_hud()
+	npcd_hud.activate_hud()
+end
 
-
-
-
-
+axrc_OG_deactivate_hud = axr_companions.deactivate_hud
+function axr_companions.deactivate_hud()
+	printf("ARXC MP deactivate_hud")
+	axrc_OG_deactivate_hud()
+	npcd_hud.deactivate_hud()
+end

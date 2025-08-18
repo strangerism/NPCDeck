@@ -163,12 +163,9 @@ local function actor_on_first_update()
     printlog("Logging",LOG.RUN, CAT.CONF,"Actor on first update")
     -- SendScriptCallback("npcd_actor_on_first_update")
 end
-if AddScriptCallback then
-    AddScriptCallback("npcd_on_log_update")
-    -- AddScriptCallback("npcd_actor_on_first_update")
-end
+
 function on_game_start()
-    printf("[NPCD][LOGGING] on_game_start")
+    printf("-[NPCD][Main] Logging on_game_start")
     RegisterScriptCallback("on_option_change", mcm_on_option_change)
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

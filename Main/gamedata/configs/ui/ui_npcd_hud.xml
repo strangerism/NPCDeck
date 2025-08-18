@@ -8,4 +8,25 @@
 			</progress>
 		</cooldown>		
 	</abilities>
+
+	<action_bar x="730" y="710" width="200" height="70" stretch="1">
+		<slot x="0" y="0" width="50" height="70" stretch="1">
+			<background x="0" y="0" width="50" height="50" stretch="1">
+				<texture a="150">ui_inGame2_companion_hud_slot</texture>
+			</background>		
+			<static x="1" y="1" width="48" height="48" stretch="1"/>
+			<flashing x="1" y="1" width="48" height="48" stretch="1" light_anim="ui_slow_blinking_alpha"/>
+			<cooldown x="1" y="1" width="48" height="48" stretch="1" horz="0" min="0" max="1" pos="0"> 
+				<progress stretch="1">
+					<texture a="200" >ui_inGame2_companion_hud_slot</texture>
+				</progress>
+			</cooldown>	
+			<hotkey_mode x="0" y="54" width="50" height="11" stretch="1">
+				<text complex_mode="1" r="200" g="200" b="200" align="c" vert_align="b" font="arial_14"/>
+			</hotkey_mode>
+			<hotkey_bind x="0" y="66" width="50" height="11" stretch="1">
+				<text complex_mode="1" r="200" g="200" b="200" align="c" vert_align="b" font="arial_14"/>
+			</hotkey_bind>
+		</slot>
+    </action_bar>	
 </w>
