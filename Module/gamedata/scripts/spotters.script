@@ -436,18 +436,9 @@ local function combat_ended()
 	squad_is_peaceful = true
 end
 
-local function get_npcd_logging()
-	if not Printer then
-		Printer = spotters_mcm.get_printer()
-	end 
-	LOG = Printer:GetLogTypes()
-	CAT = Printer:GetLogCategories()	
-	Printer:Log(LOG.INFO, CAT.EXEC," Logging initialized")
-end
-
 function actor_on_first_update()
 	on_option_change()
-	Printer:Trace(LOG.START, CAT.EXEC," Spotter actor_on_first_update")
+	Printer:Trace(LOG.START, CAT.EXEC,"Spotter actor_on_first_update")
 end
 
 local tg_update = 0
@@ -474,6 +465,18 @@ end
 
 ----
 
+function get_printer()
+	if not Printer then
+		Printer = spotters_mcm.get_printer()
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
+
 if AddScriptCallback then
 	AddScriptCallback("schedule_update_master_spotter")
 end
@@ -491,7 +494,6 @@ end
 function on_game_start()
 	printf("$ Spotter on_game_start")
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
-	RegisterScriptCallback("npcd_on_log_update", get_npcd_logging)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback('on_option_change', on_option_change)
 
