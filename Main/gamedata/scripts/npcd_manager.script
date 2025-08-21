@@ -1,6 +1,17 @@
 local npcdu = npcd_utils
 local npcd = npcd
 
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_manager")
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
 local FEAT_TYPE = npcd.FEAT_TYPE
 local FEAT_MODE = npcd.FEAT_MODE
 local ABILITY_STATE = npcd.ABILITY_STATE
@@ -214,14 +225,6 @@ end
 -- LIFECYCLE
 
 local squad_is_peaceful = true
-function actor_on_first_update()
-	if not Printer then
-		get_printer()
-	end	
-	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")	
-end
-
-
 local tg_update = 0
 local tg_update_step = 1000 --[ms]
 function actor_on_update()
@@ -253,34 +256,17 @@ function actor_on_update()
 end
 
 function register_module(deck)
-	printf("-[NPCD][Main] Manager register_module %s", deck.module)
+	Printer:Log(LOG.ADD, CAT.CONF,"Manager register_module")
+	-- printf("-[NPCD][Main] Manager register_module %s", deck.module)
 	npcd.add_module_perks(deck.perks)
 end
 
-function set_printer(main_printer)
-	printf("-[NPCD][Main] Manager set_printer")
-	Printer = main_printer
-	LOG = Printer:GetLogTypes()
-	CAT = Printer:GetLogCategories()
-end
-
-function get_printer()
-	if not Printer then
-		Printer = npcd_logging.get_npcd_printer()
-	end 
-	LOG = Printer:GetLogTypes()
-	CAT = Printer:GetLogCategories()
-end
-
-local function get_npcd_logging()
-	printf("-[NPCD][Main] Manager get_npcd_logging")
-	get_printer()
-	Printer:Log(LOG.INFO, CAT.EXEC,"Logging initialized")
+function actor_on_first_update()
+	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")	
 end
 
 function on_game_start()
-	printf("-[NPCD][Main] Manager on_game_start")
-	RegisterScriptCallback("npcd_on_log_update", get_npcd_logging)
+	Printer:Log(LOG.START, CAT.EXEC,"Manager on_game_start")
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("actor_on_update",actor_on_update)
 	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)

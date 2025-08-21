@@ -1,10 +1,13 @@
-function set_printer(main_printer)
-	printf("-[NPCD][Main] Monkey Patcher set_printer")
-	Printer = main_printer
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("zz_npcd_mp")
+	end 
 	LOG = Printer:GetLogTypes()
 	CAT = Printer:GetLogCategories()
 end
-
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
 --------------- SQUAD UPDATES
 ---
 -- ADD

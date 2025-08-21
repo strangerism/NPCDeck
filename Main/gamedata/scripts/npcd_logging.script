@@ -4,7 +4,7 @@ APP = { tag = "[NPCD]"}
 
 -- log level
 
-LEVEL = 0
+LEVEL = 1
 
 -- log types
 LOG = {
@@ -83,7 +83,7 @@ function NPCDPrinter:__init(module)
     end
     
     printlog(self.module_desc, LOG.ADD, CAT.CONF, "Initializing NPCD Printer for module %s", module)
-    printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", module, self.enabled)
+    printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", module, self.enabled and "enabled" or "disabled")
     RegisterScriptCallback('npcd_on_log_update', self)
 end
 
@@ -98,7 +98,7 @@ end
 function NPCDPrinter:npcd_on_log_update()
     printlog(self.module_desc, LOG.INFO, CAT.CONF, "Updating NPCD Printer module %s", self.module)
     self:Update()
-    printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", self.module, self.enabled)
+    printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", self.module, self.enabled and "enabled" or "disabled")
 end
 
 function NPCDPrinter:Log(type,category,msg,...)
@@ -133,6 +133,7 @@ function get_module_printer(module)
 end
 
 function get_npcd_printer()
+    printf("/ NPCD Logging get_npcd_printer")
     return NPCDPrinter(LOGGER_MODULE.NPCD)
 end
 
@@ -155,11 +156,12 @@ end
 
 function set_up()
     Printer = get_npcd_printer()
-    npcd_mcm.set_printer(Printer)
-	npcd.set_printer(Printer)
-	npcd_hud.set_printer(Printer)
-    npcd_manager.set_printer(Printer)
     update_logs()
+end
+
+function get_printer(npcd_script)
+    Printer:Log(LOG.ADD, CAT.CONF,"%s get_printer", npcd_script)
+    return Printer
 end
 
 local function mcm_on_option_change()
@@ -167,12 +169,11 @@ local function mcm_on_option_change()
 end
 
 local function actor_on_first_update()
-    printlog("Logging",LOG.RUN, CAT.CONF,"Actor on first update")
-    -- SendScriptCallback("npcd_actor_on_first_update")
+    Printer:Log(LOG.RUN, CAT.CONF,"Logging actor_on_first_update")
 end
 
 function on_game_start()
-    printf("-[NPCD][Main] Logging on_game_start")
+    Printer:Log(LOG.START, CAT.CONF,"Logging on_game_start")
     RegisterScriptCallback("on_option_change", mcm_on_option_change)
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

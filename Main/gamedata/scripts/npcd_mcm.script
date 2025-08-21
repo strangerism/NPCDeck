@@ -3,11 +3,15 @@ local NPCD = npcd
 local FEAT_MODE = NPCD.FEAT_MODE
 local FEAT_SETTING = NPCD.FEAT_SETTING
 
-function set_printer(main_printer)
-	printf("-[NPCD][Main] MCM set_printer")
-	Printer = main_printer
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_mcm")
+	end 
 	LOG = Printer:GetLogTypes()
 	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
 end
 
 function on_mcm_load()
@@ -25,7 +29,7 @@ function get_setting(module_name, var_name)
 	if Printer then
 		Printer:Debug(LOG.INFO, CAT.CONF, "npcd_get_setting %s %s", module_name, var_name)
 	else
-		printf("//[NPCD][MCM] npcd_get_setting %s %s", module_name, var_name)
+		printf("[NPCD][MCM] npcd_get_setting %s %s", module_name, var_name)
 	end
 	-- Get MCM setting
 	if ui_mcm then 
@@ -38,7 +42,7 @@ function set_setting(module_name, var_name, value)
 	if Printer then
 		Printer:Debug(LOG.INFO, CAT.CONF, "npcd_set_setting %s %s", module_name, var_name)		
 	else
-		printf("-[NPCD][MCM] npcd_set_setting %s %s", module_name, var_name)
+		printf("[NPCD][MCM] npcd_set_setting %s %s", module_name, var_name)
 	end
 	-- Set MCM setting
 	if ui_mcm then 

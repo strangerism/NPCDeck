@@ -1,10 +1,14 @@
 local npcdu = npcd_utils
 
-function set_printer(main_printer)
-	printf("-[NPCD][Main] NPCS set_printer")
-	Printer = main_printer
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd")
+	end 
 	LOG = Printer:GetLogTypes()
 	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
 end
 
 -- PERKS DECK 
@@ -290,9 +294,9 @@ function set_ability(npc_id, ability)
 end
 
 function actor_on_first_update()
-	printf("-[NPCD][Main] NPCS actor_on_first_update")
+	Printer:Log(LOG.RUN, CAT.CONF,"NPCS actor_on_first_update")
 end
 function on_game_start()
-	printf("-[NPCD][Main] NPCS on_game_start")
+	Printer:Log(LOG.START, CAT.CONF,"NPCS on_game_start")
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

@@ -2,11 +2,15 @@
 local npcdu = npcd_utils
 local npcd = npcd
 
-function set_printer(main_printer)
-	printf("-[NPCD][Main] Hud set_printer")
-	Printer = main_printer
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_hud")
+	end 
 	LOG = Printer:GetLogTypes()
 	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
 end
 
 local ABILITY_STATE = npcd.ABILITY_STATE
@@ -427,11 +431,12 @@ function on_console_execute(name)
 end
 
 function actor_on_first_update()
+	Printer:Log(LOG.RUN, CAT.UI,"Hud actor_on_first_update")
 	printf("-[NPCD][Main] Hud actor_on_first_update")
 end
 
 function on_game_start()
-	printf("-[NPCD][Main] Hud on_game_start")
+	Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
 	RegisterScriptCallback("npcd_hud_squad_update",update_actionbar_slotlist)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end
