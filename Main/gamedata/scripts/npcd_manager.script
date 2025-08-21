@@ -1,15 +1,5 @@
 local npcdu = npcd_utils
 local npcd = npcd
-local npcd_logging = npcd_logging
-local npcd_hud = npcd_hud
-local ResetTimeEvent = ResetTimeEvent
-local RemoveTimeEvent = RemoveTimeEvent
-local CreateTimeEvent = CreateTimeEvent
-local axr_companions = axr_companions
-local distance_between = distance_between
-local SendScriptCallback = SendScriptCallback
-local RegisterScriptCallback = RegisterScriptCallback
-local db = db
 
 local FEAT_TYPE = npcd.FEAT_TYPE
 local FEAT_MODE = npcd.FEAT_MODE
@@ -59,7 +49,7 @@ end
 
 -- time event function
 function manage_ability_cooldown(npc_id, feat_id)
-
+	Printer:Debug(LOG.INFO, CAT.NPC,"npc %s manage_ability_cooldown %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return true end  -- npc died?
 
@@ -99,7 +89,7 @@ function manage_ability_cooldown(npc_id, feat_id)
 end
 
 function activate_ability(npc_id, feat_id)
-
+	Printer:Debug(LOG.INFO, CAT.NPC,"npc %s activate_ability %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return true end  -- npc died?
 
@@ -116,7 +106,7 @@ function activate_ability(npc_id, feat_id)
 
     RemoveTimeEvent("npcd_ability_coolddown", tostring(npc_id) .. feat_id)
 
-    Printer:Debug(LOG.INFO, CAT.NPC,"npc %s activate_ability %s", npc_id, feat_id)
+    Printer:Debug(LOG.INFO, CAT.NPC,"npc %s create new npcd_ability_coolddown %s", npc_id, feat_id)
 
 	CreateTimeEvent("npcd_ability_coolddown", tostring(npc_id) .. feat_id, 0.5, manage_ability_cooldown, npc_id, feat_id)
 	return true
@@ -209,6 +199,9 @@ function save_state(m_data)
 end
 
 function load_state(m_data)
+	if not Printer then
+		get_printer()
+	end
 	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck Load State")
 	if m_data.npcd and m_data.npcd.npcs then
         -- cache the state
@@ -222,6 +215,9 @@ end
 
 local squad_is_peaceful = true
 function actor_on_first_update()
+	if not Printer then
+		get_printer()
+	end	
 	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")	
 end
 
@@ -261,13 +257,17 @@ function register_module(deck)
 	npcd.add_module_perks(deck.perks)
 end
 
-local function get_npcd_logging()
-	printf("-[NPCD][Main] Manager get_npcd_logging")
+function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_npcd_printer()
 	end 
 	LOG = Printer:GetLogTypes()
-	CAT = Printer:GetLogCategories()	
+	CAT = Printer:GetLogCategories()
+end
+
+local function get_npcd_logging()
+	printf("-[NPCD][Main] Manager get_npcd_logging")
+	get_printer()
 	Printer:Log(LOG.INFO, CAT.EXEC,"Logging initialized")
 	npcd.set_printer(Printer)
 	npcd_hud.set_printer(Printer)

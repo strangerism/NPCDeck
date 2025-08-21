@@ -1,18 +1,6 @@
 
 local npcdu = npcd_utils
 local npcd = npcd
-local axr_companions = axr_companions
-local RegisterScriptCallback = RegisterScriptCallback
-local db = db
-local vector2 = vector2
-local utils_xml = utils_xml
-local CScriptXmlInit = CScriptXmlInit
-local IsStalker = IsStalker
-local main_hud_shown = main_hud_shown
-local alife_object = alife_object
-local GetARGB = GetARGB
-local time_global = time_global
-local UnregisterScriptCallback = UnregisterScriptCallback
 
 function set_printer(main_printer)
 	printf("-[NPCD][Main] Hud set_printer")
@@ -194,7 +182,7 @@ function clear_actionbar_slot(slot_hud, state)
 end
 
 function add_ability_to_actionbar_slot(self, ability, slot_hud, index, mode)
-
+	Printer:Trace(LOG.INFO, CAT.UI_ACTION,"add ability %s to actionbar slot %s", ability.id, index)
 	clear_actionbar_slot(slot_hud, ability.state)
 	slot_hud.ability = {}
 
@@ -318,12 +306,12 @@ function UINPCDActionBar:Update(force)
 	-- update the actionbar
 	for i=1,8 do
 		if to_show then -- and #clist > 0 then
-			Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
+			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
 			local slot_hud = self.action_slot[i]
 			if actionbar_slotlist[i] then
 				local action_slot = actionbar_slotlist[i]
 				local ability = npcd.get_ability(action_slot.npc_id, action_slot.feat_id)
-				Printer:Debug(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
+				Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
 				Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
 				if (ability.state ~= slot_hud.state) then
 					add_ability_to_actionbar_slot(self, ability, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)

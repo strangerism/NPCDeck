@@ -1,4 +1,7 @@
 local npcdu = npcd_utils
+local NPCD = npcd
+local FEAT_MODE = NPCD.FEAT_MODE
+local FEAT_SETTING = NPCD.FEAT_SETTING
 
 npcd_default_settings = {
 
@@ -113,14 +116,44 @@ function get_module_menu(module_deck)
 			table.insert(perk_menu.gr, { id = "divider", type = "line" })
 			table.insert(perk_menu.gr, { id = perk.id .. "_feats", type = "title", align="l", clr = {200, 180, 4, 219}, text = "ui_mcm_st_npcd_feats"})
 			for _, feat in pairs(perk.feats) do
+				-- add feat section
 				table.insert(perk_menu.gr, { id = feat.id .. "_name", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=true, })
 				table.insert(perk_menu.gr, { id = feat.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = feat.description} )
+				-- type and mode
 				local list = {}
 				table.insert(list, {feat.type, feat.type})
 				table.insert(perk_menu.gr, { id = feat.id .. "_type" , hint = "st_npcd_feat_type", type= "list", val = 0, def=feat.type, content= list, })
 				list = {}
 				table.insert(list, {feat.mode, feat.mode})
 				table.insert(perk_menu.gr, { id = feat.id .. "_mode" , hint = "st_npcd_feat_mode", type= "list", val = 0, def=feat.mode, content= list, })
+				-- stats
+
+				-- keybinds
+				if feat.mode == FEAT_MODE.MANUAL and feat.activation_key then
+					local dik = { id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.DIK, type = "key_bind", val = 2, hint = "st_npcd_feat_keybind",
+						def = feat.activation_key.dik
+					}
+					local mode = { id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.MODE, type = ui_mcm.kb_mod_radio , val = 2, hint = "mcm_kb_mode",
+						def = feat.activation_key.mode,
+						content = {
+							{0, "mcm_kb_mode_press"},
+							{1, "mcm_kb_mode_dtap"},
+							{2, "mcm_kb_mode_hold"} 
+						}
+					}
+					local modkey = { id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.MODKEY , type = ui_mcm.kb_mod_radio , val = 2, hint = "mcm_kb_modifier",
+						def = feat.activation_key.mod_key,
+						content = { 
+							{0,"mcm_kb_mod_none"} , 
+							{1,"mcm_kb_mod_shift"} , 
+							{2,"mcm_kb_mod_ctrl"},
+							{3,"mcm_kb_mod_alt"}
+						}
+					}
+					table.insert(perk_menu.gr, dik)
+					table.insert(perk_menu.gr, mode)
+					table.insert(perk_menu.gr, modkey)
+				end
 			end
 		end
 		-- adding perk menu to module options
