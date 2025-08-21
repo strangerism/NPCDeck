@@ -128,6 +128,13 @@ function get_perk_feat(perk_id, feat_id)
 	return perks[perk_id].feats[feat_id]
 end
 
+function get_perk_feat_stat(perk_id, feat_id, stat_name, rank)
+	if not rank or not stat_name then return end
+	local feat = get_perk_feat(perk_id, feat_id)
+	if not feat or not feat.stats and not feat.stats[rank]  then return end
+	return feat.stats[rank][stat_name]
+end
+
 function get_npc_perks(npc_id)
 	if not npc_id or not npcs[npc_id] then return end
 	return npcs[npc_id].Perk
@@ -297,6 +304,6 @@ function actor_on_first_update()
 	Printer:Log(LOG.RUN, CAT.CONF,"NPCS actor_on_first_update")
 end
 function on_game_start()
-	Printer:Log(LOG.START, CAT.CONF,"NPCS on_game_start")
+	-- Printer:Log(LOG.START, CAT.CONF,"NPCS on_game_start")
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

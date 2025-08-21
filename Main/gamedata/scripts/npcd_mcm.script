@@ -69,6 +69,24 @@ function set_module_setting(module_name, var_name, value)
 
 end
 
+function get_module_main_setting(module, var_name)
+	return npcd_mcm.get_module_setting(module, "main/" .. var_name)
+end
+function get_module_perk_setting(module, perk_id, var_name)
+	return npcd_mcm.get_module_setting(module, perk_id .. "/" .. var_name)
+end
+
+function get_module_perk_feat_setting(module, perk_id, feat_id, setting, var_name, rank)
+
+	if setting == FEAT_SETTING.ACTIVATION_KEY then
+		return npcd_mcm.get_module_setting(module, perk_id .. "/" .. feat_id .. "_" .. setting .. "_" .. var_name)
+	end
+	-- if setting == FEAT_SETTING.STATS then
+	-- 	return npcd_mcm.get_module_setting(deck.module, perk_id .. "/" .. feat_id .. "_" .. setting .. "_" .. var_name)
+	-- end
+	
+end
+
 function npcd_module_installed(script)
 	if script then
 		return script.module_installed or nil

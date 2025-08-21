@@ -436,7 +436,7 @@ function actor_on_first_update()
 end
 
 function on_game_start()
-	Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
+	-- Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
 	RegisterScriptCallback("npcd_hud_squad_update",update_actionbar_slotlist)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end
