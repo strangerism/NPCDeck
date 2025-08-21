@@ -3,10 +3,12 @@ local NPCD = npcd
 local FEAT_MODE = NPCD.FEAT_MODE
 local FEAT_SETTING = NPCD.FEAT_SETTING
 
-npcd_default_settings = {
-
-	["enable"]		= false
-}
+function set_printer(main_printer)
+	printf("-[NPCD][Main] MCM set_printer")
+	Printer = main_printer
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
 
 function on_mcm_load()
 
@@ -19,14 +21,12 @@ function on_mcm_load()
 	return op, "npcd"
 end
 
-function on_option_change()
-    -- if ui_mcm then
-    --     npe_default_settings["enable"] = ui_mcm.get("npe/general/enable")
-    -- end
-end
-
 function get_setting(module_name, var_name)
-	printf("//[NPCD][MCM] npcd_get_setting %s %s", module_name, var_name)
+	if Printer then
+		Printer:Debug(LOG.INFO, CAT.CONF, "npcd_get_setting %s %s", module_name, var_name)
+	else
+		printf("//[NPCD][MCM] npcd_get_setting %s %s", module_name, var_name)
+	end
 	-- Get MCM setting
 	if ui_mcm then 
 		return ui_mcm.get("npcd/" .. module_name .. "/" .. var_name)
@@ -35,7 +35,11 @@ function get_setting(module_name, var_name)
 end
 
 function set_setting(module_name, var_name, value)
-	printf("-[NPCD][MCM] npcd_set_setting %s %s", module_name, var_name)
+	if Printer then
+		Printer:Debug(LOG.INFO, CAT.CONF, "npcd_set_setting %s %s", module_name, var_name)		
+	else
+		printf("-[NPCD][MCM] npcd_set_setting %s %s", module_name, var_name)
+	end
 	-- Set MCM setting
 	if ui_mcm then 
 		ui_mcm.set("npcd/" .. module_name .. "/" .. var_name, value)
@@ -69,6 +73,14 @@ function npcd_module_installed(script)
 	end
 end
 
+local function mcm_print(msg, ...)
+	if Printer then
+		Printer:Debug(LOG.INFO, CAT.CONF, msg, ...)
+	else
+		printf(msg, ...)
+	end
+end
+
 function get_module_menu(module_deck)
 
 	-- Printer:LogTable("MCM Module Deck", module_deck)
@@ -95,9 +107,9 @@ function get_module_menu(module_deck)
 	table.insert(module_options, main_menu)
 
 	-- build perks menus
-	printf("[NPCD][CONF] building %s perk menus", npcdu.tablelength(module_deck.perks))
+	mcm_print(msg, "building %s perk menus", npcdu.tablelength(module_deck.perks))
 	for _, perk in pairs(module_deck.perks) do
-		printf("[NPCD][CONF] perk menu %s", perk.id)
+		mcm_print("perk menu %s", perk.id)
 		local perk_menu = {id = perk.id, text=perk.mcm_menu_name, sh=true, gr={}}
 		-- build  perk menu
 		table.insert(perk_menu.gr, { id = perk.id .. "_name", type = "slide", link = "ui_options_slider_player", text = perk.name, size = {512,50}, spacing = 20 })
@@ -161,12 +173,4 @@ function get_module_menu(module_deck)
 	end
 
 	return module_options
-end
-
-function actor_on_first_update()
-	printf("-[NPCD][Main] MCM actor_on_first_update")
-end
-function on_game_start()
-	printf("-[NPCD][Main] MCM on_game_start")
-	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

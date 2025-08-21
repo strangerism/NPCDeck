@@ -1,3 +1,9 @@
+function set_printer(main_printer)
+	printf("-[NPCD][Main] Monkey Patcher set_printer")
+	Printer = main_printer
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
 
 --------------- SQUAD UPDATES
 ---

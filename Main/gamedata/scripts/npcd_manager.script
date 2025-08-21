@@ -257,6 +257,13 @@ function register_module(deck)
 	npcd.add_module_perks(deck.perks)
 end
 
+function set_printer(main_printer)
+	printf("-[NPCD][Main] Manager set_printer")
+	Printer = main_printer
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+
 function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_npcd_printer()
@@ -269,8 +276,6 @@ local function get_npcd_logging()
 	printf("-[NPCD][Main] Manager get_npcd_logging")
 	get_printer()
 	Printer:Log(LOG.INFO, CAT.EXEC,"Logging initialized")
-	npcd.set_printer(Printer)
-	npcd_hud.set_printer(Printer)
 end
 
 function on_game_start()

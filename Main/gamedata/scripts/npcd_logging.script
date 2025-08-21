@@ -19,7 +19,7 @@ LOG = {
 }
 -- categories
 CAT = {
-    CONF = { tag = "[CONF]", enabled = false},
+    CONF = { tag = "[CONF]", enabled = true},
     PERK = { tag = "[PERK]", enabled = false},
     NPC = { tag = "[NPC]", enabled = false},
     FEAT = { tag = "[FEAT]", enabled = false},
@@ -137,9 +137,7 @@ function get_npcd_printer()
 end
 
 function update_logs()
-
     LEVEL = tonumber(npcd_mcm.get_setting("logs", "logging_level"))
-    printf("[NPCD] Log level: %s", tostring(LEVEL))
     -- categories
     CAT.CONF.enabled = npcd_mcm.get_setting("logs", "conf_logs")
     CAT.PERK.enabled = npcd_mcm.get_setting("logs", "perk_logs")
@@ -153,6 +151,15 @@ function update_logs()
     CAT.UI_ACTION.enabled = npcd_mcm.get_setting("logs", "ui_action_logs")
 
     SendScriptCallback("npcd_on_log_update")
+end
+
+function set_up()
+    Printer = get_npcd_printer()
+    npcd_mcm.set_printer(Printer)
+	npcd.set_printer(Printer)
+	npcd_hud.set_printer(Printer)
+    npcd_manager.set_printer(Printer)
+    update_logs()
 end
 
 local function mcm_on_option_change()

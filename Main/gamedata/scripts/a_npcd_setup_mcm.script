@@ -1,9 +1,14 @@
 if AddScriptCallback then
+    printf("$[NPCD] START Callbacks configuration")
 	AddScriptCallback("npcd_squad_update")
 	AddScriptCallback("npcd_squad_combat_started")
 	AddScriptCallback("npcd_squad_combat_ended")
 	AddScriptCallback("npcd_hud_squad_update")
     AddScriptCallback("npcd_on_log_update")
     AddScriptCallback("npcd_on_loaded_state")
-    -- AddScriptCallback("npcd_actor_on_first_update")
+end
+
+function on_game_start()
+    printf("$[NPCD] START Logging set_up")
+    npcd_logging.set_up()
 end
