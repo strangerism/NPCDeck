@@ -255,10 +255,12 @@ function actor_on_update()
 	-- printlog_table("Stalkers", stalkers)
 end
 
+--- MODULE REGISTRATION
+
 function register_module(deck)
 	Printer:Log(LOG.ADD, CAT.CONF,"Manager register_module")
 	-- printf("-[NPCD][Main] Manager register_module %s", deck.module)
-	npcd.add_module_perks(deck.perks)
+	npcd.add_module_perks(deck.module, deck.perks)
 end
 
 function actor_on_first_update()

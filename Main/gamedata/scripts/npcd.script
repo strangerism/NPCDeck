@@ -35,12 +35,12 @@ FEAT_MODE = {
 }
 
 KEYBIND = {
-	MODE = {
+	MODIFIER = {
 		PRESS = 0,
 		DOUBLE_TAP = 1,
 		HOLD = 2,
 	},
-	MODKEY = {
+	SECOND_KEY = {
 		NONE = 0,
 		SHIFT = 1,
 		CTRL = 2,
@@ -51,9 +51,9 @@ KEYBIND = {
 FEAT_SETTING = {
 	ACTIVATION_KEY = "activation_key",
 	KEYBIND = {
-		DIK = "dik",
-		MODE = "mode",
-		MODKEY = "modkey"
+		KEY = "keybind",
+		MODIFIER = "modifier",
+		SECOND_KEY = "second_key"
 	},
 	STATS = "stats",
 	STAT = {
@@ -62,13 +62,14 @@ FEAT_SETTING = {
 	}
 }
 
-function add_module_perks(module_perks)
+function add_module_perks(module, module_perks)
 	for _, perk in pairs(module_perks) do
 		if not perks[perk.id] then
 			perks[perk.id] = perk
+			perks[perk.id]["module"] = module
 		end
 	end 
-	-- Printer:LogTable("Deck Perks", perks)
+	Printer:LogTable("Deck Perks", perks)
 end
 
 -- NPCs DECK
@@ -133,6 +134,25 @@ function get_perk_feat_stat(perk_id, feat_id, stat_name, rank)
 	local feat = get_perk_feat(perk_id, feat_id)
 	if not feat or not feat.stats and not feat.stats[rank]  then return end
 	return feat.stats[rank][stat_name]
+end
+
+function get_perks_activations_inputs()
+	local activations_inputs = {}
+	for _, perk in pairs(perks) do
+		if perk and not perk.disabled and perk.feats then
+			for key, feat in pairs(perk.feats) do
+				if feat.type == FEAT_TYPE.ACTIVE and feat.mode == FEAT_MODE.MANUAL then
+					local feat_activation_input = {
+						activation_key = feat.activation_key,
+						activation_functor = feat.activation_functor
+					}
+					local id = npcd_mcm.get_module_perk_feat_setting_id(perk.module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.KEY)
+					activations_inputs[id] = feat_activation_input
+				end
+			end
+		end
+	end
+	return activations_inputs
 end
 
 function get_npc_perks(npc_id)

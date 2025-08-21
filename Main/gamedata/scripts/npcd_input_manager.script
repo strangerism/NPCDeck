@@ -1,0 +1,103 @@
+local npcdu = npcd_utils
+local npcd = npcd
+
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_input")
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
+local keybind_instances = {}
+
+class "InputManager"
+
+function InputManager:__init(id, activations_inputs)
+    Printer:Log(LOG.ADD, CAT.KEYBINDS, "adding input manager for %s", id)
+    self.settings = activations_inputs.activation_key
+    self.modes = {
+        [0] = { 
+            call = "on_key_press",         
+            action = function(key) 
+                if ui_mcm.simple_press(id, key) then
+                    if activations_inputs.activation_functor then
+                        Printer:Log(LOG.RUN, CAT.ACTIV, "executing %s.%s", activations_inputs.activation_functor[1], activations_inputs.activation_functor[2])
+                        execute_func(unpack(activations_inputs.activation_functor))
+                    end
+                end
+            end 
+        },
+        [1] = { 
+            call = "on_key_press", 
+            action = function(key) 
+                if ui_mcm.double_tap(id, key) then
+                    if activations_inputs.activation_functor then
+                        Printer:Log(LOG.RUN, CAT.ACTIV, "executing %s.%s", activations_inputs.activation_functor[1], activations_inputs.activation_functor[2])
+                        execute_func(unpack(activations_inputs.activation_functor))
+                    end
+                end 
+            end 
+        },
+        [2] = { 
+            call = "on_key_hold", 
+            action = function(key) 
+                if ui_mcm.key_hold(id, key) then
+                    if activations_inputs.activation_functor then
+                        Printer:Log(LOG.RUN, CAT.ACTIV, "executing %s.%s", activations_inputs.activation_functor[1], activations_inputs.activation_functor[2])
+                        execute_func(unpack(activations_inputs.activation_functor))
+                    end
+                end 
+            end 
+        }
+    }
+    RegisterScriptCallback(self.modes[self.settings.modifier].call, self)
+end
+
+function InputManager:on_key_press(key)
+    if key ~= self.settings.keybind then return end
+    if ui_mcm.get_mod_key(self.settings.second_key) then
+        self.modes[self.settings.modifier].action(key)
+    end
+end
+
+function InputManager:on_key_hold(key)
+    if key ~= self.settings.keybind then return end
+    if ui_mcm.get_mod_key(self.settings.second_key) then
+        self.modes[self.settings.modifier].action(key)
+    end
+end
+
+function InputManager:destroy()
+    UnregisterScriptCallback(self.modes[self.settings.modifier].call, self)
+end
+
+function update_activation_inputs(activations_inputs)
+    Printer:Log(LOG.CONF, CAT.KEYBINDS, "update_activation_inputs")
+    -- unbind old first
+    for id, _ in pairs(keybind_instances) do
+        if keybind_instances[id] then
+            keybind_instances[id]:destroy()
+        end 
+    end
+
+    -- bind new
+    for id, activation_input in pairs(activations_inputs) do
+        keybind_instances[id] = InputManager(id, activation_input)
+    end
+end
+
+function actor_on_first_update()
+    local activations_inputs = npcd.get_perks_activations_inputs()
+    Printer:LogTable("Feats Activations", activations_inputs)
+    update_activation_inputs(activations_inputs)
+end
+
+function on_game_start()
+        RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+    -- RegisterScriptCallback("on_option_change", on_option_change)
+    -- on_option_change(mcm_keybinds)
+end
