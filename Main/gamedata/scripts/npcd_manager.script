@@ -35,6 +35,7 @@ function register_abilities(npc_id)
 		end
 	end
 	Printer:LogTable("Registered Abilities", npc_deck.Ability)
+	npcd_actionbar.add_npc_abilities_to_actionbar(npc_id)
 	return true
 end
 
@@ -55,6 +56,7 @@ function unregister_abilities(npc_id)
 			end
 		end
 	end
+	npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
 	return true
 end
 

@@ -1,0 +1,151 @@
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_actionbar")
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
+local actionbar = {
+    slots = {},         -- List of all slots
+    by_index = {},      -- Index → list of slots (supports multiple per index)
+    by_key = {}         -- Key → single slot
+}
+
+function get_actionbar()
+    return actionbar
+end 
+
+function get_actionslot_key(npc_id, feat_id)
+    return npc_id .. "_" .. feat_id
+end
+
+function get_actionslot_ids(actionslot_key)
+    local parts = {}
+    for part in string.gmatch(actionslot_key, "[^_]+") do
+        table.insert(parts, part)
+    end
+    local npc_id = parts[1]
+    local feat_id = parts[2]
+    return npc_id, feat_id
+end
+
+function add_action_slot(index, npc_id, feat_id)
+    Printer:Debug(LOG.ADD, CAT.CONF,"add action slot %s for npc %s and ability %s", index, npc_id, feat_id)
+    local key = get_actionslot_key(npc_id, feat_id)
+    local slot = {
+        index = index,
+        key = key,
+        npc_id = npc_id,
+        feat_id = feat_id
+    }
+
+    -- Add to master slot list
+    table.insert(actionbar.slots, slot)
+
+    -- Add to index map
+    if not actionbar.by_index[index] then
+        actionbar.by_index[index] = {}
+    end
+    table.insert(actionbar.by_index[index], slot)
+
+    -- Add to key map
+    actionbar.by_key[key] = slot
+end
+
+function add_npc_abilities_to_actionbar(npc_id)
+    Printer:Debug(LOG.ADD, CAT.CONF,"add npc %s abilities to actionbar", npc_id)
+    local npc_abilities = npcd.get_abilities(npc_id)
+    if npc_abilities then
+        for id, ability in pairs(npc_abilities) do
+            if ability.mode == npcd.FEAT_MODE.MANUAL then
+                local mcm_index
+                local index = mcm_index or 0
+                add_action_slot(index, npc_id, ability.id)
+            end
+        end
+    end
+end
+
+function remove_npc_abilities_from_actionbar(npc_id)
+    -- Step 1: Remove from actionbar.slots
+    local i = 1
+    while i <= #actionbar.slots do
+        if actionbar.slots[i].npc_id == npc_id then
+            table.remove(actionbar.slots, i)
+        else
+            i = i + 1
+        end
+    end
+
+    -- Step 2: Remove from actionbar.by_index
+    for index, slots in pairs(actionbar.by_index) do
+        local j = 1
+        while j <= #slots do
+            if slots[j].npc_id == npc_id then
+                table.remove(slots, j)
+            else
+                j = j + 1
+            end
+        end
+        -- Clean up empty lists
+        if #slots == 0 then
+            actionbar.by_index[index] = nil
+        end
+    end
+
+    -- Step 3: Remove from actionbar.by_key
+    for key, slot in pairs(actionbar.by_key) do
+        if slot.npc_id == npc_id then
+            actionbar.by_key[key] = nil
+        end
+    end
+end
+
+function get_actionbar_slots_list()
+    Printer:Debug(LOG.ADD, CAT.CONF,"get actionbar slots list")
+    Printer:LogTable("Actionbar", actionbar.by_index)
+    local action_slots_list = {}
+    local action_bar_slots = 8
+
+    for i = 1, action_bar_slots do
+        local current_slots = actionbar.by_index[i]
+
+        if current_slots and #current_slots > 0 then
+            -- Use existing slot(s) at index i
+            for _, slot in ipairs(current_slots) do
+                table.insert(action_slots_list, slot)
+            end
+        else
+            local fallback_slot = nil
+
+            -- Try to get one from index 0
+            if actionbar.by_index[0] and #actionbar.by_index[0] > 0 then
+                fallback_slot = table.remove(actionbar.by_index[0], 1)
+            else
+                -- Search ahead for the next available slot
+                for j = i + 1, action_bar_slots do
+                    if actionbar.by_index[j] and #actionbar.by_index[j] > 0 then
+                        fallback_slot = table.remove(actionbar.by_index[j], 1)
+                        break
+                    end
+                end
+            end
+
+            if fallback_slot then
+                -- Update the slot's index and insert it
+                fallback_slot.index = i
+                table.insert(action_slots_list, fallback_slot)
+
+                -- Also update the actionbar.by_index[i] to reflect the change
+                actionbar.by_index[i] = actionbar.by_index[i] or {}
+                table.insert(actionbar.by_index[i], fallback_slot)
+            end
+        end
+    end
+
+    return action_slots_list
+end

@@ -306,7 +306,6 @@ function UINPCDActionBar:Update(force)
 	end
 
 	local to_show = main_hud_shown()
-	local clist = axr_companions.list_actor_squad_by_id()
 	-- update the actionbar
 	for i=1,8 do
 		if to_show then -- and #clist > 0 then
@@ -337,49 +336,50 @@ end
 
 function update_actionbar_slotlist()
 	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "update_actionbar_slotlist")
-	local clist = axr_companions.list_actor_squad_by_id()
-	if not (#clist > 0) then
-		Printer:Trace(LOG.WARN, CAT.UI_ACTION, "no squad available at this time")
-		return
-	end
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "updating action bar from a %s npcs squad", #clist)
-	actionbar_slotlist = {}
-	local index = 1
-	for i=1,8 do
-		local se_obj = clist[i] and alife_object(clist[i])
-		Printer:Trace(LOG.INFO, CAT.UI_ACTION, "checking squad[%s] object %s ", i, clist[i])
-		if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
-			local st = db.storage[se_obj.id]
-			local npc = st and st.object
-			local npc_id = npc:id()
-			local npc_abilities = npcd.get_abilities(npc_id)
+	actionbar_slotlist = npcd_actionbar.get_actionbar_slots_list()
+	-- local clist = axr_companions.list_actor_squad_by_id()
+	-- if not (#clist > 0) then
+	-- 	Printer:Trace(LOG.WARN, CAT.UI_ACTION, "no squad available at this time")
+	-- 	return
+	-- end
+	-- Printer:Debug(LOG.INFO, CAT.UI_ACTION, "updating action bar from a %s npcs squad", #clist)
+	-- actionbar_slotlist = {}
+	-- local index = 1
+	-- for i=1,8 do
+	-- 	local se_obj = clist[i] and alife_object(clist[i])
+	-- 	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "checking squad[%s] object %s ", i, clist[i])
+	-- 	if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
+	-- 		local st = db.storage[se_obj.id]
+	-- 		local npc = st and st.object
+	-- 		local npc_id = npc:id()
+	-- 		local npc_abilities = npcd.get_abilities(npc_id)
 
-			if npc_abilities then -- some npc might not have abilities or don't have an NPCD profile yet
-				Printer:Debug(LOG.INFO, CAT.UI_ACTION, "building action bar from npc %s abilities", npc_id)
-				for _, ability in pairs(npc_abilities) do
-					-- queue active ability
-					-- this must be done with callbacks
-					if ability.mode == npcd.FEAT_MODE.MANUAL then
-						Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Found actionable ability %s from npc %s", ability.id,  npc_id)
-						local action_slot = {}
-						action_slot.id = index
-						action_slot.feat_id = ability.id
-						action_slot.npc_id = npc_id
-						local mcm_slot_index
-						action_slot.index = mcm_slot_index or index
-						if not actionbar_slotlist[action_slot.index] then
-							table.insert(actionbar_slotlist, index, action_slot)
-						else
-							table.insert(actionbar_slotlist, action_slot)
-						end
-						index = index + 1
-					end
-				end
-			else
-				Printer:Trace(LOG.INFO, CAT.UI_ACTION, "squad[%s] npc %s has no abilities", i, npc_id)
-			end
-		end
-	end
+	-- 		if npc_abilities then -- some npc might not have abilities or don't have an NPCD profile yet
+	-- 			Printer:Debug(LOG.INFO, CAT.UI_ACTION, "building action bar from npc %s abilities", npc_id)
+	-- 			for _, ability in pairs(npc_abilities) do
+	-- 				-- queue active ability
+	-- 				-- this must be done with callbacks
+	-- 				if ability.mode == npcd.FEAT_MODE.MANUAL then
+	-- 					Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Found actionable ability %s from npc %s", ability.id,  npc_id)
+	-- 					local action_slot = {}
+	-- 					action_slot.id = index
+	-- 					action_slot.feat_id = ability.id
+	-- 					action_slot.npc_id = npc_id
+	-- 					local mcm_slot_index
+	-- 					action_slot.index = mcm_slot_index or index
+	-- 					if not actionbar_slotlist[action_slot.index] then
+	-- 						table.insert(actionbar_slotlist, index, action_slot)
+	-- 					else
+	-- 						table.insert(actionbar_slotlist, action_slot)
+	-- 					end
+	-- 					index = index + 1
+	-- 				end
+	-- 			end
+	-- 		else
+	-- 			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "squad[%s] npc %s has no abilities", i, npc_id)
+	-- 		end
+	-- 	end
+	-- end
 	Printer:LogTable("Action Bar Slots", actionbar_slotlist)
 end
 

@@ -91,9 +91,9 @@ function update_activation_inputs(activations_inputs)
 end
 
 function actor_on_first_update()
-    local activations_inputs = npcd.get_perks_activations_inputs()
-    Printer:LogTable("Feats Activations", activations_inputs)
-    update_activation_inputs(activations_inputs)
+    -- local activations_inputs = npcd.get_perks_activations_inputs()
+    -- Printer:LogTable("Feats Activations", activations_inputs)
+    -- update_activation_inputs(activations_inputs)
 end
 
 function on_game_start()
