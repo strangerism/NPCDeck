@@ -96,7 +96,7 @@ function NPCDPrinter:Update()
 end
 
 function NPCDPrinter:npcd_on_log_update()
-    printlog(self.module_desc, LOG.INFO, CAT.CONF, "Updating NPCD Printer module %s", self.module)
+    printlog(self.module_desc, LOG.RUN, CAT.CONF, "Updating NPCD Printer module %s", self.module)
     self:Update()
     printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", self.module, self.enabled and "enabled" or "disabled")
 end
@@ -160,7 +160,7 @@ function set_up()
 end
 
 function get_printer(npcd_script)
-    Printer:Log(LOG.ADD, CAT.CONF,"%s get_printer", npcd_script)
+    Printer:Log(LOG.RUN, CAT.CONF,"%s get_printer", npcd_script)
     return Printer
 end
 

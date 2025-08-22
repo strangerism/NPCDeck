@@ -16,7 +16,7 @@ local FEAT_TYPE = npcd.FEAT_TYPE
 local FEAT_MODE = npcd.FEAT_MODE
 local ABILITY_STATE = npcd.ABILITY_STATE
 
---------------- ABILITIES
+--------------- NPCs
 function register_abilities(npc_id)
 
 	Printer:Debug(LOG.ADD, CAT.NPC,"npc %s register_abilities", npc_id)
@@ -125,6 +125,14 @@ function activate_ability(npc_id, feat_id)
 	return true
 end
 
+--------------- ACTIONBAR UPDATES
+
+function update_actionbar()
+	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Manager update actionbar")
+	npcd_actionbar.reset_actionbar()
+	SendScriptCallback("npcd_hud_squad_update")
+end
+
 --------------- SQUAD UPDATES
 
 local current_clist
@@ -133,6 +141,13 @@ local function npcd_squad_update()
 	local new_clist = axr_companions.list_actor_squad_by_id()
 
 	local added_ids, removed_ids = npcdu.compute_diff(new_clist, current_clist)
+
+	-- update removed squad members
+	for i=1, #removed_ids do
+		local npc = npcdu.get_npc_obj(removed_ids[i])
+		local npc_id = npc:id()
+		unregister_abilities(npc_id)
+	end	
 
 	-- update new squad members
 	for i=1, #added_ids do
@@ -147,18 +162,11 @@ local function npcd_squad_update()
 		end
 	end
 
-	-- update removed squad members
-	for i=1, #removed_ids do
-		local npc = npcdu.get_npc_obj(removed_ids[i])
-		local npc_id = npc:id()
-		unregister_abilities(npc_id)
-	end	
-
 	current_clist = new_clist
 	SendScriptCallback("npcd_hud_squad_update")
 end
 
--- DEATH
+--------------- NPC DEATH
 
 function squad_on_npc_death(squad,se_npc)
 	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
@@ -166,14 +174,26 @@ function squad_on_npc_death(squad,se_npc)
 	Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death name %s", npc and npc:name())
 	local npc_id = npc:id() or 0
 	npcd.remove_npc(npc_id)
+	Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removed", npc:id())
 	for id,actor_squad in pairs(axr_companions.companion_squads) do
 		if squad.id == actor_squad.id then
+			npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
 			SendScriptCallback("npcd_squad_update")
 		end
 	end
 end
 
 --------------- SQUAD STATE
+
+function is_squad_available()
+    local clist = axr_companions.list_actor_squad_by_id()
+    if not (npcdu.tablelength(clist) > 0) then
+        Printer:Debug(LOG.WARN, CAT.NPC, "no squad available at this time")
+        return nil
+	else
+		return clist
+	end
+end
 
 function is_companions_squad_in_danger()
 	local squad_is_peaceful = true
@@ -199,7 +219,7 @@ function is_companions_squad_in_danger()
 	return not squad_is_peaceful
 end
 
---------------- STATE MGMT
+--------------- NPCD STATE MGMT
 
 function save_state(m_data)
 	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck Save State")
@@ -224,7 +244,7 @@ function load_state(m_data)
 	SendScriptCallback("npcd_on_loaded_state")
 end
 
--- LIFECYCLE
+-- NPCD LIFECYCLE
 
 local squad_is_peaceful = true
 local tg_update = 0
@@ -260,21 +280,35 @@ end
 --- MODULE REGISTRATION
 
 function register_module(deck)
-	Printer:Log(LOG.ADD, CAT.CONF,"Manager register_module")
+	printf("-[NPCD][MAIN] Manager register module %s", deck.module)
 	-- printf("-[NPCD][Main] Manager register_module %s", deck.module)
 	npcd.add_module_perks(deck.module, deck.perks)
 end
 
 function actor_on_first_update()
-	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")	
+	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")
+end
+
+---- BOOT
+
+function game_play_start()
+	Printer:Log(LOG.START, CAT.EXEC,"Manager game_play_start")
+    if(device().precache_frame > 1) then --detects if game is not past the press any key prompt
+        return
+    end
+  --setup your thing here
+   UnregisterScriptCallback("actor_on_update", game_play_start)
+   update_actionbar()
 end
 
 function on_game_start()
-	-- Printer:Log(LOG.START, CAT.EXEC,"Manager on_game_start")
+	printf("/[NPCD][MAIN] Manager on_game_start")
+	RegisterScriptCallback("npcd_on_loaded_state", npcd_on_loaded_state)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
-	RegisterScriptCallback("actor_on_update",actor_on_update)
-	RegisterScriptCallback("squad_on_npc_death",squad_on_npc_death)
-	RegisterScriptCallback("npcd_squad_update",npcd_squad_update)
+	RegisterScriptCallback("actor_on_update", actor_on_update)
+	RegisterScriptCallback("actor_on_update", game_play_start)
+	RegisterScriptCallback("squad_on_npc_death", squad_on_npc_death)
+	RegisterScriptCallback("npcd_squad_update", npcd_squad_update)
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
 end

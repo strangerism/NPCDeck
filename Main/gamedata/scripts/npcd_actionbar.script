@@ -1,3 +1,5 @@
+local is_squad_available = npcd_manager.is_squad_available
+
 function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_actionbar")
@@ -148,4 +150,149 @@ function get_actionbar_slots_list()
     end
 
     return action_slots_list
+end
+
+function remove_action_slot(index, npc_id, feat_id)
+    local key = get_actionslot_key(npc_id, feat_id)
+    
+    -- Remove from slots array
+    for i = 1, #actionbar.slots do
+        if actionbar.slots[i].key == key then
+            table.remove(actionbar.slots, i)
+            break
+        end
+    end
+    
+    -- Remove from index map
+    if actionbar.by_index[index] then
+        for i = 1, #actionbar.by_index[index] do
+            if actionbar.by_index[index][i].key == key then
+                table.remove(actionbar.by_index[index], i)
+                break
+            end
+        end
+    end
+    
+    -- Remove from key map
+    actionbar.by_key[key] = nil
+end
+
+function update_action_slot(index, npc_id, feat_id, new_index)
+    local key = get_actionslot_key(npc_id, feat_id)
+    local slot = actionbar.by_key[key]
+    if slot then
+        -- Remove from old index
+        remove_action_slot(slot.index, npc_id, feat_id)
+        -- Add to new index
+        add_action_slot(new_index, npc_id, feat_id)
+        return true
+    end
+    return false
+end
+
+function clear_actionbar()
+    actionbar.slots = {}
+    actionbar.by_index = {}
+    actionbar.by_key = {}
+end
+
+function is_valid_slot(index, npc_id, feat_id)
+    if not index or index < 0 or index > 8 then return false end
+    if not npc_id or not feat_id then return false end
+    
+    -- Check if NPC exists and has the ability
+    local ability = npcd.get_ability(npc_id, feat_id)
+    return ability ~= nil
+end
+
+function has_slot(index, npc_id, feat_id)
+    local key = get_actionslot_key(npc_id, feat_id)
+    return actionbar.by_key[key] ~= nil
+end
+
+function is_slot_available(index)
+    return not actionbar.by_index[index] or #actionbar.by_index[index] == 0
+end
+
+function get_slot_by_index(index)
+    return actionbar.by_index[index]
+end
+
+function get_slot_by_ability(npc_id, feat_id)
+    local key = get_actionslot_key(npc_id, feat_id)
+    return actionbar.by_key[key]
+end
+
+function get_npc_slots(npc_id)
+    local npc_slots = {}
+    for _, slot in ipairs(actionbar.slots) do
+        if slot.npc_id == npc_id then
+            table.insert(npc_slots, slot)
+        end
+    end
+    return npc_slots
+end
+
+function count_slots()
+    return {
+        total = #actionbar.slots,
+        used = 0,
+        available = 8
+    }
+end
+
+function save_actionbar_state()
+    local state = {}
+    for i, slot in ipairs(actionbar.slots) do
+        table.insert(state, {
+            index = slot.index,
+            npc_id = slot.npc_id,
+            feat_id = slot.feat_id
+        })
+    end
+    return state
+end
+
+function load_actionbar_state(state)
+    clear_actionbar()
+    for _, slot in ipairs(state) do
+        add_action_slot(slot.index, slot.npc_id, slot.feat_id)
+    end
+end
+
+function reset_actionbar()
+    -- Get current squad
+    local clist = is_squad_available()
+    if not clist then
+        return
+    end
+    clear_actionbar()
+    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", #clist)
+    
+    -- Process each squad member
+    local slot_index = 1
+    for i=1, 8 do
+        local se_obj = clist[i] and alife_object(clist[i])
+        if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
+            local st = db.storage[se_obj.id]
+            local npc = st and st.object
+            if npc then
+                local npc_id = npc:id()
+                local npc_abilities = npcd.get_abilities(npc_id)
+                
+                if npc_abilities then
+                    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Adding abilities for NPC %s", npc_id)
+                    for _, ability in pairs(npc_abilities) do
+                        if ability.mode == npcd.FEAT_MODE.MANUAL and slot_index <= 8 then
+                            add_action_slot(slot_index, npc_id, ability.id)
+                            slot_index = slot_index + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Action bar reset complete with %s slots filled", slot_index - 1)
+    Printer:LogTable("Reset Actionbar", actionbar.by_index)
 end

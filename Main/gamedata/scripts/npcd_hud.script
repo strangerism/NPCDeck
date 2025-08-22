@@ -96,6 +96,8 @@ end
 
 og_axr_companions_UI_Update = axr_companions.UICompanionList.Update
 function axr_companions.UICompanionList:Update(force)
+	local to_show = main_hud_shown()
+	if not to_show then return end
 	og_axr_companions_UI_Update(self, force)
 	
 	-- local tg = time_global()
@@ -113,11 +115,10 @@ function axr_companions.UICompanionList:Update(force)
 	self.W      = 40
 	self.offset = 10
 
-	local to_show = main_hud_shown()
 	local clist = axr_companions.list_actor_squad_by_id()
 	for i=1,8 do
 		local se_obj = clist[i] and alife_object(clist[i])
-		if to_show and (se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive()) then
+		if (se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive()) then
 			local st = db.storage[se_obj.id]
 			local npc = st and st.object
 			local ele = self.companion_info[i]
@@ -259,6 +260,8 @@ end
 function UINPCDActionBar:__finalize()
 end
 
+local actionbar_slots_list
+
 function UINPCDActionBar:InitControls()
 	-- Printer:Trace(LOG.START, CAT.UI, "UINPCDActionBar:InitControls")
 	self.xml = CScriptXmlInit()
@@ -301,8 +304,9 @@ function UINPCDActionBar:Update(force)
 	end
 	self._tmr = tg + self.update_rate
 
-	if npcdu.tablelength(actionbar_slotlist) == 0 then
-		update_actionbar_slotlist()
+	if npcdu.tablelength(actionbar_slots_list) == 0 then
+		Printer:Log(LOG.WARN, CAT.UI_ACTION, "actionbar_slots_list is empty")
+		return
 	end
 
 	local to_show = main_hud_shown()
@@ -311,18 +315,22 @@ function UINPCDActionBar:Update(force)
 		if to_show then -- and #clist > 0 then
 			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
 			local slot_hud = self.action_slot[i]
-			if actionbar_slotlist[i] then
-				local action_slot = actionbar_slotlist[i]
+			if actionbar_slots_list[i] then
+				local action_slot = actionbar_slots_list[i]
 				local ability = npcd.get_ability(action_slot.npc_id, action_slot.feat_id)
-				Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
-				Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
-				if (ability.state ~= slot_hud.state) then
-					add_ability_to_actionbar_slot(self, ability, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
-				end
-				if ability.state == ABILITY_STATE.COOLDOWN then
-					local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
-					Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
-					slot_hud.ability.cd:SetProgressPos(bar)
+				if ability then
+					Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
+					Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
+					if (ability.state ~= slot_hud.state) then
+						add_ability_to_actionbar_slot(self, ability, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
+					end
+					if ability.state == ABILITY_STATE.COOLDOWN then
+						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
+						slot_hud.ability.cd:SetProgressPos(bar)
+					end
+				else
+					Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find npc %s ability %s for actionbar slot %s", action_slot.npc_id, action_slot.feat_id, action_slot.index)
 				end
 			else
 				clear_actionbar_slot(slot_hud)
@@ -334,53 +342,10 @@ function UINPCDActionBar:Update(force)
 	end
 end
 
-function update_actionbar_slotlist()
-	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "update_actionbar_slotlist")
-	actionbar_slotlist = npcd_actionbar.get_actionbar_slots_list()
-	-- local clist = axr_companions.list_actor_squad_by_id()
-	-- if not (#clist > 0) then
-	-- 	Printer:Trace(LOG.WARN, CAT.UI_ACTION, "no squad available at this time")
-	-- 	return
-	-- end
-	-- Printer:Debug(LOG.INFO, CAT.UI_ACTION, "updating action bar from a %s npcs squad", #clist)
-	-- actionbar_slotlist = {}
-	-- local index = 1
-	-- for i=1,8 do
-	-- 	local se_obj = clist[i] and alife_object(clist[i])
-	-- 	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "checking squad[%s] object %s ", i, clist[i])
-	-- 	if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
-	-- 		local st = db.storage[se_obj.id]
-	-- 		local npc = st and st.object
-	-- 		local npc_id = npc:id()
-	-- 		local npc_abilities = npcd.get_abilities(npc_id)
-
-	-- 		if npc_abilities then -- some npc might not have abilities or don't have an NPCD profile yet
-	-- 			Printer:Debug(LOG.INFO, CAT.UI_ACTION, "building action bar from npc %s abilities", npc_id)
-	-- 			for _, ability in pairs(npc_abilities) do
-	-- 				-- queue active ability
-	-- 				-- this must be done with callbacks
-	-- 				if ability.mode == npcd.FEAT_MODE.MANUAL then
-	-- 					Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Found actionable ability %s from npc %s", ability.id,  npc_id)
-	-- 					local action_slot = {}
-	-- 					action_slot.id = index
-	-- 					action_slot.feat_id = ability.id
-	-- 					action_slot.npc_id = npc_id
-	-- 					local mcm_slot_index
-	-- 					action_slot.index = mcm_slot_index or index
-	-- 					if not actionbar_slotlist[action_slot.index] then
-	-- 						table.insert(actionbar_slotlist, index, action_slot)
-	-- 					else
-	-- 						table.insert(actionbar_slotlist, action_slot)
-	-- 					end
-	-- 					index = index + 1
-	-- 				end
-	-- 			end
-	-- 		else
-	-- 			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "squad[%s] npc %s has no abilities", i, npc_id)
-	-- 		end
-	-- 	end
-	-- end
-	Printer:LogTable("Action Bar Slots", actionbar_slotlist)
+function npcd_hud_squad_update()
+	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "update_actionbar_slots_list")
+	actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
+	Printer:LogTable("Action Bar Slots", actionbar_slots_list)
 end
 
 HUD = nil
@@ -411,7 +376,7 @@ function deactivate_hud()
 end
 
 function update_hud()
-	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar deactivate_hud")
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar update_hud")
 	if HUD ~= nil then
 		HUD:Update(true)
 	end
@@ -431,12 +396,11 @@ function on_console_execute(name)
 end
 
 function actor_on_first_update()
-	Printer:Log(LOG.RUN, CAT.UI,"Hud actor_on_first_update")
 	printf("-[NPCD][Main] Hud actor_on_first_update")
 end
 
 function on_game_start()
 	-- Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
-	RegisterScriptCallback("npcd_hud_squad_update",update_actionbar_slotlist)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+	RegisterScriptCallback("npcd_hud_squad_update", npcd_hud_squad_update)
 end

@@ -42,6 +42,13 @@ print_tip = function(text,delay, ...)
 	end
 end
 
+local string_format = string.format
+function printlog_table(text, node, ...)
+    
+    text = string_format(text, ...)
+    printf("NPCD | %s | \n" .. utils_data.print_table(node, text, true), time_global(), ...)
+end
+
 function tablelength(T)
   if not T then return 0 end 
   local count = 0
