@@ -10,12 +10,12 @@ LEVEL = 1
 LOG = {
     INFO = { tag = ""},
     START = { tag = "$"},
-    STOP = { tag = "%"},
+    STOP = { tag = "!"},
     ERROR = { tag = "!"},
     WARN = { tag = "~"},
     ADD = { tag = "-"},
     REMOVE = { tag = "*"},
-    RUN = { tag = "//"},
+    RUN = { tag = "/"},
 }
 -- categories
 CAT = {
