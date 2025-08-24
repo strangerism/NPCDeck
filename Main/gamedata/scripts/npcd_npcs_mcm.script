@@ -1,0 +1,4 @@
+-- function on_mcm_load()
+-- 	op = { { id = "npcs", sh=true, text = "ui_mcm_menu_npcd_npcs", gr = npcd_mcm.get_npcs_menu() },}
+-- 	return op, "npcd"
+-- end

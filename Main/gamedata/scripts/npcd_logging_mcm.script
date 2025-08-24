@@ -8,7 +8,7 @@ LOG_LEVEL = {
 
 function on_mcm_load()
 
-	op =  { id= "logs", sh=true, text="ui_mcm_npcd_logs", gr ={
+	op =  { id= "logs", sh=true, text="ui_mcm_menu_npcd_logs", gr ={
         {id = "title",type= "slide",link= "ui_options_slider_player",text="ui_mcm_npcd_logs_title",size= {512,50},spacing= 20 },
         {id = "help1", type = "desc", clr = {200, 200, 255, 200}, text="ui_mcm_npcd_logs_help1"},
         {id = "logging_level"	,type= "list", val = 0, def="0", content= LOG_LEVEL, no_str = true, },

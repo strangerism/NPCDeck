@@ -5,7 +5,7 @@
 		<text>NPCD</text>
 	</string>
 <!-- main menu	 -->
-	<string id="ui_mcm_npcd_main">
+	<string id="ui_mcm_menu_npcd_main">
 		<text>General</text>
 	</string>		
 	<string id="ui_mcm_npcd_main_title">
@@ -19,79 +19,11 @@
 	</string>
 	<string id="ui_mcm_npcd_main_enable_desc">
 		<text>Enable/Disable all the NPDC installed modules</text>
-	</string>										
-
-<!-- logs menu	 -->
-	<string id="ui_mcm_npcd_logs">
-		<text>Logging</text>
+	</string>
+<!-- npcs menu	 -->
+	<string id="ui_mcm_menu_npcd_npcs">
+		<text>NPCs</text>
 	</string>		
-	<string id="ui_mcm_npcd_logs_title">
-		<text>Logging Settings</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_help1">
-		<text>Enable logs only when developing npcd modules or troubleshooting issue. Leave it all disabled otherwise</text>
-	</string>	
-	<string id="ui_mcm_npcd_logs_npcd">
-		<text>Enable main logger</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_npcd_desc">
-		<text>Enables the main NPCD logger used by the whole framework</text>
-	</string>	
-	<string id="ui_mcm_npcd_logs_default">
-		<text>Enable default module logger</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_default_desc">
-		<text>Enables the default NPCD logger that all modules gets if they don't customize the NPCD logger</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_logging_level">
-		<text>Logging Level</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_logging_level_desc">
-		<text>Determine the level of logging on the console. %c[d_red]OFF%c[white] disables all logs</text>
-	</string>	
-	<string id="ui_mcm_npcd_logs_title_cat">
-		<text>Logs Categories</text>
-	</string>	
-	<string id="ui_mcm_npcd_logs_help2">
-		<text>Enable which logs categories to be printed</text>
-	</string>	
-	<string id="ui_mcm_npcd_logs_conf_logs">
-		<text>Configuration Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_perk_logs">
-		<text>Perks Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_npc_logs">
-		<text>NPC Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_feat_logs">
-		<text>Feats Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_exec_logs">
-		<text>Executions Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_activ_logs">
-		<text>Activations Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_cooldown_logs">
-		<text>Cooldowns Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_keybinds_logs">
-		<text>Keybinds Logs</text>
-	</string>	
-	<string id="ui_mcm_npcd_logs_ui_logs">
-		<text>UI Logs</text>
-	</string>
-	<string id="ui_mcm_npcd_logs_ui_action_logs">
-		<text>UI execution Logs</text>
-	</string>
-	<!-- Logger strings -->
-     <string id="ui_mcm_npcd_logger_npcd">
-        <text>Main</text>
-    </string>	
-     <string id="ui_mcm_npcd_logger_default">
-        <text>Module</text>
-    </string>		
 	<!-- Module menus  -->
 	<string id="ui_mcm_menu_npcd_module">
 		<text>NPCD Modules</text>
@@ -158,5 +90,18 @@
 
 	<string id="ui_mcm_st_npcd_feat_keybind">
 		<text>Activation Key</text>
+	</string>
+	<!-- inputs -->
+	<string id="ui_mcm_lst_npcd_kb_mod_none">
+		<text>None</text>
+	</string>
+	<string id="ui_mcm_lst_npcd_kb_mod_ctrl">
+		<text>CTRL</text>
+	</string>
+	<string id="ui_mcm_lst_npcd_kb_mod_shift">
+		<text>SHIFT</text>
+	</string>
+	<string id="ui_mcm_lst_npcd_kb_mod_alt">
+		<text>ALT</text>
 	</string>	
 </string_table>

@@ -1,7 +1,6 @@
 
 local npcdu = npcd_utils
-local npcd = npcd
-
+local SECOND_KEY_DESC = npcd.SECOND_KEY_DESC 
 function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_hud")
@@ -186,7 +185,7 @@ function clear_actionbar_slot(slot_hud, state)
 	end
 end
 
-function add_ability_to_actionbar_slot(self, ability, slot_hud, index, mode)
+function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, index, mode)
 	Printer:Trace(LOG.INFO, CAT.UI_ACTION,"add ability %s to actionbar slot %s", ability.id, index)
 	clear_actionbar_slot(slot_hud, ability.state)
 	slot_hud.ability = {}
@@ -217,10 +216,19 @@ function add_ability_to_actionbar_slot(self, ability, slot_hud, index, mode)
 	-- set ratio
 	slot_hud.ability.hotkey_mode =self. xml:InitTextWnd("action_bar:slot:hotkey_mode", slot_hud.base)
 	slot_hud.ability.hotkey_mode:SetFont(GetFontSmall())
-	slot_hud.ability.hotkey_mode:SetText("ALT")
+	local text
+	local second_key = action_slot.activation_input.activation_key.second_key
+	if second_key and second_key ~= 0 then
+		text = game.translate_string(SECOND_KEY_DESC[second_key])
+	end
+	slot_hud.ability.hotkey_mode:SetText(text or "")
 	slot_hud.ability.hotkey_bind = self.xml:InitTextWnd("action_bar:slot:hotkey_bind", slot_hud.base)
 	slot_hud.ability.hotkey_bind:SetFont(GetFontSmall())
-	slot_hud.ability.hotkey_bind:SetText("C")
+	text = nil
+	if action_slot.activation_input.activation_key.keybind then
+		text = ui_mcm.display_key(action_slot.activation_input.activation_key.keybind)
+	end		
+	slot_hud.ability.hotkey_bind:SetText(text or "")
 	-- set ratio
 	utils_xml.correct_ratio(slot_hud.ability.icon)
 	utils_xml.correct_ratio(slot_hud.ability.cd)
@@ -322,7 +330,7 @@ function UINPCDActionBar:Update(force)
 					Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
 					Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
 					if (ability.state ~= slot_hud.state) then
-						add_ability_to_actionbar_slot(self, ability, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
+						add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
 					end
 					if ability.state == ABILITY_STATE.COOLDOWN then
 						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
@@ -342,10 +350,11 @@ function UINPCDActionBar:Update(force)
 	end
 end
 
-function npcd_hud_squad_update()
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "update_actionbar_slots_list")
+function update_actionbar_slotlist()
+	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "actionbar update_actionbar_slotlist")
 	actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
-	Printer:LogTable("Action Bar Slots", actionbar_slots_list)
+	refresh_hud()
+	-- Printer:LogTable("Action Bar Slots", actionbar_slots_list)
 end
 
 HUD = nil
@@ -382,6 +391,12 @@ function update_hud()
 	end
 end
 
+function refresh_hud()
+	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "actionbar refresh_hud")
+	deactivate_hud()
+	activate_hud()
+end
+
 function actor_on_net_destroy()
 	if HUD ~= nil then
 		get_hud():RemoveDialogToRender(HUD)
@@ -399,8 +414,13 @@ function actor_on_first_update()
 	printf("-[NPCD][Main] Hud actor_on_first_update")
 end
 
+if AddScriptCallback then
+	AddScriptCallback("npcd_hud_refresh")
+	AddScriptCallback("npcd_hud_update")
+end
 function on_game_start()
 	-- Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
+	RegisterScriptCallback("npcd_hud_refresh", refresh_hud)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
-	RegisterScriptCallback("npcd_hud_squad_update", npcd_hud_squad_update)
+	RegisterScriptCallback("npcd_hud_update", update_actionbar_slotlist)
 end

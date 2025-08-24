@@ -1,3 +1,6 @@
+local npcdu = npcd_utils
+local npcdm = npcd_manager
+local FEAT_SETTING = NPCD.FEAT_SETTING
 local is_squad_available = npcd_manager.is_squad_available
 
 function get_printer()
@@ -35,14 +38,18 @@ function get_actionslot_ids(actionslot_key)
     return npc_id, feat_id
 end
 
-function add_action_slot(index, npc_id, feat_id)
-    Printer:Debug(LOG.ADD, CAT.CONF,"add action slot %s for npc %s and ability %s", index, npc_id, feat_id)
+function add_action_slot(npc_id, feat_id, force_index)
     local key = get_actionslot_key(npc_id, feat_id)
+    local feat = npcd.get_npc_feat(npc_id, feat_id)
+    local index = force_index or npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id) or 0
+    Printer:Debug(LOG.ADD, CAT.CONF,"add action slot %s for npc %s and ability %s", index, npc_id, feat_id)
+    local feat_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
     local slot = {
         index = index,
         key = key,
         npc_id = npc_id,
-        feat_id = feat_id
+        feat_id = feat_id,
+        activation_input = feat_activation_input
     }
 
     -- Add to master slot list
@@ -58,18 +65,84 @@ function add_action_slot(index, npc_id, feat_id)
     actionbar.by_key[key] = slot
 end
 
+function update_action_slot(npc_id, feat_id)
+    local key = get_actionslot_key(npc_id, feat_id)
+    local slot = actionbar.by_key[key]
+    
+    if not slot then
+        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot update - no slot found for npc %s and ability %s", npc_id, feat_id)
+        return false
+    end
+
+    local feat = npcd.get_npc_feat(npc_id, feat_id)
+    local new_index = npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id)
+    local new_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
+    
+    -- Remove from old index map
+    if actionbar.by_index[slot.index] then
+        for i = 1, #actionbar.by_index[slot.index] do
+            if actionbar.by_index[slot.index][i].key == key then
+                table.remove(actionbar.by_index[slot.index], i)
+                break
+            end
+        end
+        if #actionbar.by_index[slot.index] == 0 then
+            actionbar.by_index[slot.index] = nil
+        end
+    end
+
+    -- Update slot properties
+    slot.index = new_index or slot.index
+    slot.activation_input = new_activation_input or slot.activation_input
+
+    -- Add to new index map
+    if not actionbar.by_index[slot.index] then
+        actionbar.by_index[slot.index] = {}
+    end
+    table.insert(actionbar.by_index[slot.index], slot)
+
+    Printer:Debug(LOG.INFO, CAT.CONF, "Updated action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
+    return true
+end
+
 function add_npc_abilities_to_actionbar(npc_id)
     Printer:Debug(LOG.ADD, CAT.CONF,"add npc %s abilities to actionbar", npc_id)
     local npc_abilities = npcd.get_abilities(npc_id)
     if npc_abilities then
         for id, ability in pairs(npc_abilities) do
             if ability.mode == npcd.FEAT_MODE.MANUAL then
-                local mcm_index
-                local index = mcm_index or 0
-                add_action_slot(index, npc_id, ability.id)
+                add_action_slot(npc_id, ability.id)
             end
         end
     end
+
+    -- CreateTimeEvent("npcd_actionbar","npcd_actionbar_refresh", 2, function ()
+    --     SendScriptCallback("npcd_actionbar_refresh")
+    --     return true
+    -- end)
+end
+
+function update_actionbar_slots()
+    Printer:Debug(LOG.UPDATE, CAT.CONF, "Updating all actionbar slots")
+
+    -- Create temporary copy of slots since we'll be modifying the actionbar
+    local slots_to_update = {}
+    for _, slot in ipairs(actionbar.slots) do
+        table.insert(slots_to_update, {
+            npc_id = slot.npc_id,
+            feat_id = slot.feat_id
+        })
+    end
+
+    -- Update each slot
+    local updated_count = 0
+    for _, slot in ipairs(slots_to_update) do
+        if update_action_slot(slot.npc_id, slot.feat_id) then
+            updated_count = updated_count + 1
+        end
+    end
+
+    Printer:Debug(LOG.INFO, CAT.CONF, "Updated %s actionbar slots", updated_count)
 end
 
 function remove_npc_abilities_from_actionbar(npc_id)
@@ -109,9 +182,9 @@ end
 
 function get_actionbar_slots_list()
     Printer:Debug(LOG.ADD, CAT.CONF,"get actionbar slots list")
-    Printer:LogTable("Actionbar", actionbar.by_index)
+    -- Printer:LogTable("Actionbar", actionbar.by_index)
     local action_slots_list = {}
-    local action_bar_slots = 8
+    local action_bar_slots = npcdm.settings.actionbar.max_slots
 
     for i = 1, action_bar_slots do
         local current_slots = actionbar.by_index[i]
@@ -177,19 +250,6 @@ function remove_action_slot(index, npc_id, feat_id)
     actionbar.by_key[key] = nil
 end
 
-function update_action_slot(index, npc_id, feat_id, new_index)
-    local key = get_actionslot_key(npc_id, feat_id)
-    local slot = actionbar.by_key[key]
-    if slot then
-        -- Remove from old index
-        remove_action_slot(slot.index, npc_id, feat_id)
-        -- Add to new index
-        add_action_slot(new_index, npc_id, feat_id)
-        return true
-    end
-    return false
-end
-
 function clear_actionbar()
     actionbar.slots = {}
     actionbar.by_index = {}
@@ -237,28 +297,28 @@ function count_slots()
     return {
         total = #actionbar.slots,
         used = 0,
-        available = 8
+        available = npcdm.settings.actionbar.max_slots
     }
 end
 
-function save_actionbar_state()
-    local state = {}
-    for i, slot in ipairs(actionbar.slots) do
-        table.insert(state, {
-            index = slot.index,
-            npc_id = slot.npc_id,
-            feat_id = slot.feat_id
-        })
-    end
-    return state
-end
+-- function save_actionbar_state()
+--     local state = {}
+--     for i, slot in ipairs(actionbar.slots) do
+--         table.insert(state, {
+--             index = slot.index,
+--             npc_id = slot.npc_id,
+--             feat_id = slot.feat_id
+--         })
+--     end
+--     return state
+-- end
 
-function load_actionbar_state(state)
-    clear_actionbar()
-    for _, slot in ipairs(state) do
-        add_action_slot(slot.index, slot.npc_id, slot.feat_id)
-    end
-end
+-- function load_actionbar_state(state)
+--     clear_actionbar()
+--     for _, slot in ipairs(state) do
+--         add_action_slot(slot.index, slot.npc_id, slot.feat_id)
+--     end
+-- end
 
 function reset_actionbar()
     -- Get current squad
@@ -266,33 +326,48 @@ function reset_actionbar()
     if not clist then
         return
     end
+
     clear_actionbar()
     Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", #clist)
     
     -- Process each squad member
     local slot_index = 1
-    for i=1, 8 do
+    for i=1, #clist do
         local se_obj = clist[i] and alife_object(clist[i])
         if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
             local st = db.storage[se_obj.id]
             local npc = st and st.object
             if npc then
                 local npc_id = npc:id()
-                local npc_abilities = npcd.get_abilities(npc_id)
-                
-                if npc_abilities then
-                    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Adding abilities for NPC %s", npc_id)
-                    for _, ability in pairs(npc_abilities) do
-                        if ability.mode == npcd.FEAT_MODE.MANUAL and slot_index <= 8 then
-                            add_action_slot(slot_index, npc_id, ability.id)
-                            slot_index = slot_index + 1
-                        end
-                    end
-                end
+                add_npc_abilities_to_actionbar(npc_id)
+                slot_index = slot_index + 1
             end
         end
     end
     
+    npcdu.printlog_table("reset_actionbar: update_actionbar_slots", actionbar)
+    refresh_actionbar()
     Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Action bar reset complete with %s slots filled", slot_index - 1)
-    Printer:LogTable("Reset Actionbar", actionbar.by_index)
+    -- Printer:LogTable("Reset Actionbar", actionbar.by_index)
+end
+
+function refresh_actionbar()
+
+    -- npcdu.printlog_table("refresh_actionbar", actionbar.by_key)
+
+    -- update actionbar mcm slots with new the actionbar data
+    npcd_actionbar_mcm.update_mcm_menu()
+    
+    -- update actionar from mcm
+    update_actionbar_slots()
+
+    -- refresh hud
+    SendScriptCallback("npcd_hud_update")
+end
+
+if AddScriptCallback then
+	AddScriptCallback("npcd_actionbar_refresh")
+end
+function on_game_start()
+    RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
 end

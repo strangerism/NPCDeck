@@ -1,7 +1,9 @@
 local npcdu = npcd_utils
+local npcdm = npcd_manager
 local NPCD = npcd
 local FEAT_MODE = NPCD.FEAT_MODE
 local FEAT_SETTING = NPCD.FEAT_SETTING
+local KEYBIND = NPCD.KEYBIND
 
 function get_printer()
 	if not Printer then
@@ -16,7 +18,7 @@ end
 
 function on_mcm_load()
 
-		op = { id= "main", sh=true, text="ui_mcm_npcd_main", gr ={
+		op = { id= "main", sh=true, text="ui_mcm_menu_npcd_main", gr ={
 				{ id = "title",type= "slide",link= "ui_options_slider_player",text="ui_mcm_npcd_main_title",size= {512,50},spacing= 20 },
 				{ id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_main_desc" },
 				{ id = "enable", type = "check", val = 1, def=true},
@@ -24,6 +26,22 @@ function on_mcm_load()
 			}
 	return op, "npcd"
 end
+
+-- function on_mcm_load()
+
+-- 		op = { id= "npcd",gr={
+-- 				{ id= "main", sh=true, text="ui_mcm_menu_npcd_main", gr ={
+-- 					{ id = "title",type= "slide",link= "ui_options_slider_player",text="ui_mcm_npcd_main_title",size= {512,50},spacing= 20 },
+-- 					{ id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_main_desc" },
+-- 					{ id = "enable", type = "check", val = 1, def=true},},
+-- 				},
+-- 				-- { id = "npcs", sh=true, text = "ui_mcm_menu_npcd_npcs", gr = get_npcs_menu() },
+-- 				{ id = "actionbar", text = "ui_mcm_menu_npcd_actionbar", gr = get_actionbar_menu() },
+-- 			}
+-- 		}
+				
+-- 	return op
+-- end
 
 function get_setting(module_name, var_name)
 	if Printer then
@@ -109,6 +127,44 @@ local function mcm_print(msg, ...)
 	end
 end
 
+function add_readonly_field(menu, field, id, hint, no_str)
+	local list = {}
+	table.insert(list, {field, field})
+	table.insert(menu, { id = id , hint = hint, type= "list", val = 0, def=field, content= list, no_str = no_str or false,})
+end
+
+function add_keybind(menu, keybind_grp)
+
+	local key_bind = { id = keybind_grp.key_bind.id, type = "key_bind", val = 2, hint = keybind_grp.key_bind.hint,
+		def = keybind_grp.key_bind.default
+	}
+	local mode = { id = keybind_grp.mode.id, type = ui_mcm.kb_mod_radio , val = 2, hint = keybind_grp.mode.hint or "mcm_kb_mode",
+		def = keybind_grp.mode.default,
+		content = {
+			{0, "mcm_kb_mode_press"},
+			{1, "mcm_kb_mode_dtap"},
+			{2, "mcm_kb_mode_hold"} 
+		}
+	}
+	local modifier = { id = keybind_grp.modifier.id, type = ui_mcm.kb_mod_radio , val = 2, hint = keybind_grp.modifier.hint or "mcm_kb_modifier",
+		def = keybind_grp.modifier.default,
+		content = { 
+			{0,"mcm_kb_mod_none"} , 
+			{1,"mcm_kb_mod_shift"} , 
+			{2,"mcm_kb_mod_ctrl"},
+			{3,"mcm_kb_mod_alt"}
+		}
+	}
+	table.insert(menu, key_bind)
+	table.insert(menu, mode)
+	table.insert(menu, modifier)
+end
+
+
+function get_npcs_menu()
+	return {}
+end
+
 function get_module_menu(module_deck)
 
 	-- Printer:LogTable("MCM Module Deck", module_deck)
@@ -142,9 +198,7 @@ function get_module_menu(module_deck)
 		-- build  perk menu
 		table.insert(perk_menu.gr, { id = perk.id .. "_name", type = "slide", link = "ui_options_slider_player", text = perk.name, size = {512,50}, spacing = 20 })
 		table.insert(perk_menu.gr, { id = perk.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = perk.description} )
-		local list = {}
-		table.insert(list, {perk.type, perk.type})
-		table.insert(perk_menu.gr, { id = perk.id .. "_type" , hint = "st_npcd_perk_type", type= "list", val = 0, def=perk.type, content= list, })
+		add_readonly_field(perk_menu.gr, perk.type, perk.id .. "_type", "st_npcd_perk_type")
 		-- add settings
 		if perk.mcm_menu then
 			for _, setting in pairs(perk.mcm_menu) do
@@ -160,45 +214,33 @@ function get_module_menu(module_deck)
 				table.insert(perk_menu.gr, { id = feat.id .. "_name", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=true, })
 				table.insert(perk_menu.gr, { id = feat.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = feat.description} )
 				-- type and mode
-				local list = {}
-				table.insert(list, {feat.type, feat.type})
-				table.insert(perk_menu.gr, { id = feat.id .. "_type" , hint = "st_npcd_feat_type", type= "list", val = 0, def=feat.type, content= list, })
-				list = {}
-				table.insert(list, {feat.mode, feat.mode})
-				table.insert(perk_menu.gr, { id = feat.id .. "_mode" , hint = "st_npcd_feat_mode", type= "list", val = 0, def=feat.mode, content= list, })
+				add_readonly_field(perk_menu.gr, feat.type, feat.id .. "_type", "st_npcd_feat_type")
+				add_readonly_field(perk_menu.gr, feat.mode, feat.id .. "_mode", "st_npcd_feat_mode")
 				-- stats
-
 				-- keybinds
 				if feat.mode == FEAT_MODE.MANUAL and feat.activation_key then
-					local dik = { id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.KEY, type = "key_bind", val = 2, hint = "st_npcd_feat_keybind",
-						def = feat.activation_key.keybind
-					}
-					local mode = { id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.MODIFIER, type = ui_mcm.kb_mod_radio , val = 2, hint = "mcm_kb_mode",
-						def = feat.activation_key.modifier,
-						content = {
-							{0, "mcm_kb_mode_press"},
-							{1, "mcm_kb_mode_dtap"},
-							{2, "mcm_kb_mode_hold"} 
+					local keybind_grp = {
+						key_bind = {
+							id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.KEY,
+							hint = "st_npcd_feat_keybind",
+							default = feat.activation_key.keybind,
+						},
+						mode = {
+							id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.MODIFIER,
+							default = feat.activation_key.modifier,
+						},
+						modifier = {
+							id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.SECOND_KEY,
+							default = feat.activation_key.second_key,
 						}
 					}
-					local modkey = { id = feat.id .. "_" .. FEAT_SETTING.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.SECOND_KEY , type = ui_mcm.kb_mod_radio , val = 2, hint = "mcm_kb_modifier",
-						def = feat.activation_key.second_key,
-						content = { 
-							{0,"mcm_kb_mod_none"} , 
-							{1,"mcm_kb_mod_shift"} , 
-							{2,"mcm_kb_mod_ctrl"},
-							{3,"mcm_kb_mod_alt"}
-						}
-					}
-					table.insert(perk_menu.gr, dik)
-					table.insert(perk_menu.gr, mode)
-					table.insert(perk_menu.gr, modkey)
+					add_keybind(perk_menu.gr, keybind_grp)
 				end
 			end
 		end
 		-- adding perk menu to module options
 		table.insert(module_options, perk_menu)
 	end
-
+	-- npcdu.printlog_table("MCM Module Deck", module_options)
 	return module_options
 end

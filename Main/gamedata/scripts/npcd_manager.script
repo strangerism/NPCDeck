@@ -130,7 +130,6 @@ end
 function update_actionbar()
 	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Manager update actionbar")
 	npcd_actionbar.reset_actionbar()
-	SendScriptCallback("npcd_hud_squad_update")
 end
 
 --------------- SQUAD UPDATES
@@ -163,7 +162,8 @@ local function npcd_squad_update()
 	end
 
 	current_clist = new_clist
-	SendScriptCallback("npcd_hud_squad_update")
+	-- SendScriptCallback("npcd_hud_update")
+	update_actionbar()
 end
 
 --------------- NPC DEATH
@@ -289,6 +289,21 @@ function actor_on_first_update()
 	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")
 end
 
+--- NPCD SETTINGS
+
+settings = {
+	["actionbar"] = {
+		["max_slots"] = 8,
+		["show_empty"] = true,
+	}
+}
+
+function on_option_change()
+	settings.actionbar.max_slots = npcd_mcm.get_setting("actionbar", "main/max_slots")
+	settings.actionbar.show_empty = npcd_mcm.get_setting("actionbar", "main/show_empty")
+	update_actionbar()
+end
+
 ---- BOOT
 
 function game_play_start()
@@ -303,12 +318,13 @@ end
 
 function on_game_start()
 	printf("/[NPCD][MAIN] Manager on_game_start")
-	RegisterScriptCallback("npcd_on_loaded_state", npcd_on_loaded_state)
+	-- RegisterScriptCallback("npcd_on_loaded_state", npcd_on_loaded_state)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("actor_on_update", actor_on_update)
 	RegisterScriptCallback("actor_on_update", game_play_start)
 	RegisterScriptCallback("squad_on_npc_death", squad_on_npc_death)
 	RegisterScriptCallback("npcd_squad_update", npcd_squad_update)
+	RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
 end

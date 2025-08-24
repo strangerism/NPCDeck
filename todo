@@ -28,7 +28,7 @@ ideas for archetypes
 
 
 - stuff to do
-
+- module_mcm must update npdc.perk from mcm settings changes (keybind, stats,etc)
 - implement enable NPCD
 - add generation of deck npcs to mcm menu
 - implements enable/uninstall modules
@@ -52,3 +52,4 @@ ideas for archetypes
     bugs
 
     - fix live coolddowns on icons not working when loading from save
+    - fix npcd crash when no perks are installed 
