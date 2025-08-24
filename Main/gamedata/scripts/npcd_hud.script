@@ -246,7 +246,7 @@ end
 class "UINPCDActionBar" (CUIScriptWnd)
 
 function UINPCDActionBar:__init() super()
-	self.action_slot = {}
+	self.slot = {}
 	self._tmr 			= time_global()
 	self.update_rate	= 2000 --[ms]
 	self.clr_list = {
@@ -269,44 +269,42 @@ function UINPCDActionBar:__finalize()
 end
 
 function UINPCDActionBar:InitControls()
-	-- Printer:Trace(LOG.START, CAT.UI, "UINPCDActionBar:InitControls")
+	Printer:Trace(LOG.START, CAT.UI, "UINPCDActionBar:InitControls")
 	self.xml = CScriptXmlInit()
 	self.xml:ParseFile("ui_npcd_hud.xml")
 	local xml =  self.xml
 	-- init NPCD actionbar
 	self.dialog = xml:InitStatic("action_bar", self)
 	self.index  = 0
-	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	self.scale  = 1
 	self.W      = 55
 	self.offset = 2
 
-	
+	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	
 	local actionbar_slots = npcd_actionbar.count_slots()
 	printf("$ InitControls actionbar available slots %s", actionbar_slots.available)
-	self.action_slot = {}
 	for i=1, actionbar_slots.available do
 		-- init NPCD actionbar's slots	
-		self.action_slot[i]                   = {}
-		self.action_slot[i].base              = xml:InitStatic("action_bar:slot", self.dialog)
+		self.slot[i]                   = {}
+		self.slot[i].base              = xml:InitStatic("action_bar:slot", self.dialog)
 		local x = (i-1)*(self.W + self.offset) * 1
-		self.action_slot[i].base:SetWndPos( vector2():set( 0+x , 0 ) )
-		self.action_slot[i].background        = xml:InitStatic("action_bar:slot:background", self.action_slot[i].base)
-		self.action_slot[i].hotkey_mode         = xml:InitTextWnd("action_bar:slot:hotkey_mode", self.action_slot[i].base)
-		self.action_slot[i].hotkey_bind          = xml:InitTextWnd("action_bar:slot:hotkey_bind", self.action_slot[i].base)
-		for _,ele in pairs(self.action_slot[i]) do
+		self.slot[i].base:SetWndPos( vector2():set( 0+x , 0 ) )
+		self.slot[i].background        = xml:InitStatic("action_bar:slot:background", self.slot[i].base)
+		self.slot[i].hotkey_mode         = xml:InitTextWnd("action_bar:slot:hotkey_mode", self.slot[i].base)
+		self.slot[i].hotkey_bind          = xml:InitTextWnd("action_bar:slot:hotkey_bind", self.slot[i].base)
+		for _,ele in pairs(self.slot[i]) do
 			utils_xml.correct_ratio(ele)
 		end
-		self.action_slot[i].state = SLOT_STATE.EMPTY
+		self.slot[i].state = SLOT_STATE.EMPTY
 		if npcd_actionbar.settings.show_empty then
 			printf("/ show empty slots %s", i)
-			self.action_slot[i].background:Show(true)
-			self.action_slot[i].base:Show(true)
+			self.slot[i].background:Show(true)
+			self.slot[i].base:Show(true)
 		else
 			printf("/ hide empty slots %s", i)
-			self.action_slot[i].background:Show(false)
-			self.action_slot[i].base:Show(false)
+			self.slot[i].background:Show(false)
+			self.slot[i].base:Show(false)
 		end
 	end
 end
@@ -326,10 +324,10 @@ function UINPCDActionBar:Update(force)
 
 	local to_show = main_hud_shown()
 	-- update the actionbar
-	for i=1, #self.action_slot do
+	for i=1, #self.slot do
 		if to_show then
-			Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
-			local slot_hud = self.action_slot[i]
+			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
+			local slot_hud = self.slot[i]
 			-- if slot_hud then
 				local action_slot = self.actionbar_slots_list[i]
 				if action_slot then
@@ -348,30 +346,31 @@ function UINPCDActionBar:Update(force)
 					else
 						Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find npc %s ability %s for actionbar slot %s", action_slot.npc_id, action_slot.feat_id, action_slot.index)
 					end
-					self.action_slot[i].background:Show(true)
-					self.action_slot[i].base:Show(true)
+					self.slot[i].background:Show(true)
+					self.slot[i].base:Show(true)
 				else
 					clear_actionbar_slot(slot_hud)
 					if not npcd_actionbar.settings.show_empty then
 						printf("- show empty slots %s", i)
-						self.action_slot[i].background:Show(false)
-						self.action_slot[i].base:Show(true)
+						self.slot[i].background:Show(false)
+						self.slot[i].base:Show(true)
 					else
 						printf("- hide empty slots %s", i)
-						self.action_slot[i].background:Show(true)
-						self.action_slot[i].base:Show(true)
+						self.slot[i].background:Show(true)
+						self.slot[i].base:Show(true)
 					end
 				end
 			-- end
 		else
-			self.action_slot[i].base:Show(false)
+			self.slot[i].base:Show(false)
 		end
 	end
 end
 
-function UINPCDActionBar:ClearActionbar()
-	for i=1, #self.action_slot do
-		local slot_hud = self.action_slot[i]
+function UINPCDActionBar:ClearControls()
+	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "ClearControls")
+	for i=1, #self.slot do
+		local slot_hud = self.slot[i]
 		if slot_hud then
 			clear_actionbar_slot(slot_hud)
 			slot_hud.background:Show(false)
@@ -403,7 +402,7 @@ end
 function deactivate_hud()
 	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar deactivate_hud")
 	if HUD ~= nil then
-		HUD:ClearActionbar()
+		HUD:ClearControls()
 		get_hud():RemoveDialogToRender(HUD)
 		HUD = nil
 	end
