@@ -35,9 +35,9 @@ function get_actionbar_menu()
 	table.insert(slots_options, { id = "divider", type = "line" })
 
 	local actionbar = npcd_actionbar.get_actionbar()
-	-- npcdu.printlog_table("on_mcm_load:get_actionbar_menu", actionbar.by_key)
+	-- npcdu.printlog_table("on_mcm_load actionbar.by_key", actionbar.by_key)
 	for key, action_slot in pairs(actionbar.by_key) do
-		-- npcdu.printlog_table("action_slot", action_slot)
+		-- npcdu.printlog_table("on_mcm_load action_slot", action_slot)
 		local npc = npcdu.get_npc_obj(action_slot.npc_id)
     	local feat = npcd.get_npc_feat(action_slot.npc_id, action_slot.feat_id)
         table.insert(slots_options, { id = action_slot.key .. "_feat", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=false, })
@@ -66,7 +66,7 @@ function get_actionbar_menu()
     local slots_menu = { id="slots", text="ui_mcm_menu_npcd_actionbar_slots", sh=true, gr=slots_options}
 
 	table.insert(actionbar_menu, slots_menu)
-	-- npcdu.printlog_table("MCM Module Deck", actionbar_menu)
+	-- npcdu.printlog_table("on_mcm_load actionbar_menu", actionbar_menu)
 	return actionbar_menu
 end
 
@@ -89,18 +89,8 @@ function get_feat_index_slot(npc_id, feat_id)
 end
 
 function update_mcm_menu()
-	-- printf("update_mcm_menu")
 	local op, module = on_mcm_load()
 
-	-- for key, mod_menu in pairs(ui_mcm.options) do
-	-- 	if mod_menu.id == module then
-	-- 		for key, submenu in pairs(mod_menu.gr) do
-	-- 			if sumbenu.id == "slots" then
-					
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
 	-- npcdu.printlog_table("update_mcm_menu npcd op", op)
 	for i=1, #ui_mcm.options do
 		if ui_mcm.options[i].id == module then

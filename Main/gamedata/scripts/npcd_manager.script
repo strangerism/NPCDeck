@@ -162,7 +162,6 @@ local function npcd_squad_update()
 	end
 
 	current_clist = new_clist
-	-- SendScriptCallback("npcd_hud_update")
 	update_actionbar()
 end
 

@@ -115,11 +115,6 @@ function add_npc_abilities_to_actionbar(npc_id)
             end
         end
     end
-
-    -- CreateTimeEvent("npcd_actionbar","npcd_actionbar_refresh", 2, function ()
-    --     SendScriptCallback("npcd_actionbar_refresh")
-    --     return true
-    -- end)
 end
 
 function update_actionbar_slots()
@@ -345,15 +340,12 @@ function reset_actionbar()
         end
     end
     
-    npcdu.printlog_table("reset_actionbar: update_actionbar_slots", actionbar)
     refresh_actionbar()
     Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Action bar reset complete with %s slots filled", slot_index - 1)
     -- Printer:LogTable("Reset Actionbar", actionbar.by_index)
 end
 
 function refresh_actionbar()
-
-    -- npcdu.printlog_table("refresh_actionbar", actionbar.by_key)
 
     -- update actionbar mcm slots with new the actionbar data
     npcd_actionbar_mcm.update_mcm_menu()

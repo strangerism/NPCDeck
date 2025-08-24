@@ -350,10 +350,11 @@ function UINPCDActionBar:Update(force)
 	end
 end
 
-function update_actionbar_slotlist()
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "actionbar update_actionbar_slotlist")
+function npcd_hud_update()
+	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update")
 	actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
-	refresh_hud()
+	deactivate_hud()
+	activate_hud()
 	-- Printer:LogTable("Action Bar Slots", actionbar_slots_list)
 end
 
@@ -391,12 +392,6 @@ function update_hud()
 	end
 end
 
-function refresh_hud()
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "actionbar refresh_hud")
-	deactivate_hud()
-	activate_hud()
-end
-
 function actor_on_net_destroy()
 	if HUD ~= nil then
 		get_hud():RemoveDialogToRender(HUD)
@@ -415,12 +410,10 @@ function actor_on_first_update()
 end
 
 if AddScriptCallback then
-	AddScriptCallback("npcd_hud_refresh")
 	AddScriptCallback("npcd_hud_update")
 end
 function on_game_start()
 	-- Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
-	RegisterScriptCallback("npcd_hud_refresh", refresh_hud)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
-	RegisterScriptCallback("npcd_hud_update", update_actionbar_slotlist)
+	RegisterScriptCallback("npcd_hud_update", npcd_hud_update)
 end
