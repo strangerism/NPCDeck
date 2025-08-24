@@ -2,7 +2,7 @@ local npcdu = npcd_utils
 local npcdm = npcd_manager
 local FEAT_SETTING = NPCD.FEAT_SETTING
 local is_squad_available = npcd_manager.is_squad_available
-
+MAX_SLOTS = 16
 function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_actionbar")
@@ -179,11 +179,10 @@ function get_actionbar_slots_list()
     Printer:Debug(LOG.ADD, CAT.CONF,"get actionbar slots list")
     -- Printer:LogTable("Actionbar", actionbar.by_index)
     local action_slots_list = {}
-    local action_bar_slots = npcdm.settings.actionbar.max_slots
+    local action_bar_slots = MAX_SLOTS
 
     for i = 1, action_bar_slots do
         local current_slots = actionbar.by_index[i]
-
         if current_slots and #current_slots > 0 then
             -- Use existing slot(s) at index i
             for _, slot in ipairs(current_slots) do
@@ -292,7 +291,7 @@ function count_slots()
     return {
         total = #actionbar.slots,
         used = 0,
-        available = npcdm.settings.actionbar.max_slots
+        available = npcd_mcm.get_setting("actionbar", "main/max_slots") or settings.max_slots
     }
 end
 
@@ -319,6 +318,7 @@ function reset_actionbar()
     -- Get current squad
     local clist = is_squad_available()
     if not clist then
+        SendScriptCallback("npcd_hud_update")
         return
     end
 
@@ -360,6 +360,19 @@ end
 if AddScriptCallback then
 	AddScriptCallback("npcd_actionbar_refresh")
 end
+
+settings = {
+    ["max_slots"] = nil,
+    ["show_empty"] = nil,
+}
+
+function on_option_change()
+	settings.max_slots = npcd_mcm.get_setting("actionbar", "main/max_slots")
+	settings.show_empty = npcd_mcm.get_setting("actionbar", "main/show_empty")
+end
+
 function on_game_start()
+    RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
+    on_option_change()
 end

@@ -268,8 +268,6 @@ end
 function UINPCDActionBar:__finalize()
 end
 
-local actionbar_slots_list
-
 function UINPCDActionBar:InitControls()
 	-- Printer:Trace(LOG.START, CAT.UI, "UINPCDActionBar:InitControls")
 	self.xml = CScriptXmlInit()
@@ -278,12 +276,17 @@ function UINPCDActionBar:InitControls()
 	-- init NPCD actionbar
 	self.dialog = xml:InitStatic("action_bar", self)
 	self.index  = 0
-
+	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	self.scale  = 1
 	self.W      = 55
 	self.offset = 2
-	--- init NPCD companions hud extra elements and action slots (max slots is 8, 1 for each potential npc in squad)
-	for i=1,8 do
+
+	
+	
+	local actionbar_slots = npcd_actionbar.count_slots()
+	printf("$ InitControls actionbar available slots %s", actionbar_slots.available)
+	self.action_slot = {}
+	for i=1, actionbar_slots.available do
 		-- init NPCD actionbar's slots	
 		self.action_slot[i]                   = {}
 		self.action_slot[i].base              = xml:InitStatic("action_bar:slot", self.dialog)
@@ -296,6 +299,15 @@ function UINPCDActionBar:InitControls()
 			utils_xml.correct_ratio(ele)
 		end
 		self.action_slot[i].state = SLOT_STATE.EMPTY
+		if npcd_actionbar.settings.show_empty then
+			printf("/ show empty slots %s", i)
+			self.action_slot[i].background:Show(true)
+			self.action_slot[i].base:Show(true)
+		else
+			printf("/ hide empty slots %s", i)
+			self.action_slot[i].background:Show(false)
+			self.action_slot[i].base:Show(false)
+		end
 	end
 end
 
@@ -312,50 +324,66 @@ function UINPCDActionBar:Update(force)
 	end
 	self._tmr = tg + self.update_rate
 
-	if npcdu.tablelength(actionbar_slots_list) == 0 then
-		Printer:Log(LOG.WARN, CAT.UI_ACTION, "actionbar_slots_list is empty")
-		return
-	end
-
 	local to_show = main_hud_shown()
 	-- update the actionbar
-	for i=1,8 do
-		if to_show then -- and #clist > 0 then
-			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
+	for i=1, #self.action_slot do
+		if to_show then
+			Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
 			local slot_hud = self.action_slot[i]
-			if actionbar_slots_list[i] then
-				local action_slot = actionbar_slots_list[i]
-				local ability = npcd.get_ability(action_slot.npc_id, action_slot.feat_id)
-				if ability then
-					Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
-					Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
-					if (ability.state ~= slot_hud.state) then
-						add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
+			-- if slot_hud then
+				local action_slot = self.actionbar_slots_list[i]
+				if action_slot then
+					local ability = npcd.get_ability(action_slot.npc_id, action_slot.feat_id)
+					if ability then
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
+						if (ability.state ~= slot_hud.state) then
+							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
+						end
+						if ability.state == ABILITY_STATE.COOLDOWN then
+							local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
+							Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
+							slot_hud.ability.cd:SetProgressPos(bar)
+						end
+					else
+						Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find npc %s ability %s for actionbar slot %s", action_slot.npc_id, action_slot.feat_id, action_slot.index)
 					end
-					if ability.state == ABILITY_STATE.COOLDOWN then
-						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
-						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
-						slot_hud.ability.cd:SetProgressPos(bar)
-					end
+					self.action_slot[i].background:Show(true)
+					self.action_slot[i].base:Show(true)
 				else
-					Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find npc %s ability %s for actionbar slot %s", action_slot.npc_id, action_slot.feat_id, action_slot.index)
+					clear_actionbar_slot(slot_hud)
+					if not npcd_actionbar.settings.show_empty then
+						printf("- show empty slots %s", i)
+						self.action_slot[i].background:Show(false)
+						self.action_slot[i].base:Show(true)
+					else
+						printf("- hide empty slots %s", i)
+						self.action_slot[i].background:Show(true)
+						self.action_slot[i].base:Show(true)
+					end
 				end
-			else
-				clear_actionbar_slot(slot_hud)
-			end
-			self.action_slot[i].base:Show(true)
+			-- end
 		else
 			self.action_slot[i].base:Show(false)
 		end
 	end
 end
 
+function UINPCDActionBar:ClearActionbar()
+	for i=1, #self.action_slot do
+		local slot_hud = self.action_slot[i]
+		if slot_hud then
+			clear_actionbar_slot(slot_hud)
+			slot_hud.background:Show(false)
+			slot_hud.background = nil
+		end
+	end
+end
+
 function npcd_hud_update()
 	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update")
-	actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	deactivate_hud()
 	activate_hud()
-	-- Printer:LogTable("Action Bar Slots", actionbar_slots_list)
 end
 
 HUD = nil
@@ -375,6 +403,7 @@ end
 function deactivate_hud()
 	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar deactivate_hud")
 	if HUD ~= nil then
+		HUD:ClearActionbar()
 		get_hud():RemoveDialogToRender(HUD)
 		HUD = nil
 	end
