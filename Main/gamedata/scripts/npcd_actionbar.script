@@ -318,6 +318,7 @@ function reset_actionbar()
     -- Get current squad
     local clist = is_squad_available()
     if not clist then
+        Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update but no squad available")
         SendScriptCallback("npcd_hud_update")
         return
     end

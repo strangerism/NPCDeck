@@ -28,6 +28,7 @@ ideas for archetypes
 
 
 - stuff to do
+- integrate action_slots to input manager
 - module_mcm must update npdc.perk from mcm settings changes (keybind, stats,etc)
 - implement enable NPCD
 - add generation of deck npcs to mcm menu
@@ -39,8 +40,10 @@ ideas for archetypes
 - add power regen ??? 
 - add activation (seconds) stat to feat
 - add ACTIVATING state to feat
-- simplify npcd queries in spotters_mcm 
-- refactor npcd and modules startup
+- refactor logging boot sequence using the game_play_start event in npcd_manager
+- refactor npcd_actionbar hud into separate file
+- refactor npcd_actionbar to be standalone and pluggable
+- refactor npcd_logging to be standalone and pluggable
 
 - addons to look
 

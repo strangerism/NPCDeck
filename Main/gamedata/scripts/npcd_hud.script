@@ -283,7 +283,7 @@ function UINPCDActionBar:InitControls()
 	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	
 	local actionbar_slots = npcd_actionbar.count_slots()
-	printf("$ InitControls actionbar available slots %s", actionbar_slots.available)
+	Printer:Trace(LOG.START, CAT.UI_ACTION, "InitControls actionbar available slots %s", actionbar_slots.available)
 	for i=1, actionbar_slots.available do
 		-- init NPCD actionbar's slots	
 		self.slot[i]                   = {}
@@ -298,11 +298,11 @@ function UINPCDActionBar:InitControls()
 		end
 		self.slot[i].state = SLOT_STATE.EMPTY
 		if npcd_actionbar.settings.show_empty then
-			printf("/ show empty slots %s", i)
+			Printer:Trace(LOG.START, CAT.UI_ACTION, "show empty slots %s", i)
 			self.slot[i].background:Show(true)
 			self.slot[i].base:Show(true)
 		else
-			printf("/ hide empty slots %s", i)
+			Printer:Trace(LOG.START, CAT.UI_ACTION, "hide empty slots %s", i)
 			self.slot[i].background:Show(false)
 			self.slot[i].base:Show(false)
 		end
@@ -351,11 +351,11 @@ function UINPCDActionBar:Update(force)
 				else
 					clear_actionbar_slot(slot_hud)
 					if not npcd_actionbar.settings.show_empty then
-						printf("- show empty slots %s", i)
+						Printer:Trace(LOG.START, CAT.UI_ACTION, " show empty slots %s", i)
 						self.slot[i].background:Show(false)
 						self.slot[i].base:Show(true)
 					else
-						printf("- hide empty slots %s", i)
+						Printer:Trace(LOG.START, CAT.UI_ACTION, " hide empty slots %s", i)
 						self.slot[i].background:Show(true)
 						self.slot[i].base:Show(true)
 					end

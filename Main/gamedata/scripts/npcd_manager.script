@@ -135,8 +135,8 @@ end
 --------------- SQUAD UPDATES
 
 local current_clist
-local function npcd_squad_update()
-	Printer:Debug(LOG.INFO, CAT.NPC,"npcd_squad_update")
+local function do_npcd_squad_update()
+	Printer:Debug(LOG.INFO, CAT.NPC,"do_npcd_squad_update")
 	local new_clist = axr_companions.list_actor_squad_by_id()
 
 	local added_ids, removed_ids = npcdu.compute_diff(new_clist, current_clist)
@@ -163,6 +163,12 @@ local function npcd_squad_update()
 
 	current_clist = new_clist
 	update_actionbar()
+	return true
+end
+
+local function npcd_squad_update()
+	Printer:Debug(LOG.INFO, CAT.NPC,"npcd_squad_update")
+	CreateTimeEvent("npcd_manager", "do_npcd_squad_update", 1, do_npcd_squad_update)
 end
 
 --------------- NPC DEATH
