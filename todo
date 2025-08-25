@@ -27,10 +27,16 @@ ideas for archetypes
     - awareness: aoe mark in (previous visited?) smarts location of all item of interests  
 
 
-- stuff to do
-- integrate action_slots to input manager
+stuff to do
+
+- bind action_slots to input manager (NEEDS TESTING)
+- refactor action slot functor execution against module feat implementation
+- remove old input management
+- implement feat's can_register functor in perk config (add mcm always_register?)
+- check correct usage of objects_id instead of passing objects
 - module_mcm must update npdc.perk from mcm settings changes (keybind, stats,etc)
 - implement enable NPCD
+- implement roll npc profile when talking to npc only. ask about his background
 - add generation of deck npcs to mcm menu
 - implements enable/uninstall modules
 - add generation of perks stats in mcm menu
@@ -40,6 +46,8 @@ ideas for archetypes
 - add power regen ??? 
 - add activation (seconds) stat to feat
 - add ACTIVATING state to feat
+- add MODAL to feat type
+- add npcd logging to mp patcher script
 - refactor logging boot sequence using the game_play_start event in npcd_manager
 - refactor npcd_actionbar hud into separate file
 - refactor npcd_actionbar to be standalone and pluggable

@@ -68,8 +68,9 @@ function get_npc_obj(npc_id)
 	return db.storage[npc_id] and db.storage[npc_id].object
 end
 
-function get_desc_rank(npc)
-	return ranks.get_se_obj_rank_name(npc)
+function get_desc_rank(npc_id)
+	local npc = get_npc_obj(npc_id)
+	return npc and ranks.get_se_obj_rank_name(npc) or ""
 end
 
 local RANK = {

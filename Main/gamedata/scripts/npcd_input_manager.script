@@ -90,14 +90,31 @@ function update_activation_inputs(activations_inputs)
     end
 end
 
-function actor_on_first_update()
-    -- local activations_inputs = npcd.get_perks_activations_inputs()
-    -- Printer:LogTable("Feats Activations", activations_inputs)
-    -- update_activation_inputs(activations_inputs)
+function bind_activation_input(id, activation_input)
+    Printer:Debug(LOG.CONF, CAT.KEYBINDS, "bind_activation_input %s", id)
+    if keybind_instances[id] then
+        keybind_instances[id]:destroy()
+    end
+
+    keybind_instances[id] = InputManager(id, activation_input)
 end
 
-function on_game_start()
-        RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
-    -- RegisterScriptCallback("on_option_change", on_option_change)
-    -- on_option_change(mcm_keybinds)
+function remove_activation_input(id)
+    Printer:Debug(LOG.CONF, CAT.KEYBINDS, "remove_activation_input %s", id)
+    if keybind_instances[id] then
+        keybind_instances[id]:destroy()
+    end
+end
+
+function remove_all()
+    Printer:Log(LOG.CONF, CAT.KEYBINDS, "remove_all")
+    for id, _ in pairs(keybind_instances) do
+        if keybind_instances[id] then
+            keybind_instances[id]:destroy()
+        end
+    end
+end
+
+function actor_on_net_destroy()
+    remove_all()
 end

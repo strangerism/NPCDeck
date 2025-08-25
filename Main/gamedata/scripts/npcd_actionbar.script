@@ -65,12 +65,12 @@ function add_action_slot(npc_id, feat_id, force_index)
     actionbar.by_key[key] = slot
 end
 
-function update_action_slot(npc_id, feat_id)
+function bind_action_slot(npc_id, feat_id)
     local key = get_actionslot_key(npc_id, feat_id)
     local slot = actionbar.by_key[key]
     
     if not slot then
-        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot update - no slot found for npc %s and ability %s", npc_id, feat_id)
+        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot bind - no slot found for npc %s and ability %s", npc_id, feat_id)
         return false
     end
 
@@ -101,6 +101,9 @@ function update_action_slot(npc_id, feat_id)
     end
     table.insert(actionbar.by_index[slot.index], slot)
 
+    -- bind action slot to input manager
+    npcd_input_manager.bind_activation_input(slot.key, slot.activation_input)
+
     Printer:Debug(LOG.INFO, CAT.CONF, "Updated action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
     return true
 end
@@ -117,8 +120,8 @@ function add_npc_abilities_to_actionbar(npc_id)
     end
 end
 
-function update_actionbar_slots()
-    Printer:Debug(LOG.UPDATE, CAT.CONF, "Updating all actionbar slots")
+function bind_actionbar_slots()
+    Printer:Debug(LOG.UPDATE, CAT.CONF, "Binding all actionbar slots")
 
     -- Create temporary copy of slots since we'll be modifying the actionbar
     local slots_to_update = {}
@@ -132,7 +135,7 @@ function update_actionbar_slots()
     -- Update each slot
     local updated_count = 0
     for _, slot in ipairs(slots_to_update) do
-        if update_action_slot(slot.npc_id, slot.feat_id) then
+        if bind_action_slot(slot.npc_id, slot.feat_id) then
             updated_count = updated_count + 1
         end
     end
@@ -352,7 +355,7 @@ function refresh_actionbar()
     npcd_actionbar_mcm.update_mcm_menu()
     
     -- update actionar from mcm
-    update_actionbar_slots()
+    bind_actionbar_slots()
 
     -- refresh hud
     SendScriptCallback("npcd_hud_update")
