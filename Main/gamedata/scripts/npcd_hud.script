@@ -414,7 +414,7 @@ function deactivate_hud()
 end
 
 function update_hud()
-	Printer:Debug(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar update_hud")
+	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar update_hud")
 	if HUD ~= nil then
 		HUD:Update(true)
 	end

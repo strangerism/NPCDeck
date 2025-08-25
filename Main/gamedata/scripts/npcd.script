@@ -31,7 +31,8 @@ FEAT_TYPE = {
 
 FEAT_MODE = {
 	AUTO = "st_npcd_feat_mode_auto",
-	MANUAL = "st_npcd_feat_mode_manual"
+	MANUAL = "st_npcd_feat_mode_manual",
+	MODAL = "st_npcd_feat_mode_modal"
 }
 
 KEYBIND = {
@@ -68,6 +69,11 @@ FEAT_SETTING = {
 		COOLDOWN = "cooldown",
 		LIFE = "life",
 	}
+}
+
+INPUT_MANAGER = {
+	NPCD = "npcd",
+	CUSTOM = "custom"
 }
 
 function add_module_perks(module, module_perks)

@@ -101,6 +101,19 @@ function manage_ability_cooldown(npc_id, feat_id)
 	return false
 end
 
+local function execute_activation(npc_id, functor)
+	if not functor then return false end
+	table.insert(functor, npc_id)
+	Printer:LogTable(LOG.RUN, CAT.ACTIV, "Executing", functor)
+	return execute_func(unpack(functor))
+end
+
+function activate(activation_input)
+	if activate_ability(activation_input.npc_id, activation_input.feat_id) then
+		execute_activation(activation_input.npc_id, activation_input.functor)
+	end
+end
+
 function activate_ability(npc_id, feat_id)
 	Printer:Debug(LOG.INFO, CAT.NPC,"npc %s activate_ability %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
@@ -110,10 +123,10 @@ function activate_ability(npc_id, feat_id)
 	if not npc_ability then return true end -- ability unregistered?
 
 	if (npc_ability.state == ABILITY_STATE.COOLDOWN) then 
-		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
+		Printer:Debug(LOG.WARN, CAT.NPC,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
 		return false
 	elseif (npc_ability.state == ABILITY_STATE.READING) then
-		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s activates ability %s on READING", npc_id, feat_id)
+		Printer:Debug(LOG.WARN, CAT.NPC,"npc %s activates ability %s on READING", npc_id, feat_id)
 		npc_ability.state = ABILITY_STATE.READY
 	end
 

@@ -16,18 +16,15 @@ local keybind_instances = {}
 
 class "InputManager"
 
-function InputManager:__init(id, activations_inputs)
+function InputManager:__init(id, activation_input)
     Printer:Log(LOG.ADD, CAT.KEYBINDS, "adding input manager for %s", id)
-    self.settings = activations_inputs.activation_key
+    self.settings = activation_input.activation_key
     self.modes = {
         [0] = { 
             call = "on_key_press",         
             action = function(key) 
                 if ui_mcm.simple_press(id, key) then
-                    if activations_inputs.activation_functor then
-                        Printer:Log(LOG.RUN, CAT.ACTIV, "executing %s.%s", activations_inputs.activation_functor[1], activations_inputs.activation_functor[2])
-                        execute_func(unpack(activations_inputs.activation_functor))
-                    end
+                    npcd_manager.activate(activation_input)
                 end
             end 
         },
@@ -35,10 +32,7 @@ function InputManager:__init(id, activations_inputs)
             call = "on_key_press", 
             action = function(key) 
                 if ui_mcm.double_tap(id, key) then
-                    if activations_inputs.activation_functor then
-                        Printer:Log(LOG.RUN, CAT.ACTIV, "executing %s.%s", activations_inputs.activation_functor[1], activations_inputs.activation_functor[2])
-                        execute_func(unpack(activations_inputs.activation_functor))
-                    end
+                    npcd_manager.activate(activation_input)
                 end 
             end 
         },
@@ -46,10 +40,7 @@ function InputManager:__init(id, activations_inputs)
             call = "on_key_hold", 
             action = function(key) 
                 if ui_mcm.key_hold(id, key) then
-                    if activations_inputs.activation_functor then
-                        Printer:Log(LOG.RUN, CAT.ACTIV, "executing %s.%s", activations_inputs.activation_functor[1], activations_inputs.activation_functor[2])
-                        execute_func(unpack(activations_inputs.activation_functor))
-                    end
+                    npcd_manager.activate(activation_input)
                 end 
             end 
         }
@@ -75,7 +66,7 @@ function InputManager:destroy()
     UnregisterScriptCallback(self.modes[self.settings.modifier].call, self)
 end
 
-function update_activation_inputs(activations_inputs)
+function update_activation_inputs(activation_input)
     Printer:Log(LOG.CONF, CAT.KEYBINDS, "update_activation_inputs")
     -- unbind old first
     for id, _ in pairs(keybind_instances) do
@@ -85,7 +76,7 @@ function update_activation_inputs(activations_inputs)
     end
 
     -- bind new
-    for id, activation_input in pairs(activations_inputs) do
+    for id, activation_input in pairs(activation_input) do
         keybind_instances[id] = InputManager(id, activation_input)
     end
 end

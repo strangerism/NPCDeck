@@ -102,6 +102,8 @@ function bind_action_slot(npc_id, feat_id)
     table.insert(actionbar.by_index[slot.index], slot)
 
     -- bind action slot to input manager
+    slot.activation_input["npc_id"] = npc_id
+    slot.activation_input["feat_id"] = feat_id
     npcd_input_manager.bind_activation_input(slot.key, slot.activation_input)
 
     Printer:Debug(LOG.INFO, CAT.CONF, "Updated action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
