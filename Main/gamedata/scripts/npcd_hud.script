@@ -187,7 +187,7 @@ function clear_actionbar_slot(slot_hud, state)
 end
 
 function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, index, mode)
-	Printer:Trace(LOG.INFO, CAT.UI_ACTION,"add ability %s to actionbar slot %s", ability.id, index)
+	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"add ability %s to actionbar slot %s", ability.id, index)
 	clear_actionbar_slot(slot_hud, ability.state)
 	slot_hud.ability = {}
 
@@ -284,7 +284,7 @@ function UINPCDActionBar:InitControls()
 	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	
 	local actionbar_slots = npcd_actionbar.count_slots()
-	Printer:Trace(LOG.START, CAT.UI_ACTION, "InitControls actionbar available slots %s", actionbar_slots.available)
+	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "InitControls actionbar available slots %s", actionbar_slots.available)
 	for i=1, actionbar_slots.available do
 		-- init NPCD actionbar's slots	
 		self.slot[i]                   = {}
@@ -369,7 +369,7 @@ function UINPCDActionBar:Update(force)
 end
 
 function UINPCDActionBar:ClearControls()
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "ClearControls")
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "ClearControls")
 	for i=1, #self.slot do
 		local slot_hud = self.slot[i]
 		if slot_hud then
@@ -381,7 +381,7 @@ function UINPCDActionBar:ClearControls()
 end
 
 function npcd_hud_update()
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update")
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "npcd_hud_update")
 	deactivate_hud()
 	activate_hud()
 end

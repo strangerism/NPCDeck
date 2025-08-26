@@ -67,7 +67,7 @@ function InputManager:destroy()
 end
 
 function update_activation_inputs(activation_input)
-    Printer:Log(LOG.CONF, CAT.KEYBINDS, "update_activation_inputs")
+    Printer:Log(LOG.ADD, CAT.KEYBINDS, "update_activation_inputs")
     -- unbind old first
     for id, _ in pairs(keybind_instances) do
         if keybind_instances[id] then
@@ -82,7 +82,7 @@ function update_activation_inputs(activation_input)
 end
 
 function bind_activation_input(id, activation_input)
-    Printer:Debug(LOG.CONF, CAT.KEYBINDS, "bind_activation_input %s", id)
+    Printer:Debug(LOG.ADD, CAT.KEYBINDS, "bind_activation_input %s", id)
     if keybind_instances[id] then
         keybind_instances[id]:destroy()
     end
@@ -91,14 +91,14 @@ function bind_activation_input(id, activation_input)
 end
 
 function remove_activation_input(id)
-    Printer:Debug(LOG.CONF, CAT.KEYBINDS, "remove_activation_input %s", id)
+    Printer:Debug(LOG.REMOVE, CAT.KEYBINDS, "remove_activation_input %s", id)
     if keybind_instances[id] then
         keybind_instances[id]:destroy()
     end
 end
 
 function remove_all()
-    Printer:Log(LOG.CONF, CAT.KEYBINDS, "remove_all")
+    Printer:Log(LOG.REMOVE, CAT.KEYBINDS, "remove_all")
     for id, _ in pairs(keybind_instances) do
         if keybind_instances[id] then
             keybind_instances[id]:destroy()

@@ -202,7 +202,7 @@ end
 
 -- returns true of the perk is rolled
 function roll_npc_perk(npc_id, perk_id)
-	Printer:Log(LOG.INFO, CAT.CONF,"npc %s Roll_perk", npc_id)
+	Printer:Log(LOG.RUN, CAT.CONF,"npc %s rolls perk", npc_id)
 	if not npc_id or not perk_id or not perks[perk_id] then return end
 	Printer:Log(LOG.INFO, CAT.CONF,"perk %s is available", perk_id)
 	local perk = perks[perk_id]
@@ -244,7 +244,7 @@ local function get_randomized_perk_list(perk_type, perk_archetype)
 end
 
 function create_profile(npc_id)
-
+	Printer:Log(LOG.RUN, CAT.CONF,"npc %s create profile", npc_id)
 	-- ARCHETYPE
 	-- atm only one perk can be added, of type archetype
 	local archetype_perk_list = get_randomized_perk_list(PERK_TYPE.ARCHETYPE)

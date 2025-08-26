@@ -122,7 +122,7 @@ function add_npc_abilities_to_actionbar(npc_id)
 end
 
 function bind_actionbar_slots()
-    Printer:Debug(LOG.UPDATE, CAT.CONF, "Binding all actionbar slots")
+    Printer:Debug(LOG.ADD, CAT.CONF, "Binding all actionbar slots")
 
     -- Create temporary copy of slots since we'll be modifying the actionbar
     local slots_to_update = {}
@@ -158,7 +158,7 @@ function remove_npc_abilities_from_actionbar(npc_id)
 end
 
 function get_actionbar_slots_list()
-    Printer:Debug(LOG.ADD, CAT.CONF,"get actionbar slots list")
+    Printer:Debug(LOG.RUN, CAT.CONF,"get actionbar slots list")
     -- Printer:LogTable("Actionbar", actionbar.by_index)
     local action_slots_list = {}
     local action_bar_slots = MAX_SLOTS
@@ -202,6 +202,7 @@ function get_actionbar_slots_list()
 end
 
 function remove_action_slot(npc_id, feat_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"npc %s remove ability %s action slot", npc_id, feat_id)
     local key = get_actionslot_key(npc_id, feat_id)
     local slot = actionbar.by_key[key]
     
@@ -313,6 +314,7 @@ end
 -- end
 
 function reset_actionbar()
+    Printer:Debug(LOG.RUN, CAT.UI_ACTION, "reset actionbar")
     -- Get current squad
     if not npcdm.squad_available() then
         Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update but no squad available")
@@ -346,6 +348,7 @@ function reset_actionbar()
 end
 
 function refresh_actionbar()
+    Printer:Debug(LOG.RUN, CAT.UI_ACTION, "refresh actionbar")
 
     -- update actionbar mcm slots with new the actionbar data
     npcd_actionbar_mcm.update_mcm_menu()

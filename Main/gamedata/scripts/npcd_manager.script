@@ -48,11 +48,11 @@ function release_npc(npc_id)
 end
 
 function register_abilities(npc_id)
-
-	Printer:Debug(LOG.ADD, CAT.NPC,"npc %s register abilities", npc_id)
+	Printer:Debug(LOG.RUN, CAT.NPC,"npc %s register abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
-	Printer:LogTable("NPC perks", npc_deck)
+
+	Printer:LogTable("Register Abilities - NPC perks:", npc_deck)
 	-- clear npc current abilities
 	npcd.clear_abilities(npc_id)
 
@@ -63,7 +63,7 @@ function register_abilities(npc_id)
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
 					if npc_can_register(npc_id, feat) then
-						Printer:Debug(LOG.INFO, CAT.NPC,"npc %s adds ability %s", npc_id, feat.id)
+						Printer:Debug(LOG.ADD, CAT.NPC,"npc %s adds ability %s", npc_id, feat.id)
 						npcd.add_ability(npc_id, feat)
 						bind_ability(npc_id, feat)
 					end
@@ -72,13 +72,11 @@ function register_abilities(npc_id)
 		end
 	end
 	Printer:LogTable("Registered Abilities", npc_deck.Ability)
-	-- npcd_actionbar.add_npc_abilities_to_actionbar(npc_id)
 	return true
 end
 
 function unregister_abilities(npc_id)
-
-    Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s unregister abilities", npc_id)
+    Printer:Debug(LOG.RUN, CAT.NPC,"npc %s unregister abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
@@ -88,14 +86,13 @@ function unregister_abilities(npc_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
-					Printer:Debug(LOG.INFO, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
+					Printer:Debug(LOG.ADD, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
 					npcd.remove_ability(npc_id, feat.id)
 					unbind_ability(npc_id, feat)
 				end
 			end
 		end
 	end
-	-- npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
 	return true
 end
 
@@ -105,34 +102,33 @@ end
 Tasks = {}
 
 function add_cooldown_execution(npc_id, feat_id)
-
 	local ability_cooldown_id = get_ability_cooldown_id(npc_id, feat_id)
-
 	remove_execution(ability_cooldown_id)
-
-	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s creates new ability cooldown manager %s", npc_id, ability_cooldown_id)
+	Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s creates new ability cooldown manager %s", npc_id, ability_cooldown_id)
 	CreateTimeEvent("npcd_manager", ability_cooldown_id, 0, manage_ability_cooldown, ability_cooldown_id, npc_id, feat_id)
 	Tasks[ability_cooldown_id] = { npc_id = npc_id, feat_id = feat_id}
 end
 
 function add_poll_execution(npc_id, feat)
-
 	local polling_input = create_polling_input(npc_id, feat)
-	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s creates new ability poll manager %s", npc_id, polling_input.id)
+	Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s creates new ability poll manager %s", npc_id, polling_input.id)
 	CreateTimeEvent("npcd_manager", polling_input.id, polling_input.interval, poll, polling_input)
 	Tasks[polling_input.id] = { npc_id = npc_id, feat_id = feat.id}
 end
 
 function remove_execution(id)
+	Printer:Debug(LOG.STOP, CAT.EXEC,"remove execution %s", id)
 	RemoveTimeEvent("npcd_manager", id)
 	Tasks[id] = nil
 end
 
 function reset_execution(id, delay)
+	Printer:Debug(LOG.ADD, CAT.EXEC,"reset execution %s", id)
 	ResetTimeEvent("npcd_manager", id, delay)
 end
 
 function remove_npc_executions(npc_id)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"remove npc %s executions",npc_id)
 	for id, execution_info in pairs(Tasks) do
 		if execution_info.npc_id == npc_id then
 			remove_execution(id)
@@ -141,6 +137,7 @@ function remove_npc_executions(npc_id)
 end
 
 function teardown_npcd_execution()
+	Printer:Debug(LOG.STOP, CAT.EXEC,"teardown_npcd_execution")
 	for key, value in pairs(Tasks) do
 		RemoveTimeEvent("npcd_manager", key)
 	end
@@ -150,7 +147,7 @@ end
 
 -- called by NPCD Manager custom time events
 function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
-	Printer:Debug(LOG.INFO, CAT.FEAT,"npc %s manage ability cooldown %s", npc_id, feat_id)
+	Printer:Trace(LOG.RUN, CAT.FEAT,"npc %s manage ability cooldown %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then
 		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
@@ -199,20 +196,15 @@ function get_ability_cooldown_id(npc_id, feat_id)
 	return "ability_cooldown_" .. tostring(npc_id) .. "_" .. feat_id
 end
 
--- TODO add all cooldown timers to a table by cooldown id
--- TODO part of it is redundant since poll_ability(npc_id, feat_id)
 local function activate_ability(npc_id, feat_id)
-	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s wants to activate ability %s", npc_id, feat_id)
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"npc %s tries to activate ability %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end  -- npc died?
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return false end -- ability unregistered?
 
-	if (npc_ability.state == ABILITY_STATE.COOLDOWN) then 
-		Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
-		return false
-	elseif (npc_ability.state == ABILITY_STATE.READING) then
+	if (npc_ability.state == ABILITY_STATE.READING) then
 		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s on READING", npc_id, feat_id)
 		npc_ability.state = ABILITY_STATE.READY
 	else
@@ -224,8 +216,7 @@ local function activate_ability(npc_id, feat_id)
 end
 
 function poll_ability(npc_id, feat_id)
-
-	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s polling ability cooldown %s", npc_id, feat_id)
+	Printer:Trace(LOG.RUN, CAT.ACTIV,"npc %s polling ability cooldown %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end  -- npc died?
 
@@ -263,9 +254,8 @@ end
 
 -- called by NPCD Input Manager
 function activate(activation_input)
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"input manager activates npc %s ability %s",activation_input.npc_id, activation_input.feat_id)
 	if poll_ability(activation_input.npc_id, activation_input.feat_id) then
-		printf("--------- Polling passed")
-		npcdu.printlog_table("", activation_input)
 		-- execute ability
 		local activated = execute(activation_input.npc_id, activation_input.activation_functor)
 		-- activate ability cooldown
@@ -332,7 +322,7 @@ end
 -- if we remove create_profile from squad updates then we can do all registration in start_npcd_squad_update
 
 function npcd_squad_ability_registration()
-	Printer:Debug(LOG.INFO, CAT.NPC,"npcd_squad_ability_registration")
+	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_ability_registration")
 	local clist = squad_get_clist()
 	-- re-configure all squad abilities
 	for i=1, #clist do
@@ -349,7 +339,7 @@ end
 
 local current_clist
 local function do_npcd_squad_update()
-	Printer:Debug(LOG.INFO, CAT.NPC,"do_npcd_squad_update")
+	Printer:Debug(LOG.RUN, CAT.NPC,"do_npcd_squad_update")
 	local new_clist = squad_get_clist()
 
 	local added_ids, removed_ids = npcdu.compute_diff(new_clist, current_clist)
@@ -379,13 +369,14 @@ local function do_npcd_squad_update()
 end
 
 local function npcd_squad_update()
-	Printer:Debug(LOG.INFO, CAT.NPC,"npcd_squad_update")
+	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_update")
 	CreateTimeEvent("npcd_manager", "do_npcd_squad_update", 1, do_npcd_squad_update)
 end
 
 --------------- NPC DEATH
 -- TODO remove_npc or remove_npc_abilities_from_actionbar or npcd_squad_update
 function squad_on_npc_death(squad,se_npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"squad_on_npc_death")
 	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
 	if not npc then return end
 	local npc_id = npc:id()
@@ -543,6 +534,11 @@ function actor_on_update()
 	-- printlog_table("Stalkers", stalkers)
 end
 
+function actor_on_net_destroy()
+	teardown_npcd_execution()
+	--save_state() --??
+end
+
 --- MODULE REGISTRATION
 
 function register_module(deck)
@@ -593,4 +589,5 @@ function on_game_start()
 	RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
+	RegisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
 end
