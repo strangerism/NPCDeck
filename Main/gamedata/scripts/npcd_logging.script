@@ -136,6 +136,19 @@ function NPCDPrinter:LogTable(text, node, ...)
         printlog_table(self.module_desc,text, node, ...)
     end
 end
+
+function NPCDPrinter:DebugTable(text, node, ...)
+    if self.enabled then
+        if LEVEL > 1 then printlog_table(self.module_desc,text, node, ...) end
+    end
+end
+
+function NPCDPrinter:TraceTable(text, node, ...)
+    if self.enabled then
+        if LEVEL > 2 then printlog_table(self.module_desc,text, node, ...) end
+    end
+end
+
 function NPCDPrinter:GetLogTypes()
     return LOG
 end

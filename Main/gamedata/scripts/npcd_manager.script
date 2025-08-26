@@ -24,9 +24,9 @@ local function execute(npc_id, functor)
 	table.insert(ex_functor, functor[1])
 	table.insert(ex_functor, functor[2])
 	table.insert(ex_functor, npc_id)
-	Printer:LogTable("npc executing", ex_functor)
+	Printer:TraceTable("npc executing", ex_functor)
 	local result = execute_func(unpack(ex_functor))
-	Printer:Debug(LOG.INFO, CAT.EXEC,"with result: %s", result)
+	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
 	return result
 end
 
@@ -39,12 +39,20 @@ local function npc_can_register(npc_id, feat)
 end
 
 --------------- NPCs
+---
+
+function release_npc(npc_id)
+	remove_npc_executions(npc_id)
+	npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
+	npcd.remove_npc(npc_id)
+end
+
 function register_abilities(npc_id)
 
 	Printer:Debug(LOG.ADD, CAT.NPC,"npc %s register abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
-
+	Printer:LogTable("NPC perks", npc_deck)
 	-- clear npc current abilities
 	npcd.clear_abilities(npc_id)
 
@@ -91,16 +99,69 @@ function unregister_abilities(npc_id)
 	return true
 end
 
+--------------- Execution MGMT
+---
+
+Tasks = {}
+
+function add_cooldown_execution(npc_id, feat_id)
+
+	local ability_cooldown_id = get_ability_cooldown_id(npc_id, feat_id)
+
+	remove_execution(ability_cooldown_id)
+
+	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s creates new ability cooldown manager %s", npc_id, ability_cooldown_id)
+	CreateTimeEvent("npcd_manager", ability_cooldown_id, 0, manage_ability_cooldown, ability_cooldown_id, npc_id, feat_id)
+	Tasks[ability_cooldown_id] = { npc_id = npc_id, feat_id = feat_id}
+end
+
+function add_poll_execution(npc_id, feat)
+
+	local polling_input = create_polling_input(npc_id, feat)
+	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s creates new ability poll manager %s", npc_id, polling_input.id)
+	CreateTimeEvent("npcd_manager", polling_input.id, polling_input.interval, poll, polling_input)
+	Tasks[polling_input.id] = { npc_id = npc_id, feat_id = feat.id}
+end
+
+function remove_execution(id)
+	RemoveTimeEvent("npcd_manager", id)
+	Tasks[id] = nil
+end
+
+function reset_execution(id, delay)
+	ResetTimeEvent("npcd_manager", id, delay)
+end
+
+function remove_npc_executions(npc_id)
+	for id, execution_info in pairs(Tasks) do
+		if execution_info.npc_id == npc_id then
+			remove_execution(id)
+		end
+	end
+end
+
+function teardown_npcd_execution()
+	for key, value in pairs(Tasks) do
+		RemoveTimeEvent("npcd_manager", key)
+	end
+end
+
 --------------- Abilities MGMT
 
 -- called by NPCD Manager custom time events
 function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 	Printer:Debug(LOG.INFO, CAT.FEAT,"npc %s manage ability cooldown %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
-	if not npc_deck then return true end  -- npc died?
+	if not npc_deck then
+		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
+		return true
+	end  -- npc died?
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
-	if not npc_ability then return true end -- ability unregistered?
+	if not npc_ability then
+		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. stopping manage ability cooldown %s", npc_id, feat_id, ability_cooldown_id)
+		return true
+	end -- ability unregistered?
 
     -- setup cooldown transition
 	if npc_ability.state == ABILITY_STATE.READY then
@@ -113,7 +174,7 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 	if npc_ability.timer <= -5 then
 		npc_ability.timer = -999
 		npc_ability.state = ABILITY_STATE.READY
-		Printer:Debug(LOG.STOP, CAT.FEAT,"ending time event %s", npc_id)
+		Printer:Debug(LOG.STOP, CAT.FEAT,"cooldown completed. ending time event %s", ability_cooldown_id)
 		return true
 	elseif npc_ability.timer == 0 then -- ability cooldown ended is, going to reading up
 		npc_ability.state = ABILITY_STATE.READING
@@ -130,7 +191,7 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
     npcd.set_ability(npc_id, npc_ability)
 
     -- loop cooldown management event
-	ResetTimeEvent("npcd_manager", ability_cooldown_id, 1)
+	reset_execution(ability_cooldown_id, 1)
 	return false
 end
 
@@ -138,7 +199,7 @@ function get_ability_cooldown_id(npc_id, feat_id)
 	return "ability_cooldown_" .. tostring(npc_id) .. "_" .. feat_id
 end
 
-
+-- TODO add all cooldown timers to a table by cooldown id
 -- TODO part of it is redundant since poll_ability(npc_id, feat_id)
 local function activate_ability(npc_id, feat_id)
 	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s wants to activate ability %s", npc_id, feat_id)
@@ -158,13 +219,7 @@ local function activate_ability(npc_id, feat_id)
 		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s", npc_id, feat_id)
 	end
 
-	local ability_cooldown_id = get_ability_cooldown_id(npc_id, feat_id)
-
-    RemoveTimeEvent("npcd_manager", ability_cooldown_id)
-
-    Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s creates new ability cooldown manager %s", npc_id, ability_cooldown_id)
-
-	CreateTimeEvent("npcd_manager", ability_cooldown_id, 0, manage_ability_cooldown, ability_cooldown_id, npc_id, feat_id)
+	add_cooldown_execution(npc_id, feat_id)
 	return true
 end
 
@@ -186,6 +241,7 @@ function poll_ability(npc_id, feat_id)
 	end
 end
 
+-- TODO add all cooldown timers to a table by cooldown id
 -- called by NPCD Manager custom time events
 function poll(polling_input)
 	Printer:Debug(LOG.RUN, CAT.ACTIV,"npc %s polls ability %s", polling_input.npc_id, polling_input.feat_id)
@@ -201,7 +257,7 @@ function poll(polling_input)
 	end
 
     -- loop polling event
-	ResetTimeEvent("npcd_manager", polling_input.id, polling_input.interval)
+	reset_execution(polling_input.id, polling_input.interval)
 	return false
 end
 
@@ -240,8 +296,7 @@ function bind_ability(npc_id, feat)
 	end
 
 	if feat.mode == FEAT_MODE.AUTO then
-		local polling_input = create_polling_input(npc_id, feat)
-		CreateTimeEvent("npcd_manager", polling_input.id, polling_input.interval, poll, polling_input)
+		add_poll_execution(npc_id, feat)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
@@ -257,7 +312,7 @@ function unbind_ability(npc_id, feat)
 
 	if feat.mode == FEAT_MODE.AUTO then
 		local ability_polling_id = get_ability_polling_id(npc_id, feat.id)
-		RemoveTimeEvent("npcd_manager", ability_polling_id)
+		remove_execution(ability_polling_id)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
@@ -278,7 +333,7 @@ end
 
 function npcd_squad_ability_registration()
 	Printer:Debug(LOG.INFO, CAT.NPC,"npcd_squad_ability_registration")
-	local clist = axr_companions.list_actor_squad_by_id()
+	local clist = squad_get_clist()
 	-- re-configure all squad abilities
 	for i=1, #clist do
 		local npc = npcdu.get_npc_obj(clist[i])
@@ -295,25 +350,25 @@ end
 local current_clist
 local function do_npcd_squad_update()
 	Printer:Debug(LOG.INFO, CAT.NPC,"do_npcd_squad_update")
-	local new_clist = axr_companions.list_actor_squad_by_id()
+	local new_clist = squad_get_clist()
 
 	local added_ids, removed_ids = npcdu.compute_diff(new_clist, current_clist)
 
 	-- update removed squad members
 	for i=1, #removed_ids do
 		local npc = npcdu.get_npc_obj(removed_ids[i])
-		local npc_id = npc:id()
-		unregister_abilities(npc_id)
+		if npc and npcd.get_npc(npc:id()) then -- check if npc was released during squad_on_npc_death event
+			unregister_abilities(npc:id())
+		end
 	end	
 
 	-- update new squad members - TODO this can be removed if we create the npc profile on npc dialog window
 	for i=1, #added_ids do
 		local npc = npcdu.get_npc_obj(added_ids[i])
 		if npc and npc:alive() then
-			local npc_id = npc:id()
-			if npcd.add_npc(npc_id) then
+			if npcd.add_npc(npc:id()) then
 				-- It's a new NPC lets roll the perks
-				npcd.create_profile(npc_id)
+				npcd.create_profile(npc:id())
 			end
 		end
 	end
@@ -333,33 +388,77 @@ end
 function squad_on_npc_death(squad,se_npc)
 	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
 	if not npc then return end
-	Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death name %s", npc and npc:name())
-	local npc_id = npc:id() or 0
-	npcd.remove_npc(npc_id)
-	Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removed", npc:id())
-	for id,actor_squad in pairs(axr_companions.companion_squads) do
-		if squad.id == actor_squad.id then
-			npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
-			SendScriptCallback("npcd_squad_update")
+	local npc_id = npc:id()
+	if npcd.get_npc(npc_id) then
+		Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death npc %s name %s", npc_id, npc:name())
+		release_npc(npc_id)
+		Printer:Debug(LOG.REMOVE, CAT.NPC,"dead npc %s released", npc_id)		
+		for id,actor_squad in pairs(axr_companions.companion_squads) do
+			if squad.id == actor_squad.id then
+				SendScriptCallback("npcd_squad_update")
+			end
 		end
 	end
 end
 
 --------------- SQUAD STATE
 
-function is_squad_available()
+
+local Squad_Info = {
+	combat = false,
+	size = 0,
+	non_task_companions = 0,
+	clist = {}
+}
+
+function squad_get_clist()
+	return Squad_Info.clist
+end
+
+function squad_get_combat()
+	return Squad_Info.combat
+end
+
+function squad_get_size()
+	return Squad_Info.size
+end
+
+function squad_get_nontask_size()
+	return Squad_Info.non_task_companions
+end
+
+function squad_available()
+	return Squad_Info.available
+end
+
+local function reset_squad_info()
+	Squad_Info = {
+		combat = false,
+		size = 0,
+		non_task_companions = 0,
+		clist = {},
+		available = false
+	}
+end
+
+local function update_axr_companions_info()
     local clist = axr_companions.list_actor_squad_by_id()
-    if not (npcdu.tablelength(clist) > 0) then
+	Squad_Info.size = npcdu.tablelength(clist)
+    if not (Squad_Info.size > 0) then
         Printer:Debug(LOG.WARN, CAT.NPC, "no squad available at this time")
-        return nil
+		reset_squad_info()
 	else
-		return clist
+		Squad_Info.non_task_companions = axr_companions.get_companion_count()
+		Squad_Info.clist = clist
+		Squad_Info.available = true
+		Printer:Debug(LOG.INFO, CAT.NPC, "squad count %s - non tasks companions %s", Squad_Info.size, Squad_Info.non_task_companions)
 	end
 end
 
-function is_companions_squad_in_danger()
+function update_squad_info()
 	local squad_is_peaceful = true
-	local clist = axr_companions.list_actor_squad_by_id()
+	update_axr_companions_info()
+	local clist = Squad_Info.clist
 	for i=1, #clist do
 		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
 		if npc then
@@ -378,11 +477,23 @@ function is_companions_squad_in_danger()
 		Printer:Trace(LOG.INFO, CAT.NPC,"squad is under attack or attacking")
 	end
 	Printer:Trace(LOG.INFO, CAT.NPC,"-- squad is resolved peaceful %s", squad_is_peaceful)
-	return not squad_is_peaceful
+	if not Squad_Info.combat and not squad_is_peaceful then
+		Printer:Debug(LOG.START, CAT.EXEC,"npcd_squad_combat_started")
+		Squad_Info.combat = true
+		SendScriptCallback("npcd_squad_combat_started")
+		return
+	end
+
+	if Squad_Info.combat and squad_is_peaceful then
+		Printer:Debug(LOG.STOP, CAT.EXEC,"npcd_squad_combat_ended")
+		Squad_Info.combat = false
+		SendScriptCallback("npcd_squad_combat_ended")
+		return
+	end
 end
 
 function is_actor_squad(npc_id)
-	local clist = axr_companions.list_actor_squad_by_id()
+	local clist = squad_get_clist()
 	for i = 1, #clist do
 		if clist[i] == npc_id then return true end
 	end
@@ -416,9 +527,9 @@ end
 
 -- NPCD LIFECYCLE
 
-local squad_is_peaceful = true
+
 local tg_update = 0
-local tg_update_step = 1000 --[ms]
+local tg_update_step = 500 --[ms]
 function actor_on_update()
 
 	local tg = time_global()
@@ -427,22 +538,7 @@ function actor_on_update()
 	end
 	tg_update = tg + tg_update_step
 
-	local in_danger_state = is_companions_squad_in_danger()
-	Printer:Trace(LOG.INFO, CAT.NPC,"squad_is_peaceful %s, in_danger_state %s", squad_is_peaceful, in_danger_state)
-	if squad_is_peaceful and in_danger_state then
-		Printer:Debug(LOG.START, CAT.EXEC,"npcd_squad_combat_started")
-		squad_is_peaceful = false
-		SendScriptCallback("npcd_squad_combat_started")
-		return
-	end
-
-	if not squad_is_peaceful and not in_danger_state then
-		Printer:Debug(LOG.STOP, CAT.EXEC,"npcd_squad_combat_ended")
-		squad_is_peaceful = true
-		SendScriptCallback("npcd_squad_combat_ended")
-		return
-	end
-
+	update_squad_info()
 
 	-- printlog_table("Stalkers", stalkers)
 end

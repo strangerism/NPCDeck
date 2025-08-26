@@ -1,5 +1,6 @@
 
 local npcdu = npcd_utils
+local npcdm = npcd_manager
 local SECOND_KEY_DESC = npcd.SECOND_KEY_DESC 
 function get_printer()
 	if not Printer then
@@ -114,7 +115,7 @@ function axr_companions.UICompanionList:Update(force)
 	self.W      = 40
 	self.offset = 10
 
-	local clist = axr_companions.list_actor_squad_by_id()
+	local clist = npcdm.squad_get_clist()
 	for i=1,8 do
 		local se_obj = clist[i] and alife_object(clist[i])
 		if (se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive()) then

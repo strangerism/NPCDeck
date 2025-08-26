@@ -11,7 +11,7 @@ end
 --------------- SQUAD UPDATES
 ---
 -- ADD
-
+-- TODO removed - task companion shoud be ignored
 axrc_OG_add_special_task_npc_to_actor_squad = axr_companions.add_special_task_npc_to_actor_squad
 function axr_companions.add_special_task_npc_to_actor_squad(npc)
 	if not Printer then
@@ -19,9 +19,9 @@ function axr_companions.add_special_task_npc_to_actor_squad(npc)
 	end
 	Printer:Trace(LOG.INFO, CAT.NPC, "MP add_special_task_npc_to_actor_squad")
 	axrc_OG_add_special_task_npc_to_actor_squad(npc)
-	SendScriptCallback("npcd_squad_update")
+	-- SendScriptCallback("npcd_squad_update")
 end
-
+-- TODO removed - task companion shoud be ignored
 axrc_OG_add_special_squad = axr_companions.add_special_squad
 function axr_companions.add_special_squad(npc)
 	if not Printer then
@@ -29,9 +29,10 @@ function axr_companions.add_special_squad(npc)
 	end
 	Printer:Trace(LOG.INFO, CAT.NPC, "MP add_special_squad")
 	axrc_OG_add_special_squad(npc)
-	SendScriptCallback("npcd_squad_update")
+	-- SendScriptCallback("npcd_squad_update")
 end
 
+-- only for non_task_companions
 axrc_OG_add_to_actor_squad = axr_companions.add_to_actor_squad
 function axr_companions.add_to_actor_squad(npc)
 	if not Printer then
@@ -43,7 +44,7 @@ function axr_companions.add_to_actor_squad(npc)
 end
 
 -- REMOVE
-
+-- only for non_task_companions
 axrc_OG_remove_from_actor_squad = axr_companions.remove_from_actor_squad
 function axr_companions.remove_from_actor_squad(npc)
 	if not Printer then
@@ -64,7 +65,7 @@ function axr_companions.remove_all_from_actor_squad(npc)
 	SendScriptCallback("npcd_squad_update")
 end
 
-
+-- HUD
 axrc_OG_activate_hud = axr_companions.activate_hud
 function axr_companions.activate_hud()
 	if not Printer then

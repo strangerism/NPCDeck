@@ -1,7 +1,6 @@
 local npcdu = npcd_utils
 local npcdm = npcd_manager
 local FEAT_SETTING = NPCD.FEAT_SETTING
-local is_squad_available = npcd_manager.is_squad_available
 MAX_SLOTS = 16
 function get_printer()
 	if not Printer then
@@ -237,7 +236,7 @@ function remove_action_slot(npc_id, feat_id)
     actionbar.by_key[key] = nil
 
     -- Remove input binding
-    npcd_input_manager.unbind_activation_input(key)
+    npcd_input_manager.remove_activation_input(key)
     
     Printer:Debug(LOG.INFO, CAT.CONF, "Removed action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
     return true
@@ -315,18 +314,19 @@ end
 
 function reset_actionbar()
     -- Get current squad
-    local clist = is_squad_available()
-    if not clist then
+    if not npcdm.squad_available() then
         Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update but no squad available")
         SendScriptCallback("npcd_hud_update")
         return
     end
 
     clear_actionbar()
-    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", #clist)
+    local squad_size = npcdm.squad_get_size()
+    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", squad_size)
     
     -- Process each squad member
     local slot_index = 1
+    local clist = npcdm.squad_get_clist()
     for i=1, #clist do
         local se_obj = clist[i] and alife_object(clist[i])
         if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
