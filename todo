@@ -32,6 +32,7 @@ stuff to do
 - bind action_slots to input manager (NEEDS TESTING)
 - refactor action slot functor execution against module feat implementation
 - remove old input management
+- move npc profile creation in npc dialog window --> depends on the possibility to pick single npc from squad (but it can work regardless) 
 - implement feat's can_register functor in perk config (add mcm always_register?)
 - check correct usage of objects_id instead of passing objects
 - module_mcm must update npdc.perk from mcm settings changes (keybind, stats,etc)

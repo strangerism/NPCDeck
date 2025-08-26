@@ -340,6 +340,10 @@ function get_abilities(npc_id)
 	return npcs[npc_id].Ability
 end
 
+function clear_abilities(npc_id)
+	npcs[npc_id].Ability = {}
+end
+
 function get_ability(npc_id, feat_id)
 	if not npcs[npc_id] then return end
 	

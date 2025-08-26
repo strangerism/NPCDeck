@@ -1,6 +1,7 @@
 if AddScriptCallback then
     printf("$[NPCD] START Callbacks configuration")
 	AddScriptCallback("npcd_squad_update")
+    AddScriptCallback("npcd_post_squad_update")
 	AddScriptCallback("npcd_squad_combat_started")
 	AddScriptCallback("npcd_squad_combat_ended")
 	AddScriptCallback("npcd_hud_squad_update")

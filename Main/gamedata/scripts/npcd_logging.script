@@ -33,6 +33,19 @@ CAT = {
     UI_ACTION = { tag = "[UI_ACTION]", enabled = false},
 }
 
+local function format_string(module,type,category,msg,...)
+
+    msg = msg or " "
+    module = ( module and ("[" .. module .. "]") ) or ""
+    if type then
+        msg = type.tag .. APP.tag .. module .. category.tag  .. msg
+    else
+        msg = APP.tag .. category.tag  .. msg
+    end
+    
+    return string.format(msg,...)
+end
+
 local function printlog(module,type,category,msg,...)
     if LEVEL > 0 then
         msg = msg or " "
@@ -100,7 +113,9 @@ function NPCDPrinter:npcd_on_log_update()
     self:Update()
     printlog(self.module_desc, LOG.INFO, CAT.CONF, "NPCD Printer for module %s is %s", self.module, self.enabled and "enabled" or "disabled")
 end
-
+function NPCDPrinter:FormatString(type,category,msg,...)
+    format_string(self.module,type,category,msg,...)
+end
 function NPCDPrinter:Log(type,category,msg,...)
     if self.enabled then
         printlog(self.module_desc,type,category,msg,...)        

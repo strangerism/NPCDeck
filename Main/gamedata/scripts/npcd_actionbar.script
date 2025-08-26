@@ -146,36 +146,14 @@ function bind_actionbar_slots()
 end
 
 function remove_npc_abilities_from_actionbar(npc_id)
-    -- Step 1: Remove from actionbar.slots
-    local i = 1
-    while i <= #actionbar.slots do
-        if actionbar.slots[i].npc_id == npc_id then
-            table.remove(actionbar.slots, i)
-        else
-            i = i + 1
-        end
-    end
-
-    -- Step 2: Remove from actionbar.by_index
-    for index, slots in pairs(actionbar.by_index) do
-        local j = 1
-        while j <= #slots do
-            if slots[j].npc_id == npc_id then
-                table.remove(slots, j)
-            else
-                j = j + 1
+    Printer:Debug(LOG.REMOVE, CAT.CONF,"remove npc %s abilities to actionbar", npc_id)
+    local npc_abilities = npcd.get_abilities(npc_id)
+    if npc_abilities then
+        for id, ability in pairs(npc_abilities) do
+            Printer:LogTable("Actionbar:remove npc ability", ability)
+            if ability.mode == npcd.FEAT_MODE.MANUAL then
+                remove_action_slot(npc_id, ability.id)
             end
-        end
-        -- Clean up empty lists
-        if #slots == 0 then
-            actionbar.by_index[index] = nil
-        end
-    end
-
-    -- Step 3: Remove from actionbar.by_key
-    for key, slot in pairs(actionbar.by_key) do
-        if slot.npc_id == npc_id then
-            actionbar.by_key[key] = nil
         end
     end
 end
@@ -224,9 +202,15 @@ function get_actionbar_slots_list()
     return action_slots_list
 end
 
-function remove_action_slot(index, npc_id, feat_id)
+function remove_action_slot(npc_id, feat_id)
     local key = get_actionslot_key(npc_id, feat_id)
+    local slot = actionbar.by_key[key]
     
+    if not slot then
+        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot remove - no slot found for npc %s and ability %s", npc_id, feat_id)
+        return false
+    end
+
     -- Remove from slots array
     for i = 1, #actionbar.slots do
         if actionbar.slots[i].key == key then
@@ -236,17 +220,27 @@ function remove_action_slot(index, npc_id, feat_id)
     end
     
     -- Remove from index map
-    if actionbar.by_index[index] then
-        for i = 1, #actionbar.by_index[index] do
-            if actionbar.by_index[index][i].key == key then
-                table.remove(actionbar.by_index[index], i)
+    if actionbar.by_index[slot.index] then
+        for i = 1, #actionbar.by_index[slot.index] do
+            if actionbar.by_index[slot.index][i].key == key then
+                table.remove(actionbar.by_index[slot.index], i)
                 break
             end
+        end
+        -- Clean up empty lists
+        if #actionbar.by_index[slot.index] == 0 then
+            actionbar.by_index[slot.index] = nil
         end
     end
     
     -- Remove from key map
     actionbar.by_key[key] = nil
+
+    -- Remove input binding
+    npcd_input_manager.unbind_activation_input(key)
+    
+    Printer:Debug(LOG.INFO, CAT.CONF, "Removed action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
+    return true
 end
 
 function clear_actionbar()
