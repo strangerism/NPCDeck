@@ -330,13 +330,10 @@ function reset_actionbar()
     local slot_index = 1
     local clist = npcdm.squad_get_clist()
     for i=1, #clist do
-        local se_obj = clist[i] and alife_object(clist[i])
-        if se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive() then
-            local st = db.storage[se_obj.id]
-            local npc = st and st.object
-            if npc then
-                local npc_id = npc:id()
-                add_npc_abilities_to_actionbar(npc_id)
+        local npc = npcdu.get_npc_obj(clist[i])
+        if npc and IsStalker(npc) and npc:alive() then
+            if npcd.get_npc(npc:id()) then
+                add_npc_abilities_to_actionbar(npc:id())
                 slot_index = slot_index + 1
             end
         end

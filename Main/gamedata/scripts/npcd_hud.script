@@ -83,6 +83,7 @@ function axr_companions.UICompanionList:InitControls()
 	local xml = utils_xml.get_hud_xml()
 	self.npcd_xml = CScriptXmlInit()
 	self.npcd_xml:ParseFile("ui_npcd_hud.xml")
+	self._tmr_npcd = time_global()
 	for i=1,8 do
 		self.companion_info[i].name          	 = xml:InitTextWnd("companion_list:slot:distance", self.companion_info[i].base)
 		utils_xml.correct_ratio(self.companion_info[i].name)
@@ -100,35 +101,36 @@ function axr_companions.UICompanionList:Update(force)
 	if not to_show then return end
 	og_axr_companions_UI_Update(self, force)
 	
-	-- local tg = time_global()
-	-- if force then
-	-- 	self._tmr = tg - 1
-	-- end
-	-- if self._tmr >= tg then
-	-- 	return
-	-- end
-	-- self._tmr = tg + 1000
+	local tg = time_global()
+	if force then
+		self._tmr_npcd = tg - 1
+	end
+	if self._tmr_npcd >= tg then
+		return
+	end
+	self._tmr_npcd = tg + 1000
+	
 	
 	self.ratio  = utils_xml.screen_ratio()
 	self.scale  = 0.75
 	self.index  = 0
 	self.W      = 40
 	self.offset = 10
+	if not npcdm.squad_available() then return end
 
+	-- Printer:Debug(LOG.INFO, CAT.UI,"UICompanionList:Update")
 	local clist = npcdm.squad_get_clist()
 	for i=1,8 do
-		local se_obj = clist[i] and alife_object(clist[i])
-		if (se_obj and IsStalker(nil,se_obj:clsid()) and se_obj:alive()) then
-			local st = db.storage[se_obj.id]
-			local npc = st and st.object
+        local npc = npcdu.get_npc_obj(clist[i])
+		if npc and IsStalker(npc) and npc:alive() then
+			local npc_id = npc:id()
 			local ele = self.companion_info[i]
-			ele.npc_id = se_obj.id
+			ele.npc_id = npc_id
 
 			-- Name
 			ele.name:SetText(npc:character_name())
 
 			-- npcd abilities hud
-			local npc_id = se_obj.id
 			-- Printer:Trace(LOG.INFO, CAT.UI,"npc_id = %s", npc_id)
 			local abi_hud_count = ele.abilities and npcdu.tablelength(ele.abilities) or 0
 			if abi_hud_count > 0 then

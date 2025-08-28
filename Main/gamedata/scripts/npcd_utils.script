@@ -65,7 +65,10 @@ function shuffle(tbl)
 end
 
 function get_npc_obj(npc_id)
-	return db.storage[npc_id] and db.storage[npc_id].object
+	-- local npc_storage = db.storage[npc_id] and db.storage[npc_id].object
+	-- local npc_level = npc_id and level.object_by_id(npc_id)
+	-- printf("npc_id %s - by storage %s, by level %s", npc_id, npc_storage and npc_storage:id(), npc_level and npc_level:id())
+	return npc_id and level.object_by_id(npc_id)
 end
 
 function get_desc_rank(npc_id)

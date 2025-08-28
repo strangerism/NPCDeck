@@ -40,12 +40,19 @@ function on_xml_read()
 					<phrase id="3"> <!-- NPC answer background -->
 						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
 						<script_text>modxml_npcd_dialogs.get_npc_profile</script_text>
-						<next>41</next>
+						<next>411</next>
+						<next>412</next>
 					</phrase>
-					<phrase id="41"> <!-- Actor -->
+					<phrase id="411"> <!-- Actor -->
 						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
-						<script_text>modxml_npcd_dialogs.get_salute</script_text>
+						<precondition>modxml_npcd_dialogs.npc_is_insquad</precondition>
+						<script_text>modxml_npcd_dialogs.get_squad_salute</script_text>
 					</phrase>
+					<phrase id="412"> <!-- Actor -->
+						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
+						<precondition>modxml_npcd_dialogs.npc_isnot_insquad</precondition>
+						<script_text>modxml_npcd_dialogs.get_salute</script_text>
+					</phrase>					
 					<phrase id="42"> <!-- Actor -->
 						<precondition>modxml_npcd_dialogs.npc_hasnot_perks</precondition>
 						<script_text>modxml_npcd_dialogs.get_salute_noperks</script_text>
@@ -57,33 +64,6 @@ function on_xml_read()
 			xml_obj:insertFromXMLString(companion_dialogues)
 		end
 	end)
-end
-
-					-- <phrase id="3"> <!-- NPC -->
-					-- 	<script_text>modxml_npcd_dialogs.get_npc_profile</script_text>
-					-- 	<next>4</next>
-					-- 	<next>6</next>
-					-- </phrase>
-					-- <phrase id="4">
-					-- 	<script_text>individually_recruitable_companions.get_friend_companion_ask_join_individually_text</script_text>
-					-- 	<next>5</next>
-					-- </phrase>
-					-- <phrase id="5">
-					-- 	<text>axr_phrase_friend_companion_answer_join</text>
-					-- 	<action>individually_recruitable_companions.become_actor_companion_individually</action>
-					-- 	<action>dialogs.break_dialog</action>
-					-- </phrase>
-
-local asked_skills = false
-function get_dialog_ask_is_skilled(actor, npc)
-	printf("actor %s npc %s", actor, npc)
-	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
-	-- if npc_has_perks(actor, npc) then
-	-- 	asked_skills = true
-	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_skills", true)
-	-- else
-	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
-	-- end
 end
 
 function npc_has_profile(actor, npc)
@@ -114,8 +94,32 @@ function npc_hasnot_perks(actor, npc)
 	return not npc_has_perks(actor, npc)
 end
 
+function npc_is_insquad(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		return npcd_manager.is_actor_squad(npc:id())
+	end
+	return false
+end
+
+function npc_isnot_insquad(actor, npc)
+	return not npc_is_insquad(actor, npc)
+end
+
+local asked_skills = false
+function get_dialog_ask_is_skilled(actor, npc)
+	-- printf("actor %s npc %s", actor, npc)
+	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
+	-- if npc_has_perks(actor, npc) then
+	-- 	asked_skills = true
+	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_skills", true)
+	-- else
+	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
+	-- end
+end
+
 function get_dialog_skill_answer(actor, npc)
-	printf("get_dialog_skill_answer actor %s npc %s", actor, npc)
+	-- printf("get_dialog_skill_answer actor %s npc %s", actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
 		if npcd.has_perks(npc:id()) then -- and not asked_skills then
@@ -140,22 +144,13 @@ function get_salute()
 	return game.translate_string("st_npcd_npc_dialogs_salute", true)
 end
 
+function get_squad_salute()
+	return game.translate_string("st_npcd_npc_dialogs_squad_salute", true)
+end
+
 function get_salute_noperks()
 	return game.translate_string("st_npcd_npc_dialogs_salute_noperks", true)
 end
-
--- function get_salute()
--- 	local npc = dialogs.who_is_npc(actor, npc)
--- 	if npc and npc:alive() then
--- 		if npcd.has_perks(npc:id()) then
--- 			return game.translate_string("st_npcd_npc_dialogs_salute", true)
--- 		else
--- 			return game.translate_string("st_npcd_npc_dialogs_salute_noperks", true)
--- 		end
--- 	else
--- 		return game.translate_string("st_npcd_npc_dialogs_salute_noperks", true)
--- 	end
--- end
 
 function get_npc_profile(actor, npc)
 	return npcd_manager.dialog_get_npc_profile(actor, npc)

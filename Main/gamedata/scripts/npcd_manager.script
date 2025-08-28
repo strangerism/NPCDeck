@@ -115,18 +115,19 @@ function dialog_get_npc_profile(actor, npc)
 		local npc_id = npc:id()
 		Printer:Log(LOG.RUN, CAT.CONF,"npc %s get profile", npc_id)
 		local id = math.random(5)
-		local profile_dialog = game.translate_string("st_npcd_npc_dialogs_background_response" .. id, true) .. "\\n" .. "\\n"
+		local profile_dialog = game.translate_string("st_npcd_npc_dialogs_background_response" .. id, true) .. "\\n \\n" 
 		local npc_perks = npcd.get_npc_perks(npc_id)
 		if npc_perks then
 			for _, npc_perk in pairs(npc_perks) do
 				local perk = npcd.get_perk(npc_perk.id, npc_id)
-				
+				if perk.dialog then
+					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true)
+				end
 				local st_perk_name = game.translate_string(perk.name, true) or ""
 				local st_perk_module = game.translate_string("ui_mcm_npcd_module_menu_" .. perk.module, true) or perk.module or ""
-				profile_dialog = profile_dialog .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module) .. "\\n"
-				if perk.dialog then
-					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true) .. "\\n"
-				end
+				profile_dialog = profile_dialog .. "\\n" .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module)
+
+				profile_dialog = profile_dialog .. "\\n"
 			end
 			return profile_dialog
 		end
@@ -501,6 +502,14 @@ local function reset_squad_info()
 	}
 end
 
+function is_actor_squad(npc_id)
+	local clist = squad_get_clist()
+	for i = 1, #clist do
+		if clist[i] == npc_id then return true end
+	end
+	return false
+end
+
 local function update_axr_companions_info()
     local clist = axr_companions.list_actor_squad_by_id()
 	Squad_Info.size = npcdu.tablelength(clist)
@@ -550,14 +559,6 @@ function update_squad_info()
 		SendScriptCallback("npcd_squad_combat_ended")
 		return
 	end
-end
-
-function is_actor_squad(npc_id)
-	local clist = squad_get_clist()
-	for i = 1, #clist do
-		if clist[i] == npc_id then return true end
-	end
-	return false
 end
 
 --------------- NPCD STATE MGMT

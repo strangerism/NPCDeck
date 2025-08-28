@@ -48,6 +48,9 @@
     <string id="st_npcd_npc_dialogs_salute">
 		<text>Nice skills. Maybe we'll work together one day.</text>
 	</string>
+    <string id="st_npcd_npc_dialogs_squad_salute">
+		<text>Nice. Keep going.</text>
+	</string>	
     <string id="st_npcd_npc_dialogs_salute_noperks">
 		<text>Nevermind. Bye.</text>
 	</string>	

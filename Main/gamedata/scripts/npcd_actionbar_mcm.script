@@ -12,7 +12,7 @@ function on_mcm_load()
 end
 
 function get_actionbar_menu()
-
+	-- printf("/[NPCD][Main] get_actionbar_menu")
 	local actionbar_menu = {}
 
 	-- build actionbar main menu

@@ -63,3 +63,4 @@ stuff to do
 
     - fix live coolddowns on icons not working when loading from save
     - fix npcd crash when no perks are installed 
+    - cooldown resets on squad on update (e.g. dismiss an npc)
