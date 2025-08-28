@@ -96,6 +96,77 @@ function unregister_abilities(npc_id)
 	return true
 end
 
+function dialog_create_npc_profile(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"create npc profile")
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		if npcd.add_npc(npc:id()) then
+			Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", npc:id())
+			-- It's a new NPC lets roll the perks
+			npcd.create_profile(npc:id())
+		end
+	end
+end
+
+function dialog_get_npc_profile(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"get npc profile")
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		local npc_id = npc:id()
+		Printer:Log(LOG.RUN, CAT.CONF,"npc %s get profile", npc_id)
+		local id = math.random(5)
+		local profile_dialog = game.translate_string("st_npcd_npc_dialogs_background_response" .. id, true) .. "\\n" .. "\\n"
+		local npc_perks = npcd.get_npc_perks(npc_id)
+		if npc_perks then
+			for _, npc_perk in pairs(npc_perks) do
+				local perk = npcd.get_perk(npc_perk.id, npc_id)
+				
+				local st_perk_name = game.translate_string(perk.name, true) or ""
+				local st_perk_module = game.translate_string("ui_mcm_npcd_module_menu_" .. perk.module, true) or perk.module or ""
+				profile_dialog = profile_dialog .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module) .. "\\n"
+				if perk.dialog then
+					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true) .. "\\n"
+				end
+			end
+			return profile_dialog
+		end
+	end
+	return game.translate_string("st_npcd_npc_dialogs_npc_has_no_perks", true)
+end
+
+function recruit_npc(npc_id, clone_id)
+	Printer:Debug(LOG.RUN, CAT.NPC, "recruiting npc %s", npc_id)
+	if clone_id then
+		if npcd.get_npc(npc_id) then
+			Printer:Log(LOG.ADD, CAT.CONF, "recruiting npc %s through clone %s", npc_id, clone_id)			
+			-- npc profile already exists, remap to the clone id
+			if npcd.remap_npc(npc_id, clone_id) then
+				npcd.set_recruited(clone_id, true)	
+			else
+				-- cannot remap - there was a problem
+				Printer:Log(LOG.ERROR, CAT.NPC, "cannot remap npc %s to new id %s", npc_id, clone_id)
+			end
+			
+			
+		else
+			Printer:Log(LOG.WARN, CAT.NPC, "recruiting through clone where only the clone %s exists", clone_id)
+			if npcd.add_npc(clone_id) then
+				-- It's a new NPC lets roll the perks
+				Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", clone_id)
+				npcd.create_profile(clone_id)
+			end
+			npcd.set_recruited(clone_id, true)
+		end
+	else
+		if npcd.add_npc(npc_id) then
+			Printer:Log(LOG.ADD, CAT.NPC, "recruiting npc %s ", npc_id)
+			Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", npc_id)
+			-- It's a new NPC lets roll the perks
+			npcd.create_profile(npc_id)
+		end
+		npcd.set_recruited(npc_id, true)
+	end
+end
 --------------- Execution MGMT
 ---
 
@@ -349,17 +420,15 @@ local function do_npcd_squad_update()
 		local npc = npcdu.get_npc_obj(removed_ids[i])
 		if npc and npcd.get_npc(npc:id()) then -- check if npc was released during squad_on_npc_death event
 			unregister_abilities(npc:id())
+			npcd.set_recruited(npc:id(), false)
 		end
-	end	
+	end
 
 	-- update new squad members - TODO this can be removed if we create the npc profile on npc dialog window
 	for i=1, #added_ids do
 		local npc = npcdu.get_npc_obj(added_ids[i])
 		if npc and npc:alive() then
-			if npcd.add_npc(npc:id()) then
-				-- It's a new NPC lets roll the perks
-				npcd.create_profile(npc:id())
-			end
+			recruit_npc(npc:id())
 		end
 	end
 	current_clist = new_clist
@@ -376,8 +445,8 @@ end
 --------------- NPC DEATH
 -- TODO remove_npc or remove_npc_abilities_from_actionbar or npcd_squad_update
 function squad_on_npc_death(squad,se_npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"squad_on_npc_death")
-	local npc = db.storage[se_npc.id] and db.storage[se_npc.id].object
+	Printer:Trace(LOG.RUN, CAT.NPC,"squad_on_npc_death")
+	local npc = npcdu.get_npc_obj(se_npc.id)
 	if not npc then return end
 	local npc_id = npc:id()
 	if npcd.get_npc(npc_id) then
@@ -436,13 +505,13 @@ local function update_axr_companions_info()
     local clist = axr_companions.list_actor_squad_by_id()
 	Squad_Info.size = npcdu.tablelength(clist)
     if not (Squad_Info.size > 0) then
-        Printer:Debug(LOG.WARN, CAT.NPC, "no squad available at this time")
+        Printer:Trace(LOG.WARN, CAT.NPC, "no squad available at this time")
 		reset_squad_info()
 	else
 		Squad_Info.non_task_companions = axr_companions.get_companion_count()
 		Squad_Info.clist = clist
 		Squad_Info.available = true
-		Printer:Debug(LOG.INFO, CAT.NPC, "squad count %s - non tasks companions %s", Squad_Info.size, Squad_Info.non_task_companions)
+		Printer:Trace(LOG.INFO, CAT.NPC, "squad count %s - non tasks companions %s", Squad_Info.size, Squad_Info.non_task_companions)
 	end
 end
 
@@ -451,7 +520,7 @@ function update_squad_info()
 	update_axr_companions_info()
 	local clist = Squad_Info.clist
 	for i=1, #clist do
-		local npc = db.storage[clist[i]] and db.storage[clist[i]].object
+		local npc = npcdu.get_npc_obj(clist[i])
 		if npc then
 			local is_peaceful = false
 			-- check if is in fight
@@ -467,7 +536,7 @@ function update_squad_info()
 	if not squad_is_peaceful then
 		Printer:Trace(LOG.INFO, CAT.NPC,"squad is under attack or attacking")
 	end
-	Printer:Trace(LOG.INFO, CAT.NPC,"-- squad is resolved peaceful %s", squad_is_peaceful)
+	Printer:Trace(LOG.INFO, CAT.NPC,"squad is resolved peaceful %s", squad_is_peaceful)
 	if not Squad_Info.combat and not squad_is_peaceful then
 		Printer:Debug(LOG.START, CAT.EXEC,"npcd_squad_combat_started")
 		Squad_Info.combat = true
@@ -518,6 +587,19 @@ end
 
 -- NPCD LIFECYCLE
 
+function npcs_sweaper()
+	Printer:Log(LOG.RUN, CAT.CONF,"npcs sweaper")
+	local npcs_list = npcd.get_npcs_id_list()
+	for i = 1, #npcs_list do
+		local npc_id = npcs_list[i]
+		local se_npc = alife_object(npc_id)
+		if not se_npc then
+			Printer:Debug(LOG.REMOVE, CAT.CONF,"removing stale npc %s data", npc_id)
+			npcd.remove_npc(npc_id)
+		end		
+	end
+	ResetTimeEvent("npcd_manager", "npcs_sweaper", 60)
+end
 
 local tg_update = 0
 local tg_update_step = 500 --[ms]
@@ -536,7 +618,7 @@ end
 
 function actor_on_net_destroy()
 	teardown_npcd_execution()
-	--save_state() --??
+	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
 end
 
 --- MODULE REGISTRATION
@@ -569,13 +651,14 @@ end
 ---- BOOT
 
 function game_play_start()
-	Printer:Log(LOG.START, CAT.EXEC,"Manager game_play_start")
     if(device().precache_frame > 1) then --detects if game is not past the press any key prompt
         return
     end
   --setup your thing here
    UnregisterScriptCallback("actor_on_update", game_play_start)
+   Printer:Log(LOG.START, CAT.EXEC,"Manager game_play_start")
    update_actionbar()
+   CreateTimeEvent("npcd_manager", "npcs_sweaper", 60, npcs_sweaper)
 end
 
 function on_game_start()

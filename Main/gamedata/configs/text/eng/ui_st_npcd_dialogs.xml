@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
+<!--===========================================================
+<
+<	Black Market Mod Dialogue Text
+<
+<	Modified by: SalamanderAnder
+<
+<===========================================================-->
+
+<string_table>
+    <string id="st_npcd_npc_dialogs_ask_is_skilled">
+		<text>Do you have any special skills?</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_ask_skills">
+		<text>Hey, remember me your skills.</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_skill_answer_yes1">
+		<text>Yes, I know quite few tricks. Why did you ask?</text>
+	</string>	
+    <string id="st_npcd_npc_dialogs_skill_answer_yes2">
+		<text>Sure, ask away</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_skill_answer_no">
+		<text>I don't know you, it's not of your business.</text>
+	</string>			
+    <string id="st_npcd_npc_dialogs_ask_background1">
+		<text>What is your background?</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_ask_background2">
+		<text>Tell me about yourself.</text>
+	</string>	
+    <string id="st_npcd_npc_dialogs_background_response1">
+		<text>Before coming to the zone</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_background_response2">
+		<text>I had an interesting life until something bad happened, anyway</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_background_response3">
+		<text>My past life is painful to remember, but I cannot forget who I am</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_background_response4">
+		<text>Those were wonderful days unfortunately I had to leave everything behind. I still have myself though</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_background_response5">
+		<text>I left my family because I could not stand them. Maybe it's because of who I am</text>
+	</string>					
+    <string id="st_npcd_npc_dialogs_salute">
+		<text>Nice skills. Maybe we'll work together one day.</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_salute_noperks">
+		<text>Nevermind. Bye.</text>
+	</string>	
+    <string id="st_npcd_npc_dialogs_npc_has_no_perks">
+		<text>I don't have any skills. I was messing with you, haha.</text>
+    </string>
+    <string id="st_npcd_npc_dialogs_perk_desc">
+		<text>Perk: %s [%s]</text>
+	</string>	
+</string_table>

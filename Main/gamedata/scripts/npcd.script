@@ -105,9 +105,29 @@ function add_npc(npc_id)
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s added", npc_id)
 	npcs[npc_id] = {}
 	npcs[npc_id]["id"] = npc_id
+	npcs[npc_id]["recruit"] = false
 	npcs[npc_id]["Perk"] = {}
 	npcs[npc_id]["Ability"] = {}
 	return true
+end
+
+function remap_npc(npc_id, new_id)
+	if not npc_id or not npcs[npc_id] then return false end
+	Printer:Log(LOG.RUN, CAT.CONF,"npc %s remapped to %s", npc_id, new_id)
+	-- create new npcs with new id
+	add_npc(new_id)
+	npcs[new_id].recruited = npcs[npc_id].recruited
+	npcs[new_id].Perk = npcs[npc_id].Perk
+	npcs[new_id].Ability = npcs[npc_id].Ability
+
+	-- delete old npcs
+	npcs[npc_id] = nil
+	return true
+end
+
+function set_recruited(npc_id, enlist)
+	if not npcs[npc_id] then return end
+	npcs[npc_id].recruited = enlist
 end
 
 function set_deck(deck)
@@ -116,6 +136,14 @@ end
 
 function get_deck()
     return npcs
+end
+
+function get_npcs_id_list()
+	local npcs_list = {}
+	for id, _ in pairs(npcs) do
+		table.insert(npcs_list, id)
+	end
+	return npcs_list
 end
 
 function remove_npc(npc_id)
@@ -152,25 +180,6 @@ function get_perk_feat_stat(perk_id, feat_id, stat_name, rank)
 	return feat.stats[rank][stat_name]
 end
 
--- function get_perks_activations_inputs()
--- 	local activations_inputs = {}
--- 	for _, perk in pairs(perks) do
--- 		if perk and not perk.disabled and perk.feats then
--- 			for key, feat in pairs(perk.feats) do
--- 				if feat.type == FEAT_TYPE.ACTIVE and feat.mode == FEAT_MODE.MANUAL then
--- 					local feat_activation_input = {
--- 						activation_key = feat.activation_key,
--- 						activation_functor = feat.activation_functor
--- 					}
--- 					local id = npcd_mcm.get_module_perk_feat_setting_id(perk.module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.KEY)
--- 					activations_inputs[id] = feat_activation_input
--- 				end
--- 			end
--- 		end
--- 	end
--- 	return activations_inputs
--- end
-
 function get_npc_perks(npc_id)
 	if not npc_id or not npcs[npc_id] then return end
 	return npcs[npc_id].Perk
@@ -186,6 +195,11 @@ function get_archetype_perk(npc_id)
 	end
 end
 
+function has_perks(npc_id)
+	if not npc_id or not npcs[npc_id] then return end
+	return npcdu.tablelength(npcs[npc_id].Perk) > 0
+end
+
 function has_perk(npc_id, perk_id)
 	if not perk_id or not npc_id or not npcs[npc_id] then return end
 	local perk = npcs[npc_id].Perk[perk_id]
@@ -194,10 +208,16 @@ end
 
 
 local function roll_perk(npc_id, functor)
-	Printer:Log(LOG.INFO, CAT.CONF,"executing npc %s roll", npc_id)
+	Printer:Log(LOG.RUN, CAT.CONF,"executing npc %s roll", npc_id)
 	if not functor then return false end
-	table.insert(functor, npc_id)
-	return execute_func(unpack(functor))
+	local ex_functor = {}
+	table.insert(ex_functor, functor[1])
+	table.insert(ex_functor, functor[2])
+	table.insert(ex_functor, npc_id)
+	Printer:TraceTable("npc executing", ex_functor)
+	local result = execute_func(unpack(ex_functor))
+	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
+	return result
 end
 
 -- returns true of the perk is rolled
@@ -232,7 +252,7 @@ local function get_randomized_perk_list(perk_type, perk_archetype)
 			if perk_archetype then
 				--- not implemented
 				if perk.archetype == perk_archetype then
-					table.insert(list, perk)	
+					table.insert(list, perk)
 				end
 			else
 				table.insert(list, perk)
