@@ -358,7 +358,7 @@ function refresh_actionbar()
 end
 
 if AddScriptCallback then
-	AddScriptCallback("npcd_actionbar_refresh")
+	-- AddScriptCallback("npcd_actionbar_refresh")
 end
 
 settings = {
@@ -373,6 +373,6 @@ end
 
 function on_game_start()
     RegisterScriptCallback("on_option_change", on_option_change)
-    RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
+    -- RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
     on_option_change()
 end

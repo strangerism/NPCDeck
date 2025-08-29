@@ -4,9 +4,9 @@ function on_game_start()
 			-- printf("-[NPCD][Main] Adding perk background dialog to npc %s dialog list", character_id)
 			local res1 = dialog_list:add("npcd_dialogs_ask_npc_background")
 		end
-		-- if dialog_list:has("paid_companion_dialog") then
-		-- 	local res2 = dialog_list:add("paid_companion_dialog_individually")
-		-- end
+		if dialog_list:has("paid_companion_dialog") then
+			local res2 = dialog_list:add("npcd_dialogs_ask_npc_background")
+		end	
 	end)
 end
 
@@ -17,6 +17,8 @@ function on_xml_read()
 			local companion_dialogues = 
 			[[
 			<dialog id="npcd_dialogs_ask_npc_background">
+				<precondition>modxml_npcd_dialogs.npcd_started</precondition>
+				<precondition>dialogs_axr_companion.is_non_story</precondition>
 				<precondition>dialogs_axr_companion.is_actor_friend</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
 				<precondition>tasks_guide.not_prec_1</precondition>
@@ -58,12 +60,16 @@ function on_xml_read()
 						<script_text>modxml_npcd_dialogs.get_salute_noperks</script_text>
 					</phrase>					
 				</phrase_list>
-			</dialog>
+			</dialog>			
 			]]
 
 			xml_obj:insertFromXMLString(companion_dialogues)
 		end
 	end)
+end
+
+function npcd_started()
+	return npcd_manager.NPCD_BOOTED
 end
 
 function npc_has_profile(actor, npc)

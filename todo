@@ -29,6 +29,7 @@ ideas for archetypes
 
 stuff to do
 
+- rework notifications (new profile, npc joined, npc leaves)
 - remove old input management
 - add mcm always_register?
 - check correct usage of objects_id instead of passing objects
@@ -50,13 +51,9 @@ stuff to do
 - refactor npcd_actionbar to be standalone and pluggable
 - refactor npcd_logging to be standalone and pluggable
 
-- addons to look
+addons to look
 
-    https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-rpg-1-3
+- https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-rpg-1-3
+- https://www.moddb.com/mods/stalker-anomaly/addons/monster-world
 
-    https://www.moddb.com/mods/stalker-anomaly/addons/monster-world
-
-
-    bugs
-
-    - fix npcd crash when no perks are installed 
+bugs

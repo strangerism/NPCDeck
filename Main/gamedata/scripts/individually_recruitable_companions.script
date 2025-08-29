@@ -27,7 +27,7 @@ function become_actor_companion_individually(actor, npc)
 			printf("clone_become_companion_" .. clone_id)
 			local clone = level.object_by_id(clone_id)
 			if clone then
-				npcd_manager.recruit_npc(npc_id, clone_id)
+				npcd_manager.ncpd_recruit(npc_id, clone_id)
 				dialogs_axr_companion.become_actor_companion(db.actor, clone)
 				db.actor:run_talk_dialog(clone)
 				return true
@@ -47,8 +47,6 @@ function become_paid_actor_companion_individually_and_register(actor, npc)
 	local clone_id = stalker_cloning_utility.clone_stalker(npc)
 	
 	if clone_id then
-
-		npcd_manager.recruit_npc(npc:id(), clone_id)
 		
 		local se_obj = alife_object(npc:id())
 		safe_release_manager.release(se_obj)
@@ -56,6 +54,7 @@ function become_paid_actor_companion_individually_and_register(actor, npc)
 		CreateTimeEvent("clone_become_paid_companion_event", "clone_become_paid_companion_" .. clone_id, 0, function(id)
 			local clone = level.object_by_id(id)
 			if clone then
+				npcd_manager.ncpd_recruit(npc_id, clone_id)
 				dialogs_axr_companion.become_actor_companion(db.actor, clone)
 				txr_paid_companions.register_paid_companion(db.actor, clone)
 				db.actor:run_talk_dialog(clone)

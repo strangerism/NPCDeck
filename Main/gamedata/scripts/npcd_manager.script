@@ -139,6 +139,11 @@ function dialog_get_npc_profile(actor, npc)
 	return game.translate_string("st_npcd_npc_dialogs_npc_has_no_perks", true)
 end
 
+function ncpd_recruit(npc_id, clone_id)
+	if not NPCD_BOOTED then return end
+	recruit_npc(npc_id, clone_id)
+end
+
 function recruit_npc(npc_id, clone_id)
 	Printer:Debug(LOG.RUN, CAT.NPC, "recruiting npc %s", npc_id)
 	if clone_id then
@@ -702,16 +707,37 @@ end
 
 ---- BOOT
 
+NPCD_BOOTED = false
+
+function check_can_boot()
+	local plist = npcd.get_perks_id_list()
+	NPCD_BOOTED = (#plist > 0)
+	return NPCD_BOOTED
+end
+
 function game_play_start()
-    if(device().precache_frame > 1) then --detects if game is not past the press any key prompt
-        return
-    end
-  --setup your thing here
-   UnregisterScriptCallback("actor_on_update", game_play_start)
-   Printer:Log(LOG.START, CAT.EXEC,"Manager game_play_start")
-   restart_npcd_execution()
-   update_actionbar()
-   CreateTimeEvent("npcd_manager", "npcs_sweaper", 60, npcs_sweaper)
+	if(device().precache_frame > 1) then --detects if game is not past the press any key prompt
+		return
+	end
+	--setup your thing here
+	UnregisterScriptCallback("actor_on_update", game_play_start)
+	Printer:Log(LOG.START, CAT.EXEC,"Manager game_play_start")
+	check_can_boot()
+	if not NPCD_BOOTED then
+		UnregisterScriptCallback("actor_on_first_update", actor_on_first_update)
+		UnregisterScriptCallback("actor_on_update", actor_on_update)
+		UnregisterScriptCallback("squad_on_npc_death", squad_on_npc_death)
+		UnregisterScriptCallback("npcd_squad_update", npcd_squad_update)
+		UnregisterScriptCallback("on_option_change", on_option_change)
+		UnregisterScriptCallback("load_state", load_state)
+		UnregisterScriptCallback("save_state", save_state)
+		return
+	end
+	-- NPCD BOOTING
+	restart_npcd_execution()
+	update_actionbar()
+	CreateTimeEvent("npcd_manager", "npcs_sweaper", 60, npcs_sweaper)
+	SendScriptCallback("npcd_started")
 end
 
 function on_game_start()

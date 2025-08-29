@@ -245,6 +245,14 @@ end
 function set_perks(npc_id, new_perks)
 end
 
+function get_perks_id_list()
+	local plist = {}
+	for id, perk in pairs(perks) do
+		table.insert(plist, perk.id)
+	end
+	return plist
+end
+
 local function get_randomized_perk_list(perk_type, perk_archetype)
 	local list = {}
 	for _, perk in pairs(perks) do
