@@ -346,8 +346,8 @@ function add_ability(npc_id, feat)
 end
 
 function remove_ability(npc_id, feat_id)
-    local a_id = feat_id
-	npcs[npc_id].Ability[a_id] = nil
+	if not npcs[npc_id] then return end
+	npcs[npc_id].Ability[feat_id] = nil
 end
 
 function has_abilities(npc_id)
@@ -370,6 +370,12 @@ function get_ability(npc_id, feat_id)
 	if not npcs[npc_id] then return end
 	
 	return npcs[npc_id].Ability[feat_id]
+end
+
+function ability_registered(npc_id, feat_id)
+	if not npcs[npc_id] then return end
+	
+	return npcs[npc_id].Ability[feat_id] and true or false
 end
 
 function set_ability(npc_id, ability)

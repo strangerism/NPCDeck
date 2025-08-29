@@ -30,8 +30,6 @@ ideas for archetypes
 stuff to do
 
 - remove old input management
-- move npc profile creation in npc dialog window --> depends on the possibility to pick single npc from squad (but it can work regardless) 
-- implement roll npc profile when talking to npc only. ask about his background
 - add mcm always_register?
 - check correct usage of objects_id instead of passing objects
 - module_mcm must update npdc.perk from mcm settings changes (keybind, stats,etc)
@@ -61,6 +59,4 @@ stuff to do
 
     bugs
 
-    - fix live coolddowns on icons not working when loading from save
     - fix npcd crash when no perks are installed 
-    - cooldown resets on squad on update (e.g. dismiss an npc)

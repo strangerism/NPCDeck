@@ -53,8 +53,6 @@ function register_abilities(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	Printer:LogTable("Register Abilities - NPC perks:", npc_deck)
-	-- clear npc current abilities
-	npcd.clear_abilities(npc_id)
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
 		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s registers abilities for perk %s", npc_id, npc_perk.id)
@@ -64,8 +62,14 @@ function register_abilities(npc_id)
 				if feat.type == FEAT_TYPE.ACTIVE then
 					if npc_can_register(npc_id, feat) then
 						Printer:Debug(LOG.ADD, CAT.NPC,"npc %s adds ability %s", npc_id, feat.id)
-						npcd.add_ability(npc_id, feat)
-						bind_ability(npc_id, feat)
+						if not npcd.ability_registered(npc_id, feat.id) then
+							npcd.add_ability(npc_id, feat)
+							bind_ability(npc_id, feat)
+						end
+					else
+						Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
+						npcd.remove_ability(npc_id, feat.id)
+						unbind_ability(npc_id, feat)
 					end
 				end
 			end
@@ -86,7 +90,7 @@ function unregister_abilities(npc_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
-					Printer:Debug(LOG.ADD, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
+					Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
 					npcd.remove_ability(npc_id, feat.id)
 					unbind_ability(npc_id, feat)
 				end
@@ -138,6 +142,7 @@ end
 function recruit_npc(npc_id, clone_id)
 	Printer:Debug(LOG.RUN, CAT.NPC, "recruiting npc %s", npc_id)
 	if clone_id then
+		-- npc recruited through Individually recruitable companions mod dialogs (free, paid)
 		if npcd.get_npc(npc_id) then
 			Printer:Log(LOG.ADD, CAT.CONF, "recruiting npc %s through clone %s", npc_id, clone_id)			
 			-- npc profile already exists, remap to the clone id
@@ -159,6 +164,7 @@ function recruit_npc(npc_id, clone_id)
 			npcd.set_recruited(clone_id, true)
 		end
 	else
+		-- npc recruited through vanilla squad joining dialog (can be 1 npc or more at the same time)
 		if npcd.add_npc(npc_id) then
 			Printer:Log(LOG.ADD, CAT.NPC, "recruiting npc %s ", npc_id)
 			Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", npc_id)
@@ -206,6 +212,48 @@ function remove_npc_executions(npc_id)
 			remove_execution(id)
 		end
 	end
+end
+
+function restart_npcd_execution()
+	Printer:Debug(LOG.RUN, CAT.EXEC,"restart_npcd_execution")
+	local clist = squad_get_clist()
+	for i = 1, #clist do
+		restart_npc_execution(clist[i])
+	end
+end
+
+function resume_npc_ability_execution(npc_id, feat)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"resume npc %s ability %s execution", npc_id, feat.id)
+	if feat.type == FEAT_TYPE.ACTIVE then
+		if npcd.ability_registered(npc_id, feat.id) then
+			Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s restarts execution %s", npc_id, feat.id)
+			if feat.mode == FEAT_MODE.MANUAL then
+				add_cooldown_execution(npc_id, feat.id)
+			end
+			if feat.mode == FEAT_MODE.AUTO then
+				add_poll_execution(npc_id, feat)
+			end
+		end
+	end
+end
+
+function restart_npc_execution(npc_id)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"npc %s restarts abilities execution", npc_id)
+    local npc_deck = npcd.get_npc(npc_id)
+	if not npc_deck then return false end -- npc died?
+
+	Printer:LogTable("Restart Abilities - NPC perks:", npc_deck)
+	for _, npc_perk in pairs(npc_deck.Perk) do
+		Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts abilities for perk %s", npc_id, npc_perk.id)
+		local perk = npcd.get_perk(npc_perk.id)
+		if perk and perk.feats then
+			for _, feat in pairs(perk.feats) do
+				resume_npc_ability_execution(npc_id, feat)
+			end
+		end
+	end
+	Printer:LogTable("Restarted Abilities", npc_deck.Ability)
+	return true
 end
 
 function teardown_npcd_execution()
@@ -425,7 +473,10 @@ local function do_npcd_squad_update()
 		end
 	end
 
-	-- update new squad members - TODO this can be removed if we create the npc profile on npc dialog window
+	-- update new squad members 
+	-- TODO 1 this can be removed if we create the npc profile on npc dialog window
+	-- TODO 2 this now is only to cover the case where an entire squad joins
+	-- TODO 3 maybe we should not recruit and register non profiled npc automatically
 	for i=1, #added_ids do
 		local npc = npcdu.get_npc_obj(added_ids[i])
 		if npc and npc:alive() then
@@ -658,6 +709,7 @@ function game_play_start()
   --setup your thing here
    UnregisterScriptCallback("actor_on_update", game_play_start)
    Printer:Log(LOG.START, CAT.EXEC,"Manager game_play_start")
+   restart_npcd_execution()
    update_actionbar()
    CreateTimeEvent("npcd_manager", "npcs_sweaper", 60, npcs_sweaper)
 end
