@@ -51,8 +51,26 @@
 	</string>			
 	<!-- Perks menus -->
 	<string id="ui_mcm_st_npcd_feats">
-		<text>Feats list</text>
+		<text>Feats' list</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feats_stats">
+		<text>Feat's stats</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feats_stats">
+		<text>Feat's stats</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feats_stats_rank">
+		<text>Rank %s</text>
 	</string>	
+	<!-- <string id="ui_mcm_st_npcd_feats_stat_name">
+		<text>%s [%s]</text>
+	</string> -->
+	<string id="ui_mcm_st_npcd_feats_stats_cooldown">
+		<text>Cooldown</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feats_stats_life">
+		<text>Life</text>
+	</string>		
 	<string id="ui_mcm_st_npcd_perk_type">
 		<text>Perk type</text>
 	</string>

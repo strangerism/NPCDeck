@@ -105,8 +105,8 @@ function get_module_perk_feat_setting(module, perk_id, feat_id, setting, var_nam
 	if setting == FEAT_SETTING.ACTIVATION_KEY then
 		return npcd_mcm.get_module_setting(module, perk_id .. "/" .. feat_id .. "_" .. setting .. "_" .. var_name)
 	end
-	if setting == FEAT_SETTING.STATS then
-		return npcd_mcm.get_module_setting(deck.module, perk_id .. "/" .. feat_id .. "_" .. setting .. "_" .. var_name)
+	if setting == FEAT_SETTING.STATS and rank then
+		return npcd_mcm.get_module_setting(module, perk_id .. "/" .. feat_id .. "_" .. setting .. "_" .. rank .. "_" .. var_name)
 	end
 	
 end
@@ -235,6 +235,28 @@ function get_module_menu(module_deck)
 						}
 					}
 					add_keybind(perk_menu.gr, keybind_grp)
+				end
+				if feat.stats and npcdu.tablelength(feat.stats) > 0 then
+					table.insert(perk_menu.gr, { id = feat.id .. "_stats", type = "title", align="l", clr = {200, 180, 4, 219}, text = "ui_mcm_st_npcd_feats_stats"})
+					for i = 1, #feat.stats do
+						local rank = feat.stats[i]
+						table.insert(perk_menu.gr, { id = feat.id .. "_stats_desc", type = "desc", clr = {200, 200, 255, 200}, text = string.format(game.translate_string("ui_mcm_st_npcd_feats_stats_rank"), i)} )
+						for key, value in pairs(rank) do
+							local stat_hint
+							local mcm_prefix
+							if key == FEAT_SETTING.STAT.COOLDOWN then
+								-- stat_hint = "st_npcd_feats_stats_cooldown"
+								stat_hint = "st_npcd_feats_stats_cooldown"
+							elseif key == FEAT_SETTING.STAT.LIFE then
+								-- stat_hint = "st_npcd_feats_stats_life"
+								stat_hint = "st_npcd_feats_stats_life"
+							else
+								-- mcm_prefix = "npcd_module_" .. module_deck.module .. "_" .. perk.id .. "_" .. feat.id .. "_"
+								stat_hint = "npcd_module_" .. module_deck.module .. "_" .. perk.id .. "_" .. feat.id .. "_" .. key
+							end
+							table.insert(perk_menu.gr, {id = feat.id .. "_stats_" .. i .. "_" .. key , type = "input", hint = stat_hint, val = value, def = value, min = 1, max = 9999})
+						end
+					end
 				end
 			end
 		end
