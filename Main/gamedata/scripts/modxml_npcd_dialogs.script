@@ -1,3 +1,5 @@
+local npcdu = npcd_utils
+
 function on_game_start()
 	RegisterScriptCallback("on_specific_character_dialog_list", function(character_id, dialog_list)
 		if dialog_list:has("friendly_companion_dialog") then
@@ -103,7 +105,7 @@ end
 function npc_is_insquad(actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
-		return npcd_manager.is_actor_squad(npc:id())
+		return npcd_squad.is_actor_squad(npc:id())
 	end
 	return false
 end

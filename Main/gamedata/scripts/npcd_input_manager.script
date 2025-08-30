@@ -1,5 +1,4 @@
 local npcdu = npcd_utils
-local npcd = npcd
 
 function get_printer()
 	if not Printer then

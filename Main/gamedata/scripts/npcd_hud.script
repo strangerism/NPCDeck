@@ -1,7 +1,7 @@
 
 local npcdu = npcd_utils
-local npcdm = npcd_manager
 local SECOND_KEY_DESC = npcd.SECOND_KEY_DESC 
+
 function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_hud")
@@ -116,10 +116,10 @@ function axr_companions.UICompanionList:Update(force)
 	self.index  = 0
 	self.W      = 40
 	self.offset = 10
-	if not npcdm.squad_available() then return end
+	if not npcd_squad.squad_available() then return end
 
 	-- Printer:Debug(LOG.INFO, CAT.UI,"UICompanionList:Update")
-	local clist = npcdm.squad_get_clist()
+	local clist = npcd_squad.squad_get_clist()
 	for i=1,8 do
         local npc = npcdu.get_npc_obj(clist[i])
 		if npc and IsStalker(npc) and npc:alive() then

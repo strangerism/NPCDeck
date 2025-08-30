@@ -1,6 +1,6 @@
 local npcdu = npcd_utils
-local npcdm = npcd_manager
 local FEAT_SETTING = NPCD.FEAT_SETTING
+
 MAX_SLOTS = 16
 function get_printer()
 	if not Printer then
@@ -110,7 +110,7 @@ function bind_action_slot(npc_id, feat_id)
 end
 
 function add_npc_abilities_to_actionbar(npc_id)
-    Printer:Debug(LOG.ADD, CAT.CONF,"add npc %s abilities to actionbar", npc_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"add npc %s abilities to actionbar", npc_id)
     local npc_abilities = npcd.get_abilities(npc_id)
     if npc_abilities then
         for id, ability in pairs(npc_abilities) do
@@ -316,19 +316,19 @@ end
 function reset_actionbar()
     Printer:Debug(LOG.RUN, CAT.UI_ACTION, "reset actionbar")
     -- Get current squad
-    if not npcdm.squad_available() then
+    if not npcd_squad.squad_available() then
         Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update but no squad available")
         SendScriptCallback("npcd_hud_update")
         return
     end
 
     clear_actionbar()
-    local squad_size = npcdm.squad_get_size()
+    local squad_size = npcd_squad.squad_get_size()
     Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", squad_size)
     
     -- Process each squad member
     local slot_index = 1
-    local clist = npcdm.squad_get_clist()
+    local clist = npcd_squad.squad_get_clist()
     for i=1, #clist do
         local npc = npcdu.get_npc_obj(clist[i])
         if npc and IsStalker(npc) and npc:alive() then
@@ -369,6 +369,7 @@ settings = {
 function on_option_change()
 	settings.max_slots = npcd_mcm.get_setting("actionbar", "main/max_slots")
 	settings.show_empty = npcd_mcm.get_setting("actionbar", "main/show_empty")
+    reset_actionbar()
 end
 
 function on_game_start()

@@ -1,0 +1,114 @@
+local npcdu = npcd_utils
+
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_squad")
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
+--------------- SQUAD STATE
+
+local Squad_Info = {
+	combat = false,
+	size = 0,
+	non_task_companions = 0,
+	clist = {}
+}
+
+local function reset_squad_info()
+	Squad_Info = {
+		combat = false,
+		size = 0,
+		non_task_companions = 0,
+		clist = {},
+		available = false
+	}
+end
+
+local function update_axr_companions_info()
+    local clist = axr_companions.list_actor_squad_by_id()
+	Squad_Info.size = npcdu.tablelength(clist)
+    if not (Squad_Info.size > 0) then
+        Printer:Trace(LOG.WARN, CAT.NPC, "no squad available at this time")
+		reset_squad_info()
+	else
+		Squad_Info.non_task_companions = axr_companions.get_companion_count()
+		Squad_Info.clist = clist
+		Squad_Info.available = true
+		Printer:Trace(LOG.INFO, CAT.NPC, "squad count %s - non tasks companions %s", Squad_Info.size, Squad_Info.non_task_companions)
+	end
+end
+
+--------------- SQUAD Queries
+
+function squad_get_clist()
+	return Squad_Info.clist
+end
+
+function squad_get_combat()
+	return Squad_Info.combat
+end
+
+function squad_get_size()
+	return Squad_Info.size
+end
+
+function squad_get_nontask_size()
+	return Squad_Info.non_task_companions
+end
+
+function squad_available()
+	return Squad_Info.available
+end
+
+function is_actor_squad(npc_id)
+	local clist = squad_get_clist()
+	for i = 1, #clist do
+		if clist[i] == npc_id then return true end
+	end
+	return false
+end
+
+--------------- SQUAD MGMT API
+
+function update_squad_info()
+	local squad_is_peaceful = true
+	update_axr_companions_info()
+	local clist = Squad_Info.clist
+	for i=1, #clist do
+		local npc = npcdu.get_npc_obj(clist[i])
+		if npc then
+			local is_peaceful = false
+			-- check if is in fight
+			if npc:alive() then
+				is_peaceful = (not npc:best_enemy()) and npc:dont_has_info("npcx_beh_ignore_combat") and true or false
+			end
+			-- Printer:Trace(LOG.INFO, CAT.NPC,"companion[%s] is_peaceful %s - dist: %s",clist[i], is_peaceful, distance_between(db.actor,npc))
+			-- check if is too far away
+			squad_is_peaceful = squad_is_peaceful and is_peaceful
+			Printer:Trace(LOG.INFO, CAT.NPC,"current calculation for squad is_peaceful %s", squad_is_peaceful)					
+		end	
+	end	
+	if not squad_is_peaceful then
+		Printer:Trace(LOG.INFO, CAT.NPC,"squad is under attack or attacking")
+	end
+	Printer:Trace(LOG.INFO, CAT.NPC,"squad is resolved peaceful %s", squad_is_peaceful)
+	if not Squad_Info.combat and not squad_is_peaceful then
+		Printer:Debug(LOG.START, CAT.EXEC,"npcd_squad_combat_started")
+		Squad_Info.combat = true
+		SendScriptCallback("npcd_squad_combat_started")
+		return
+	end
+
+	if Squad_Info.combat and squad_is_peaceful then
+		Printer:Debug(LOG.STOP, CAT.EXEC,"npcd_squad_combat_ended")
+		Squad_Info.combat = false
+		SendScriptCallback("npcd_squad_combat_ended")
+		return
+	end
+end

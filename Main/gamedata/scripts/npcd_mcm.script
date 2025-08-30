@@ -1,5 +1,5 @@
 local npcdu = npcd_utils
-local npcdm = npcd_manager
+
 local NPCD = npcd
 local FEAT_MODE = NPCD.FEAT_MODE
 local FEAT_SETTING = NPCD.FEAT_SETTING
