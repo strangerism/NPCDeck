@@ -29,6 +29,7 @@ FEAT_TYPE = {
 	PASSIVE = "st_npcd_feat_type_passive",
 	BOON = "st_npcd_feat_type_boon",
 	TRAIT = "st_npcd_feat_type_trait",
+	MUTATION = "st_npcd_feat_type_mutation",
 }
 
 FEAT_MODE = {
@@ -78,14 +79,79 @@ INPUT_MANAGER = {
 	CUSTOM = "custom"
 }
 
+-- Perks API
+
+function get_perk(perk_id)
+	if not perk_id then return end -- cannot continue
+	return perks[perk_id]
+end
+
+function get_perk_feats(perk_id)
+	if not perk_id then return end -- cannot continue
+	return perks[perk_id].feats
+end
+
+function get_perk_feat(perk_id, feat_id)
+	if not perk_id or not perks[perk_id].feats then return end -- cannot continue
+	return perks[perk_id].feats[feat_id]
+end
+
+function get_perk_feat_stat(perk_id, feat_id, stat_name, rank)
+	if not rank or not stat_name then return end
+	local feat = get_perk_feat(perk_id, feat_id)
+	if not feat or not feat.stats and not feat.stats[rank]  then return end
+	return feat.stats[rank][stat_name]
+end
+
+function get_module_perks(module)
+	local module_perks = {}
+	for _, perk in pairs(perks) do
+		if perks[perk.id]["module"] == module then
+			table.insert(module_perks, perk)
+		end
+	end
+	return module_perks
+end
+
+-- NPCD Modules API
+
+local function apply_module_perks_settings(module, module_perks)
+	for _, perk in pairs(module_perks) do
+		if perk.feats then
+			for _, feat in pairs(perk.feats) do
+				if feat.stats then
+					for i = 1, #feat.stats do
+						for key, _ in pairs(feat.stats[i]) do
+							local value = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.STATS, key, i)
+							feat.stats[i][key] = value
+							-- Printer:Log(LOG.INFO, CAT.CONF, "updated perk %s feat %s stat %s[%s] to %s", perk.id, feat.id, key, i, value)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 function add_module_perks(module, module_perks)
+	Printer:Log(LOG.RUN, CAT.CONF, "add module %s perks", module)
 	for _, perk in pairs(module_perks) do
 		if not perks[perk.id] then
-			perks[perk.id] = perk
+			perks[perk.id] = npcdu.copy(perk)
 			perks[perk.id]["module"] = module
+		else
+			Printer:Log(LOG.ERROR, CAT.CONF, "cannot add module %s perk %s, it already exists from other module %s", module, perk.id, perks[perk.id]["module"])
 		end
-	end 
-	Printer:LogTable("Deck Perks", perks)
+	end
+	-- Printer:LogTable("Added Deck Perks", module_perks)
+	update_module_perks(module)
+end
+
+function update_module_perks(module)
+	Printer:Log(LOG.RUN, CAT.CONF, "update module %s perks", module)
+	local module_perks = get_module_perks(module)
+	apply_module_perks_settings(module, module_perks)
+	-- Printer:LogTable("Updated Deck Perks", module_perks)
 end
 
 -- NPCs DECK
@@ -156,28 +222,9 @@ function get_npc(npc_id)
     return npcs[npc_id]
 end
 
-function get_perk(perk_id, npc_id)
-	if not perk_id then return end -- cannot continue
-	if npc_id and (not npcs[npc_id] or not npcs[npc_id].Perk[perk_id]) then return end -- npc perk query but npc does not have this perk
-
-	return perks[perk_id]
-end
-
-function get_perk_feats(perk_id)
-	if not perk_id then return end -- cannot continue
-	return perks[perk_id].feats
-end
-
-function get_perk_feat(perk_id, feat_id)
-	if not perk_id or not perks[perk_id].feats then return end -- cannot continue
-	return perks[perk_id].feats[feat_id]
-end
-
-function get_perk_feat_stat(perk_id, feat_id, stat_name, rank)
-	if not rank or not stat_name then return end
-	local feat = get_perk_feat(perk_id, feat_id)
-	if not feat or not feat.stats and not feat.stats[rank]  then return end
-	return feat.stats[rank][stat_name]
+function get_npc_perk(npc_id, perk_id)
+	if not npc_id or not npcs[npc_id] or not perk_id then return end
+	return npcs[npc_id].Perk[perk_id]
 end
 
 function get_npc_perks(npc_id)
@@ -210,9 +257,7 @@ end
 local function roll_perk(npc_id, functor)
 	Printer:Log(LOG.RUN, CAT.CONF,"executing npc %s roll", npc_id)
 	if not functor then return false end
-	local ex_functor = {}
-	table.insert(ex_functor, functor[1])
-	table.insert(ex_functor, functor[2])
+	local ex_functor = npcdu.copy(functor)
 	table.insert(ex_functor, npc_id)
 	Printer:TraceTable("npc executing", ex_functor)
 	local result = execute_func(unpack(ex_functor))
@@ -341,16 +386,23 @@ end
 
 function add_ability(npc_id, feat)
 	local a_id = feat.id
-	Printer:Log(LOG.ADD, CAT.CONF,"npc %s add_ability %s", npc_id, a_id)
+	Printer:Log(LOG.ADD, CAT.CONF,"npc %s adds ability %s", npc_id, a_id)
     npcs[npc_id].Ability[a_id] = {}
 	npcs[npc_id].Ability[a_id]["id"] = a_id
 	npcs[npc_id].Ability[a_id]["mode"] = feat.mode
 	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud
 	npcs[npc_id].Ability[a_id]["icon_slot"] = feat.icon_slot
 	npcs[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
-	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework should give this
-	npcs[npc_id].Ability[a_id]["cooldown"] = feat.cooldown or feat.stats[rank].cooldown or 360
+	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework can give this otherwise
+	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1
 	npcs[npc_id].Ability[a_id]["timer"] = -1
+end
+
+function update_ability(npc_id, feat)
+	local a_id = feat.id
+	Printer:Log(LOG.ADD, CAT.CONF,"npc %s updates ability %s", npc_id, a_id)
+	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework can give this otherwise
+	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1
 end
 
 function remove_ability(npc_id, feat_id)

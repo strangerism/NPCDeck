@@ -20,9 +20,7 @@ local ABILITY_STATE = npcd.ABILITY_STATE
 
 local function execute(npc_id, functor)
 	if not functor then return false end
-	local ex_functor = {}
-	table.insert(ex_functor, functor[1])
-	table.insert(ex_functor, functor[2])
+	local ex_functor = npcdu.copy(functor)
 	table.insert(ex_functor, npc_id)
 	Printer:TraceTable("npc executing", ex_functor)
 	local result = execute_func(unpack(ex_functor))
@@ -65,6 +63,8 @@ function register_abilities(npc_id)
 						if not npcd.ability_registered(npc_id, feat.id) then
 							npcd.add_ability(npc_id, feat)
 							bind_ability(npc_id, feat)
+						else
+							npcd.update_ability(npc_id, feat)
 						end
 					else
 						Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
@@ -99,6 +99,14 @@ function unregister_abilities(npc_id)
 	end
 	return true
 end
+
+-- function update_abilities(npc_id, module)
+-- 	local npc_abilities = npcd.get_abilities(npc_id)
+-- 	for _, ability in pairs(npc_abilities) do
+-- 		local feat = npcd.get_npc_perk(npc_id, ability.id)
+-- 		ability.cooldown = feat.stats[rank].cooldown
+-- 	end
+-- end
 
 function dialog_create_npc_profile(actor, npc)
 	Printer:Debug(LOG.RUN, CAT.NPC,"create npc profile")
@@ -446,8 +454,8 @@ end
 -- TODO this registration part should be done differently
 -- if we remove create_profile from squad updates then we can do all registration in start_npcd_squad_update
 
-function npcd_squad_ability_registration()
-	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_ability_registration")
+function npcd_squad_abilities_registration()
+	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_abilities_registration")
 	local clist = squad_get_clist()
 	-- re-configure all squad abilities
 	for i=1, #clist do
@@ -490,7 +498,7 @@ local function do_npcd_squad_update()
 	end
 	current_clist = new_clist
 	SendScriptCallback("npcd_post_squad_update")
-	CreateTimeEvent("npcd_manager", "npcd_squad_ability_registration", 1, npcd_squad_ability_registration)
+	CreateTimeEvent("npcd_manager", "npcd_squad_abilities_registration", 1, npcd_squad_abilities_registration)
 	return true
 end
 
@@ -678,12 +686,17 @@ function actor_on_net_destroy()
 	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
 end
 
---- MODULE REGISTRATION
+--- MODULE REGISTRATION and MGMT
 
 function register_module(deck)
 	printf("-[NPCD][MAIN] Manager register module %s", deck.module)
-	-- printf("-[NPCD][Main] Manager register_module %s", deck.module)
 	npcd.add_module_perks(deck.module, deck.perks)
+end
+
+function update_module(deck)
+	Printer:Log(LOG.RUN, CAT.CONF,"Manager update module %s", deck.module)
+	npcd.update_module_perks(deck.module)
+	SendScriptCallback("npcd_squad_update")
 end
 
 function actor_on_first_update()
