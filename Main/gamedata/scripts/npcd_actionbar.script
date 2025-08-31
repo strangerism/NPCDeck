@@ -372,8 +372,13 @@ function on_option_change()
     reset_actionbar()
 end
 
-function on_game_start()
-    RegisterScriptCallback("on_option_change", on_option_change)
-    -- RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
+function on_npcd_started()
     on_option_change()
 end
+
+function on_game_start()
+    RegisterScriptCallback("on_option_change", on_option_change)
+    RegisterScriptCallback("npcd_started", on_npcd_started)
+    -- RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
+end
+
