@@ -127,20 +127,64 @@ function restart_npc_execution(npc_id)
 	return true
 end
 
-local function restart_npcd_execution()
-	Printer:Debug(LOG.RUN, CAT.EXEC,"restart_npcd_execution")
+local function start_npcd_execution()
+	Printer:Debug(LOG.RUN, CAT.EXEC,"start_npcd_execution")
+
+	-- restart saved execution checkpoints
 	local clist = npcd_squad.squad_get_clist()
 	for i = 1, #clist do
 		restart_npc_execution(clist[i])
 	end
+
+	-- start the npcd sim tasks
+	CreateTimeEvent("npcd_manager", "npcs_sweaper", 0, npcs_sweaper)
+	CreateTimeEvent("npcd_manager", "npcs_profiler", 0, npcs_profiler)
 end
 
 local function teardown_npcd_execution()
 	Printer:Debug(LOG.STOP, CAT.EXEC,"teardown_npcd_execution")
+
+	-- stop current npc Tasks execution
 	for key, value in pairs(Tasks) do
 		RemoveTimeEvent("npcd_manager", key)
 	end
+
+	-- stopping the npcd sim tasks
+	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
+	RemoveTimeEvent("npcd_manager", "npcs_profiler")
 end
+
+function npcs_sweaper()
+	Printer:Log(LOG.RUN, CAT.CONF,"npcs sweaper")
+	local npcs_list = npcd.get_npcs_id_list()
+	for i = 1, #npcs_list do
+		local npc_id = npcs_list[i]
+		local se_npc = alife_object(npc_id)
+		if not se_npc then
+			Printer:Debug(LOG.REMOVE, CAT.CONF,"removing stale npc %s data", npc_id)
+			npcd.remove_npc(npc_id)
+		end
+	end
+	ResetTimeEvent("npcd_manager", "npcs_sweaper", 60)
+end
+
+function npcs_profiler()
+	Printer:Log(LOG.RUN, CAT.CONF,"npcs profiler")
+	local npcs_list = npcd.get_npcs_id_list()
+	-- Printer:LogTable("NPCS list", npcs_list)
+	for i = 1, #npcs_list do
+		local npc_id = npcs_list[i]
+		Printer:Trace(LOG.INFO, CAT.CONF, "profiling npc %s", npc_id)
+		local se_npc = alife_object(npc_id)
+		local npc_deck = npcd.get_npc(npc_id)
+		if se_npc and se_npc:alive() and not npc_deck.Info.has_profile then
+			Printer:Debug(LOG.RUN, CAT.CONF,"creating new profile for npc %s %s %s", npc_id, se_npc:name(), se_npc:character_name())
+			npcd.create_profile(npc_id)
+		end
+	end
+	ResetTimeEvent("npcd_manager", "npcs_profiler", 60)
+end
+
 
 --------------- Abilities EXEC
 
@@ -385,25 +429,12 @@ local function recruit_npc(npc_id, clone_id)
 				-- cannot remap - there was a problem
 				Printer:Log(LOG.ERROR, CAT.NPC, "cannot remap npc %s to new id %s", npc_id, clone_id)
 			end
-			
-			
 		else
 			Printer:Log(LOG.WARN, CAT.NPC, "recruiting through clone where only the clone %s exists", clone_id)
-			if npcd.add_npc(clone_id) then
-				-- It's a new NPC lets roll the perks
-				Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", clone_id)
-				npcd.create_profile(clone_id)
-			end
 			npcd.set_recruited(clone_id, true)
 		end
 	else
 		-- npc recruited through vanilla squad joining dialog (can be 1 npc or more at the same time)
-		if npcd.add_npc(npc_id) then
-			Printer:Log(LOG.ADD, CAT.NPC, "recruiting npc %s ", npc_id)
-			Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", npc_id)
-			-- It's a new NPC lets roll the perks
-			npcd.create_profile(npc_id)
-		end
 		npcd.set_recruited(npc_id, true)
 	end
 end
@@ -432,9 +463,7 @@ function squad_on_npc_death(squad,se_npc)
 	end
 end
 
---------------- SQUAD UPDATES (abilities registration mainly)
--- TODO this registration part should be done differently
--- if we remove create_profile from squad updates then we can do all registration in start_npcd_squad_update
+--------------- SQUAD UPDATES (abilities registration)
 
 function npcd_squad_abilities_registration()
 	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_abilities_registration")
@@ -516,20 +545,6 @@ end
 
 -- NPCD LIFECYCLE
 
-function npcs_sweaper()
-	Printer:Log(LOG.RUN, CAT.CONF,"npcs sweaper")
-	local npcs_list = npcd.get_npcs_id_list()
-	for i = 1, #npcs_list do
-		local npc_id = npcs_list[i]
-		local se_npc = alife_object(npc_id)
-		if not se_npc then
-			Printer:Debug(LOG.REMOVE, CAT.CONF,"removing stale npc %s data", npc_id)
-			npcd.remove_npc(npc_id)
-		end		
-	end
-	ResetTimeEvent("npcd_manager", "npcs_sweaper", 60)
-end
-
 local tg_update = 0
 local tg_update_step = 500 --[ms]
 function actor_on_update()
@@ -547,7 +562,6 @@ end
 
 function actor_on_net_destroy()
 	teardown_npcd_execution()
-	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
 end
 
 --- MODULE REGISTRATION and MGMT
@@ -566,8 +580,10 @@ end
 ---- 
 
 function game_object_on_net_spawn(obj)
-	if (IsStalker(obj) and obj:alive()) then	
-		printf("-[NPCD][MAIN] NPC spawned id:%s, name:%s, character_name:%s", obj:id(), obj:name(), obj:character_name())
+	if (IsStalker(obj) and obj:alive() and obj:id() ~= 0) then
+		if npcd.add_npc(obj:id()) then
+			printf("-[NPCD][MAIN] new npc added id:%s, name:%s, character_name:%s", obj:id(), obj:name(), obj:character_name())
+		end
 	end
 end
 
@@ -615,9 +631,8 @@ function game_play_start()
 	-- NPCD BOOTING
 	npcd_squad.update_squad_info()
 	current_clist = npcd_squad.squad_get_clist()
-	restart_npcd_execution()
+	start_npcd_execution()
 	update_actionbar()
-	CreateTimeEvent("npcd_manager", "npcs_sweaper", 60, npcs_sweaper)
 	SendScriptCallback("npcd_started")
 	RegisterScriptCallback("actor_on_update", actor_on_update)
 end

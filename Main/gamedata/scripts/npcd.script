@@ -172,8 +172,9 @@ function add_npc(npc_id)
 	npcs[npc_id] = {}
 	npcs[npc_id]["id"] = npc_id
 	npcs[npc_id]["Perk"] = {}
-	npcs[npc_id]["Ability"] = {}	
+	npcs[npc_id]["Ability"] = {}
 	npcs[npc_id]["Info"] = {}
+	npcs[npc_id]["Info"]["alive"] = true
 	npcs[npc_id]["Info"]["recruited"] = false
 	npcs[npc_id]["Info"]["last_joined"] = nil
 	npcs[npc_id]["Info"]["has_profile"] = false
@@ -215,6 +216,11 @@ function get_npcs_id_list()
 end
 
 function remove_npc(npc_id)
+	if not npc_id then return end
+	npcs[npc_id]["Info"]["alive"] = false
+end
+
+function purge_npc(npc_id)
 	if not npc_id then return end
 	npcs[npc_id] = nil
 end
@@ -366,7 +372,9 @@ function create_profile(npc_id)
 	-- 		shuffle(secondary_perk_list)
 	-- 		i = 1
 	-- 	end
-	-- end	
+	-- end
+
+	npcs[npc_id].Info.has_profile = true
 end
 
 function get_npc_feat(npc_id, feat_id)
@@ -442,12 +450,4 @@ end
 
 function set_ability(npc_id, ability)
     npcs[npc_id].Ability[ability.id] = ability
-end
-
-function actor_on_first_update()
-	Printer:Log(LOG.RUN, CAT.CONF,"NPCS actor_on_first_update")
-end
-function on_game_start()
-	-- Printer:Log(LOG.START, CAT.CONF,"NPCS on_game_start")
-	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end
