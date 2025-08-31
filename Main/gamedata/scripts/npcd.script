@@ -171,21 +171,23 @@ function add_npc(npc_id)
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s added", npc_id)
 	npcs[npc_id] = {}
 	npcs[npc_id]["id"] = npc_id
-	npcs[npc_id]["recruit"] = false
 	npcs[npc_id]["Perk"] = {}
-	npcs[npc_id]["Ability"] = {}
+	npcs[npc_id]["Ability"] = {}	
+	npcs[npc_id]["Info"] = {}
+	npcs[npc_id]["Info"]["recruited"] = false
+	npcs[npc_id]["Info"]["last_joined"] = nil
+	npcs[npc_id]["Info"]["has_profile"] = false
+	npcs[npc_id]["Info"]["can_recruit"] = false
+	npcs[npc_id]["Info"]["last_time_seen"] = nil
+	npcs[npc_id]["Info"]["last_smart_seen"] = nil
+	npcs[npc_id]["Info"]["codec_frequency"] = nil
 	return true
 end
 
 function remap_npc(npc_id, new_id)
 	if not npc_id or not npcs[npc_id] then return false end
 	Printer:Log(LOG.RUN, CAT.CONF,"npc %s remapped to %s", npc_id, new_id)
-	-- create new npcs with new id
-	add_npc(new_id)
-	npcs[new_id].recruited = npcs[npc_id].recruited
-	npcs[new_id].Perk = npcs[npc_id].Perk
-	npcs[new_id].Ability = npcs[npc_id].Ability
-
+	npcs[new_id] = npcs[npc_id]
 	-- delete old npcs
 	npcs[npc_id] = nil
 	return true
@@ -193,7 +195,7 @@ end
 
 function set_recruited(npc_id, enlist)
 	if not npcs[npc_id] then return end
-	npcs[npc_id].recruited = enlist
+	npcs[npc_id].Info.recruited = enlist
 end
 
 function set_deck(deck)

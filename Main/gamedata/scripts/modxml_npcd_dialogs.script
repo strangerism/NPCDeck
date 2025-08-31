@@ -4,10 +4,12 @@ function on_game_start()
 	RegisterScriptCallback("on_specific_character_dialog_list", function(character_id, dialog_list)
 		if dialog_list:has("friendly_companion_dialog") then
 			-- printf("-[NPCD][Main] Adding perk background dialog to npc %s dialog list", character_id)
-			local res1 = dialog_list:add("npcd_dialogs_ask_npc_background")
+			dialog_list:add("friendly_companion_dialog_individually")
+			dialog_list:add("npcd_dialogs_ask_npc_background")
 		end
 		if dialog_list:has("paid_companion_dialog") then
-			local res2 = dialog_list:add("npcd_dialogs_ask_npc_background")
+			dialog_list:add("npcd_dialogs_ask_npc_background")
+			dialog_list:add("paid_companion_dialog_individually")
 		end	
 	end)
 end
@@ -19,48 +21,136 @@ function on_xml_read()
 			local companion_dialogues = 
 			[[
 			<dialog id="npcd_dialogs_ask_npc_background">
-				<precondition>modxml_npcd_dialogs.npcd_started</precondition>
+				<precondition>npcd_dialogs.npcd_started</precondition>
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
 				<precondition>dialogs_axr_companion.is_actor_friend</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
 				<precondition>tasks_guide.not_prec_1</precondition>
 				<phrase_list>
 					<phrase id="0"> <!-- Actor ask if it's skilled -->
-						<script_text>modxml_npcd_dialogs.get_dialog_ask_is_skilled</script_text>
-						<action>npcd_manager.dialog_create_npc_profile</action>
+						<script_text>npcd_dialogs.get_dialog_ask_is_skilled</script_text>
+						<action>npcd_dialogs.dialog_create_npc_profile</action>
 						<next>1</next>
 					</phrase>
 					<phrase id="1"> <!-- NPC answer whether he is skilled or not -->
-						<precondition>modxml_npcd_dialogs.npc_has_profile</precondition>
-						<script_text>modxml_npcd_dialogs.get_dialog_skill_answer</script_text>
+						<precondition>npcd_dialogs.npc_has_profile</precondition>
+						<script_text>npcd_dialogs.get_dialog_skill_answer</script_text>
 						<next>2</next>
 						<next>42</next>
 					</phrase>					
 					<phrase id="2"> <!-- Actor ask background following answer 1-->
-						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
-						<script_text>modxml_npcd_dialogs.get_background</script_text>
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<script_text>npcd_dialogs.get_background</script_text>
 						<next>3</next>
 					</phrase>
 					<phrase id="3"> <!-- NPC answer background -->
-						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
-						<script_text>modxml_npcd_dialogs.get_npc_profile</script_text>
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<script_text>npcd_dialogs.get_npc_profile</script_text>
 						<next>411</next>
 						<next>412</next>
 					</phrase>
 					<phrase id="411"> <!-- Actor -->
-						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
-						<precondition>modxml_npcd_dialogs.npc_is_insquad</precondition>
-						<script_text>modxml_npcd_dialogs.get_squad_salute</script_text>
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<precondition>npcd_dialogs.npc_is_insquad</precondition>
+						<script_text>npcd_dialogs.get_squad_salute</script_text>
 					</phrase>
 					<phrase id="412"> <!-- Actor -->
-						<precondition>modxml_npcd_dialogs.npc_has_perks</precondition>
-						<precondition>modxml_npcd_dialogs.npc_isnot_insquad</precondition>
-						<script_text>modxml_npcd_dialogs.get_salute</script_text>
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<precondition>npcd_dialogs.npc_isnot_insquad</precondition>
+						<script_text>npcd_dialogs.get_salute</script_text>
 					</phrase>					
 					<phrase id="42"> <!-- Actor -->
-						<precondition>modxml_npcd_dialogs.npc_hasnot_perks</precondition>
-						<script_text>modxml_npcd_dialogs.get_salute_noperks</script_text>
+						<precondition>npcd_dialogs.npc_hasnot_perks</precondition>
+						<script_text>npcd_dialogs.get_salute_noperks</script_text>
 					</phrase>					
+				</phrase_list>
+			</dialog>	
+			
+			<dialog id="friendly_companion_dialog_individually">
+				<precondition>dialogs_axr_companion.is_non_story</precondition>
+				<precondition>dialogs_axr_companion.is_not_actor_companion</precondition>
+				<precondition>dialogs_axr_companion.is_actor_friend</precondition>
+				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
+				<precondition>npcd_dialogs.is_room_for_one_in_actor_squad</precondition>
+				<precondition>npcd_dialogs.not_a_one_man_squad</precondition>
+				<precondition>tasks_guide.not_prec_1</precondition>
+				<phrase_list>
+					<phrase id="0">
+						<script_text>npcd_dialogs.get_friend_companion_ask_join_individually_text</script_text>
+						<next>1</next>
+					</phrase>
+					<phrase id="1">
+						<text>axr_phrase_friend_companion_answer_join</text>
+						<action>npcd_dialogs.become_actor_companion_individually</action>
+						<action>dialogs.break_dialog</action>
+					</phrase>
+				</phrase_list>
+			</dialog>
+
+			<dialog id="paid_companion_dialog_individually">
+				<precondition>dialogs.warfare_disabled</precondition>
+				<precondition>dialogs_axr_companion.is_non_story</precondition>
+				<precondition>dialogs_axr_companion.is_not_actor_companion</precondition>
+				<precondition>txr_paid_companions.is_actor_natural</precondition>
+				<precondition>txr_paid_companions.is_paid_companion_faction</precondition>
+				<precondition>txr_paid_companions.is_not_dangerous_map</precondition>
+				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
+				<precondition>npcd_dialogs.is_room_for_one_in_actor_squad</precondition>
+				<precondition>npcd_dialogs.not_a_one_man_squad</precondition>
+				<precondition>tasks_guide.not_prec_1</precondition>
+				<phrase_list>
+					<phrase id="0"> <!-- actor -->
+						<script_text>npcd_dialogs.get_paid_companion_dialog_text_individually_text</script_text>
+						<next>1</next>
+						<next>2</next>
+					</phrase>
+					<phrase id="1"> <!-- npc -->
+						<precondition>txr_paid_companions.is_squad_competent</precondition>
+						<script_text>txr_paid_companions.st_paid_companion_dialog_text_1</script_text>
+						<next>3</next>
+						<next>4</next>
+						<next>5</next>
+					</phrase>
+					<phrase id="2"> <!-- npc -->
+						<precondition>txr_paid_companions.is_squad_not_competent</precondition>
+						<text>st_paid_companion_dialog_text_2</text>
+						<next>9</next>
+					</phrase>
+					<phrase id="9"> <!-- actor -->
+						<text>st_paid_companion_dialog_text_9</text>
+					</phrase>
+					
+					<phrase id="3"> <!-- actor -->
+						<precondition>txr_paid_companions.have_guard_money_1</precondition>
+						<script_text>txr_paid_companions.st_paid_companion_dialog_text_3</script_text>
+						<next>6</next>
+					</phrase>
+					<phrase id="4"> <!-- actor -->
+						<precondition>txr_paid_companions.have_guard_money_2</precondition>
+						<script_text>txr_paid_companions.st_paid_companion_dialog_text_4</script_text>
+						<next>7</next>
+					</phrase>
+					<phrase id="5"> <!-- actor -->
+						<text>st_paid_companion_dialog_text_5</text>
+						<next>8</next>
+					</phrase>
+					
+					<phrase id="6"> <!-- npc -->
+						<text>st_paid_companion_dialog_text_6</text>
+						<action>txr_paid_companions.take_guard_money_1</action>
+						<action>npcd_dialogs.become_paid_actor_companion_individually_and_register</action>
+						<action>dialogs.break_dialog</action>
+					</phrase>
+					<phrase id="7"> <!-- npc -->
+						<text>st_paid_companion_dialog_text_7</text>
+						<action>txr_paid_companions.take_guard_money_2</action>
+						<action>npcd_dialogs.become_paid_actor_companion_individually_and_register</action>
+						<action>dialogs.break_dialog</action>
+					</phrase>
+					
+					<phrase id="8"> <!-- npc -->
+						<text>st_paid_companion_dialog_text_8</text>
+					</phrase>
 				</phrase_list>
 			</dialog>			
 			]]
@@ -68,98 +158,4 @@ function on_xml_read()
 			xml_obj:insertFromXMLString(companion_dialogues)
 		end
 	end)
-end
-
-function npcd_started()
-	return npcd_manager.NPCD_BOOTED
-end
-
-function npc_has_profile(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		return npcd.get_npc(npc:id())
-	end
-	return false
-end
-
-function npc_hasnot_profile(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		return npcd.get_npc(npc:id())
-	end
-	return false
-end
-
-function npc_has_perks(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		return npcd.has_perks(npc:id())
-	end
-	return false
-end
-
-function npc_hasnot_perks(actor, npc)
-	return not npc_has_perks(actor, npc)
-end
-
-function npc_is_insquad(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		return npcd_squad.is_actor_squad(npc:id())
-	end
-	return false
-end
-
-function npc_isnot_insquad(actor, npc)
-	return not npc_is_insquad(actor, npc)
-end
-
-local asked_skills = false
-function get_dialog_ask_is_skilled(actor, npc)
-	-- printf("actor %s npc %s", actor, npc)
-	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
-	-- if npc_has_perks(actor, npc) then
-	-- 	asked_skills = true
-	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_skills", true)
-	-- else
-	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
-	-- end
-end
-
-function get_dialog_skill_answer(actor, npc)
-	-- printf("get_dialog_skill_answer actor %s npc %s", actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		if npcd.has_perks(npc:id()) then -- and not asked_skills then
-			return game.translate_string("st_npcd_npc_dialogs_skill_answer_yes1", true)
-		-- elseif npcd.has_perks(npc:id()) and asked_skills then
-		-- 	asked_skills = false
-		-- 	return game.translate_string("st_npcd_npc_dialogs_skill_answer_yes2", true)
-		else
-			return game.translate_string("st_npcd_npc_dialogs_skill_answer_no", true)
-		end
-	else
-		return game.translate_string("st_npcd_npc_dialogs_skill_answer_no", true)
-	end
-end
-
-function get_background()
-	local id = math.random(2)
-	return game.translate_string("st_npcd_npc_dialogs_ask_background" .. id, true)
-end
-
-function get_salute()
-	return game.translate_string("st_npcd_npc_dialogs_salute", true)
-end
-
-function get_squad_salute()
-	return game.translate_string("st_npcd_npc_dialogs_squad_salute", true)
-end
-
-function get_salute_noperks()
-	return game.translate_string("st_npcd_npc_dialogs_salute_noperks", true)
-end
-
-function get_npc_profile(actor, npc)
-	return npcd_manager.dialog_get_npc_profile(actor, npc)
 end

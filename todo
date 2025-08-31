@@ -28,7 +28,7 @@ ideas for archetypes
 
 
 stuff to do
-
+- rework create profile with npcd_npcs manager (use callback on_specific_character to continuously update NPCS deck - on startup add new npc but defer profiling after npcd boot)
 - rework notifications (new profile, npc joined, npc leaves)
 - remove old input management
 - add mcm always_register?

@@ -1,4 +1,0 @@
--- function on_game_start()
---     printf("[NPCD] START")
---     npcd_logging.update_logs()
--- end

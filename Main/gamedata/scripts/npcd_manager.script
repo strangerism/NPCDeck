@@ -362,46 +362,13 @@ local function unregister_abilities(npc_id)
 	return true
 end
 
---- NPC Dialog API
-
-function dialog_create_npc_profile(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"create npc profile")
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		if npcd.add_npc(npc:id()) then
-			Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", npc:id())
-			-- It's a new NPC lets roll the perks
-			npcd.create_profile(npc:id())
-		end
-	end
-end
-
-function dialog_get_npc_profile(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"get npc profile")
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		local npc_id = npc:id()
-		Printer:Log(LOG.RUN, CAT.CONF,"npc %s get profile", npc_id)
-		local id = math.random(5)
-		local profile_dialog = game.translate_string("st_npcd_npc_dialogs_background_response" .. id, true) .. "\\n \\n" 
-		local npc_perks = npcd.get_npc_perks(npc_id)
-		if npc_perks then
-			for _, npc_perk in pairs(npc_perks) do
-				local perk = npcd.get_perk(npc_perk.id, npc_id)
-				if perk.dialog then
-					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true)
-				end
-				local st_perk_name = game.translate_string(perk.name, true) or ""
-				local st_perk_module = game.translate_string("ui_mcm_npcd_module_menu_" .. perk.module, true) or perk.module or ""
-				profile_dialog = profile_dialog .. "\\n" .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module)
-
-				profile_dialog = profile_dialog .. "\\n"
-			end
-			return profile_dialog
-		end
-	end
-	return game.translate_string("st_npcd_npc_dialogs_npc_has_no_perks", true)
-end
+-- RegisterScriptCallback("on_specific_character_init", function(character_id, data)
+-- 	printf("%% character_id %s", character_id)
+-- 	if data.snd_config:find("(woman|female)") then
+-- 		printf("% %s is a woman", character_id)
+-- 		female_npc[character_id] = true
+-- 	end
+-- end)
 
 --- NPC Recruit API
 
@@ -596,6 +563,21 @@ function update_module(deck)
 	SendScriptCallback("npcd_squad_update")
 end
 
+---- 
+
+function game_object_on_net_spawn(obj)
+	if (IsStalker(obj) and obj:alive()) then	
+		printf("-[NPCD][MAIN] NPC spawned id:%s, name:%s, character_name:%s", obj:id(), obj:name(), obj:character_name())
+	end
+end
+
+-- function game_object_on_net_spawn(obj)
+-- 	if (IsStalker(obj) and obj:alive()) then	
+-- 		printf("-[NPCD][MAIN] NPC spawned id:%s, name:%s, character_name:%s, community:%s, rank:%s, reputation:%s, goodwill:%s, general_goodwill:%s", obj:id(), obj:name(), obj:character_name(), obj:community(), obj:rank(), obj:reputation(), obj:goodwill(), obj:general_goodwill())
+-- 	end
+-- end
+
+
 function actor_on_first_update()
 	Printer:Log(LOG.START, CAT.EXEC,"Manager actor_on_first_update")
 end
@@ -651,4 +633,5 @@ function on_game_start()
     RegisterScriptCallback("load_state", load_state)
     RegisterScriptCallback("save_state", save_state)
 	RegisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
+	RegisterScriptCallback("game_object_on_net_spawn", game_object_on_net_spawn)
 end
