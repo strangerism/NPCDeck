@@ -190,6 +190,7 @@ function remap_npc(npc_id, new_id)
 	if not npc_id or not npcs[npc_id] then return false end
 	Printer:Log(LOG.RUN, CAT.CONF,"npc %s remapped to %s", npc_id, new_id)
 	npcs[new_id] = npcs[npc_id]
+	npcs[new_id].id = new_id
 	-- delete old npcs
 	npcs[npc_id] = nil
 	return true
@@ -223,7 +224,7 @@ end
 
 function remove_npc(npc_id)
 	if not npc_id then return end
-	npcs[npc_id]["Info"]["alive"] = false
+	npcs[npc_id]["alive"] = false
 end
 
 function purge_npc(npc_id)

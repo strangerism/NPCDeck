@@ -357,6 +357,7 @@ local function release_npc(npc_id)
 	if npc_deck.show_profile then
 		npcd.remove_npc(npc_id)
 	else
+		Printer:Log(LOG.RUN, LOG.NPC, "purging npc %s", npc_id)
 		npcd.purge_npc(npc_id)
 	end
 end

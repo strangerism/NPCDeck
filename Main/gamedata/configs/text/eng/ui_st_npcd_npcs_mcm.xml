@@ -22,6 +22,9 @@
 	<string id="ui_mcm_st_npcd_npcs_info">
 		<text>Info</text>
 	</string>
+	<string id="ui_mcm_st_npcd_npcs_id">
+		<text>%%c[d_cyan]ID:%%c[d_white] %s</text>
+	</string>	
 	<string id="ui_mcm_st_npcd_npcs_community">
 		<text>%%c[d_cyan]Faction:%%c[d_white] %s</text>
 	</string>
