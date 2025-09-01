@@ -108,14 +108,16 @@ function get_npc_profile(actor, npc)
 	return npcd_dialogs.dialog_get_npc_profile(actor, npc)
 end
 
-function dialog_create_npc_profile(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"create npc profile")
+function dialog_update_npc_info(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"update npc info")
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
-		if npcd.add_npc(npc:id()) then
-			Printer:Debug(LOG.ADD, CAT.NPC,"create npc %s profile", npc:id())
-			-- It's a new NPC lets roll the perks
-			npcd.create_profile(npc:id())
+		npcd.set_show_profile(npc:id(), true)
+		local npc_info = npcd.get_npc_info(npc:id())
+		if npc_info then
+			npc_info.last_time_seen = time_global()
+			npc_info.last_smart_seen = nil -- TODO
+			npcd.set_npc_info(npc:id(), npc_info)
 		end
 	end
 end

@@ -171,14 +171,15 @@ function add_npc(npc_id)
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s added", npc_id)
 	npcs[npc_id] = {}
 	npcs[npc_id]["id"] = npc_id
+	npcs[npc_id]["recruited"] = false
+	npcs[npc_id]["has_profile"] = false
+	npcs[npc_id]["alive"] = true
+	npcs[npc_id]["show_profile"] = false
+	npcs[npc_id]["can_recruit"] = false
 	npcs[npc_id]["Perk"] = {}
 	npcs[npc_id]["Ability"] = {}
 	npcs[npc_id]["Info"] = {}
-	npcs[npc_id]["Info"]["alive"] = true
-	npcs[npc_id]["Info"]["recruited"] = false
 	npcs[npc_id]["Info"]["last_joined"] = nil
-	npcs[npc_id]["Info"]["has_profile"] = false
-	npcs[npc_id]["Info"]["can_recruit"] = false
 	npcs[npc_id]["Info"]["last_time_seen"] = nil
 	npcs[npc_id]["Info"]["last_smart_seen"] = nil
 	npcs[npc_id]["Info"]["codec_frequency"] = nil
@@ -194,9 +195,14 @@ function remap_npc(npc_id, new_id)
 	return true
 end
 
+function set_show_profile(npc_id, show)
+	if not npcs[npc_id] then return end
+	npcs[npc_id].show_profile = show
+end
+
 function set_recruited(npc_id, enlist)
 	if not npcs[npc_id] then return end
-	npcs[npc_id].Info.recruited = enlist
+	npcs[npc_id].recruited = enlist
 end
 
 function set_deck(deck)
@@ -228,6 +234,16 @@ end
 function get_npc(npc_id)
     if not npc_id then return end
     return npcs[npc_id]
+end
+
+function get_npc_info(npc_id)
+    if not npc_id then return end
+    return npcs[npc_id].Info
+end
+
+function set_npc_info(npc_id, info)
+    if not npc_id or not info then return end
+    npcs[npc_id].Info = info
 end
 
 function get_npc_perk(npc_id, perk_id)
@@ -287,7 +303,6 @@ function roll_npc_perk(npc_id, perk_id)
 		npcs[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired TODO revise this
 		local npc = npcdu.get_npc_obj(npc_id)
 		npcdu.print_tip(perk.roll_success_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
-		Printer:LogTable(string.format("Roll_perk NPC %s", npc_id), npcs[npc_id])
 		return true
 	end
 end
@@ -334,12 +349,12 @@ function create_profile(npc_id)
 	while not roll_npc_perk(npc_id, archetype_perk_list[i].id) do
 		i = i + 1
 		if i > #archetype_perk_list then
-			return
+			break
 			-- i = 1 
 			-- shuffle(archetype_perk_list)	
 		end
 	end
-	
+
 	-- -- MAIN PERKS ??
 	-- -- no perks available atm
 	-- local main_perk_list = get_randomized_perk_list(PERK_TYPE.MAIN, Get_archetype_perk(npc_id))
@@ -374,7 +389,8 @@ function create_profile(npc_id)
 	-- 	end
 	-- end
 
-	npcs[npc_id].Info.has_profile = true
+	npcs[npc_id].has_profile = true
+	Printer:LogTable(string.format("Create Profile NPC %s", npc_id), npcs[npc_id])
 end
 
 function get_npc_feat(npc_id, feat_id)

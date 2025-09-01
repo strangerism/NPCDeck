@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="windows-1251"?>
+
+<string_table>
+	<string id="ui_mcm_menu_npcs">
+		<text>NPCS</text>
+	</string>		
+	<string id="ui_mcm_menu_npcd_npcs_squad">
+		<text>Squad</text>
+	</string>		
+	<string id="ui_mcm_menu_npcd_npcs_recruitable">
+		<text>Recruitable</text>
+	</string>
+	<string id="ui_mcm_menu_npcd_npcs_dead">
+		<text>Dead</text>
+	</string>
+	<string id="ui_mcm_menu_npcd_npcs_all">
+		<text>All</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_empty_list">
+		<text>No NPCs found</text>
+	</string>		
+	<string id="ui_mcm_st_npcd_npcs_info">
+		<text>Info</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_community">
+		<text>%%c[d_cyan]Faction:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_rank">
+		<text>%%c[d_cyan]Rank:%%c[d_white] %s [%s]</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_reputation">
+		<text>%%c[d_cyan]Reputation:%%c[d_white] %s [%s]</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_alive">
+		<text>%%c[d_cyan]Alive:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_has_profile">
+		<text>%%c[d_cyan]Has perks profile:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_can_recruit">
+		<text>%%c[d_cyan]Is recruitable:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_last_joined">
+		<text>%%c[d_cyan]Last time joined:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_last_time_seen">
+		<text>%%c[d_cyan]Last time seen:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_last_smart_seen">
+		<text>%%c[d_cyan]Last place seen:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_perks">
+		<text>Perks</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_standings">
+		<text>Standings</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_attitude">
+		<text>%%c[d_cyan]Attitude (Total Goodwill) towards actor:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_goodwil_personal">
+		<text>%%c[d_cyan]Goodwill (Personal):%%c[d_white] %s [%s]</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_goodwill_rank">
+		<text>%%c[d_cyan]Goodwill (Rank):%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_goodwill_reputation">
+		<text>%%c[d_cyan]Goodwill (Reputation):%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_goodwill_faction">
+		<text>%%c[d_cyan]Goodwill (Community-Stalker):%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_goodwill_communities">
+		<text>%%c[d_cyan]Goodwill (Community-Community):%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_sympathy">
+		<text>%%c[d_cyan]Sympathy:%%c[d_white] %s</text>
+	</string>
+</string_table>

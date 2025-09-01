@@ -1,6 +1,7 @@
 local npcdu = npcd_utils
 
 function get_printer()
+	printf("npcd_squad get_printer callback")
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_squad")
 	end 
@@ -8,6 +9,7 @@ function get_printer()
 	CAT = Printer:GetLogCategories()
 end
 if AddScriptCallback then
+	printf("npcd_squad registering logger callback")
 	RegisterScriptCallback("npcd_on_log_update", get_printer)
 end
 

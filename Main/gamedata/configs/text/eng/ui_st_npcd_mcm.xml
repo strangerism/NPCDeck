@@ -61,10 +61,7 @@
 	</string>
 	<string id="ui_mcm_st_npcd_feats_stats_rank">
 		<text>Rank %s</text>
-	</string>	
-	<!-- <string id="ui_mcm_st_npcd_feats_stat_name">
-		<text>%s [%s]</text>
-	</string> -->
+	</string>
 	<string id="ui_mcm_st_npcd_feats_stats_cooldown">
 		<text>Cooldown</text>
 	</string>

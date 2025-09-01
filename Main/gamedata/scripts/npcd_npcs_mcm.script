@@ -1,4 +1,113 @@
--- function on_mcm_load()
--- 	op = { { id = "npcs", sh=true, text = "ui_mcm_menu_npcd_npcs", gr = npcd_mcm.get_npcs_menu() },}
--- 	return op, "npcd"
--- end
+local npcdu = npcd_utils
+MENU_TYPE = {
+    ALL = "all",
+    RANKED = "ranked",
+    SQUAD = "squad",
+    RECRUITABLE = "recruitable",
+    DEAD = "dead",
+}
+
+function on_mcm_load()
+    if not npcd_manager.NPCD_BOOTED then return nil end
+
+	op = { 
+            id = "npcs", text = "ui_mcm_menu_npcs", gr = {
+                { id = "squad", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.SQUAD, gr = get_npcs_menu(MENU_TYPE.SQUAD)},
+                { id = "all", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.ALL, gr = get_npcs_menu(MENU_TYPE.ALL)},
+                { id = "recruitable", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.RECRUITABLE, gr = get_npcs_menu(MENU_TYPE.RECRUITABLE)},
+                { id = "dead", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.DEAD, gr = get_npcs_menu(MENU_TYPE.DEAD)},
+
+                --- ranked
+                
+                },
+            }
+	return op
+end
+
+function get_npc(npc_id, menu_type)
+
+    local npc_deck = npcd.get_npc(npc_id)
+    if menu_type == MENU_TYPE.SQUAD then
+        return npcd_squad.is_actor_squad(npc_id) and npc_deck or nil
+    end
+    if menu_type == MENU_TYPE.ALL then
+        return npc_deck.has_profile and npc_deck or nil
+    end
+    if menu_type == MENU_TYPE.RECRUITABLE then
+        return npc_deck.recruitable and npc_deck or nil
+    end
+    if menu_type == MENU_TYPE.DEAD then
+        return not npc_deck.alive and npc_deck or nil
+    end
+end
+
+function get_npcs_menu(menu_type)
+    -- printf("-[NPCD][MCM] get_npcs_menu " .. menu_type)
+    local npcs_menu = {}
+
+    local npcs_id_list = npcd.get_npcs_id_list()
+    for i = 1, #npcs_id_list do
+        -- printf("[NPCD][MCM] build npcs %s menu", npcs_id_list[i])
+        local npc_deck = get_npc(npcs_id_list[i], menu_type)
+        if npc_deck then
+            -- printf("[NPCD][MCM] found npcs %s", npc_deck.id)
+            -- npcdu.printlog_table("NPCS", npc_deck)
+            local npc = npcdu.get_object_by_id(npc_deck.id)
+            if npc then
+                -- printf("-[NPCD][MCM] adding npcs %s menu", npc_deck.id)
+                local npc_menu = {id = npc_deck.id, text=npc:character_name(), sh=true, gr={}}
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_name", type = "slide", link = "ui_options_slider_player", text = npc:character_name(), size = {512,50}, spacing = 5})
+                
+                -- info
+                -- printf("-[NPCD][MCM] adding npcs %s menu info", npc_deck.id)
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_info", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_info")})
+                
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_community", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_community"), npc:character_community())})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_rank"), ranks.get_obj_rank_name(npc), npc:character_rank())})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_reputation", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_reputation"), game.translate_string(utils_obj.get_reputation_name(npc:character_reputation())), npc:character_reputation())})
+                -- npcs info
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_alive", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_alive"), npc_deck.alive)})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_has_profile", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_has_profile"), npc_deck.has_profile)})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_can_recruit", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_can_recruit"), npc_deck.can_recruit)})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_joined", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_joined"), npc_deck.Info.last_joined)})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), npc_deck.Info.last_time_seen)})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_smart_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_smart_seen"), npc_deck.Info.last_smart_seen)})
+                
+                -- perks
+                -- printf("-[NPCD][MCM] adding npcs %s menu perks", npcs_id_list[i])
+                table.insert(npc_menu.gr, { id = "divider", type = "line" })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_perks", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_perks")})
+                
+                for perk_id, _ in pairs(npc_deck.Perk) do
+                    local perk = npcd.get_perk(perk_id)
+                    if perk then
+                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "desc", text = perk.name})
+                    end
+                end
+
+                -- Standings with actor
+                -- printf("-[NPCD][MCM] adding npcs %s menu standings", npcs_id_list[i])
+                table.insert(npc_menu.gr, { id = "divider", type = "line" })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_standings", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_standings")})
+                local target = db.actor
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_attitude", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_attitude"), npc:general_goodwill(target)) })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_goodwil_personal", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_goodwil_personal"), npc:goodwill(target), npc:relation(target)) })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_goodwill_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_goodwill_rank"), game_relations.get_rank_relation(npc, target)) })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_goodwill_reputation", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_goodwill_reputation"), game_relations.get_reputation_relation(npc, target)) })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_goodwill_actor_faction", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_goodwill_faction"), npc:community_goodwill(character_community(target))) })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_goodwill_communities", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_goodwill_communities"), relation_registry.community_relation(character_community(npc), character_community(target))) })
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_sympathy", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_sympathy"), npc:sympathy())})
+                table.insert(npcs_menu, npc_menu)
+            end
+        end
+    end
+
+    if not (npcdu.tablelength(npcs_menu) > 0) then
+        -- printf("[NPCD][MCM] build empty menu")
+        local empty_menu = {id = "empty_list", text="Not Found", sh=true, gr={}}
+        table.insert(empty_menu.gr, { id = "empty_menu", type = "desc", text = "ui_mcm_st_npcd_npcs_empty_list"})
+        table.insert(npcs_menu, empty_menu)
+    end
+    
+    return npcs_menu
+end

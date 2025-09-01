@@ -162,7 +162,12 @@ function npcs_sweaper()
 		local se_npc = alife_object(npc_id)
 		if not se_npc then
 			Printer:Debug(LOG.REMOVE, CAT.CONF,"removing stale npc %s data", npc_id)
-			npcd.remove_npc(npc_id)
+			local npc_deck = npcd.get_npc(npc_id)
+			if npc_deck.show_profile then
+				npcd.remove_npc(npc_id)
+			else
+				npcd.purge_npc(npc_id)
+			end
 		end
 	end
 	ResetTimeEvent("npcd_manager", "npcs_sweaper", 60)
@@ -177,7 +182,7 @@ function npcs_profiler()
 		Printer:Trace(LOG.INFO, CAT.CONF, "profiling npc %s", npc_id)
 		local se_npc = alife_object(npc_id)
 		local npc_deck = npcd.get_npc(npc_id)
-		if se_npc and se_npc:alive() and not npc_deck.Info.has_profile then
+		if se_npc and se_npc:alive() and not npc_deck.has_profile then
 			Printer:Debug(LOG.RUN, CAT.CONF,"creating new profile for npc %s %s %s", npc_id, se_npc:name(), se_npc:character_name())
 			npcd.create_profile(npc_id)
 		end
@@ -348,7 +353,12 @@ end
 local function release_npc(npc_id)
 	remove_npc_executions(npc_id)
 	npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
-	npcd.remove_npc(npc_id)
+	local npc_deck = npcd.get_npc(npc_id)
+	if npc_deck.show_profile then
+		npcd.remove_npc(npc_id)
+	else
+		npcd.purge_npc(npc_id)
+	end
 end
 
 local function register_abilities(npc_id)
@@ -580,9 +590,9 @@ end
 ---- 
 
 function game_object_on_net_spawn(obj)
-	if (IsStalker(obj) and obj:alive() and obj:id() ~= 0) then
+	if (IsStalker(obj) and obj:alive() and obj:id() ~= 0 and obj:character_community() ~= "zombied") then
 		if npcd.add_npc(obj:id()) then
-			printf("-[NPCD][MAIN] new npc added id:%s, name:%s, character_name:%s", obj:id(), obj:name(), obj:character_name())
+			printf("-[NPCD][MAIN] new npc added id:%s, name:%s, character_name:%s, faction:%s", obj:id(), obj:name(), obj:character_name(), obj:character_community())
 		end
 	end
 end
@@ -629,6 +639,7 @@ function game_play_start()
 		return
 	end
 	-- NPCD BOOTING
+	Printer:Log(LOG.START, CAT.EXEC, "NPCD BOOTED")
 	npcd_squad.update_squad_info()
 	current_clist = npcd_squad.squad_get_clist()
 	start_npcd_execution()

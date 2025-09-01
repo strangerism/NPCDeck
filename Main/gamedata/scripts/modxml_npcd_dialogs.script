@@ -29,7 +29,7 @@ function on_xml_read()
 				<phrase_list>
 					<phrase id="0"> <!-- Actor ask if it's skilled -->
 						<script_text>npcd_dialogs.get_dialog_ask_is_skilled</script_text>
-						<action>npcd_dialogs.dialog_create_npc_profile</action>
+						<action>npcd_dialogs.dialog_update_npc_info</action>
 						<next>1</next>
 					</phrase>
 					<phrase id="1"> <!-- NPC answer whether he is skilled or not -->
