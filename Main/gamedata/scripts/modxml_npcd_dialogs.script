@@ -3,7 +3,6 @@ local npcdu = npcd_utils
 function on_game_start()
 	RegisterScriptCallback("on_specific_character_dialog_list", function(character_id, dialog_list)
 		if dialog_list:has("friendly_companion_dialog") then
-			-- printf("-[NPCD][Main] Adding perk background dialog to npc %s dialog list", character_id)
 			dialog_list:add("friendly_companion_dialog_individually")
 			dialog_list:add("npcd_dialogs_ask_npc_background")
 		end

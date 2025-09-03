@@ -195,13 +195,11 @@ end
 local function mcm_on_option_change()
     update_logs()
 end
-
-local function actor_on_first_update()
-    Printer:Log(LOG.RUN, CAT.CONF,"Logging actor_on_first_update")
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_logging actor_on_first_update")
 end
-
 function on_game_start()
-    Printer:Log(LOG.START, CAT.CONF,"Logging on_game_start")
+    printf("$[NPCD][Main] npcd_logging on_game_start")
     RegisterScriptCallback("on_option_change", mcm_on_option_change)
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

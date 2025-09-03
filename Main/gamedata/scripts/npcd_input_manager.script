@@ -108,3 +108,12 @@ end
 function actor_on_net_destroy()
     remove_all()
 end
+
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_input_manager actor_on_first_update")
+end
+
+function on_game_start()
+    printf("$[NPCD][Main] npcd_input_manager on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+end

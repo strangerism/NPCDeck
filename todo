@@ -49,7 +49,7 @@ stuff to do
 - refactor npcd_actionbar hud into separate file
 - refactor npcd_actionbar to be standalone and pluggable
 - refactor npcd_logging to be standalone and pluggable
-
+- refactor npcd_hud to decouple it from axr_companion hud
 addons to look
 
 - https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-rpg-1-3

@@ -357,9 +357,9 @@ function refresh_actionbar()
     SendScriptCallback("npcd_hud_update")
 end
 
-if AddScriptCallback then
+-- if AddScriptCallback then
 	-- AddScriptCallback("npcd_actionbar_refresh")
-end
+-- end
 
 settings = {
     ["max_slots"] = nil,
@@ -376,7 +376,13 @@ function on_npcd_started()
     on_option_change()
 end
 
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_actionbar actor_on_first_update")
+end
+
 function on_game_start()
+    printf("$[NPCD][Main] npcd_actionbar on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
     RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("npcd_started", on_npcd_started)
     -- RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)

@@ -357,7 +357,7 @@ local function release_npc(npc_id)
 	if npc_deck.show_profile then
 		npcd.remove_npc(npc_id)
 	else
-		Printer:Log(LOG.RUN, LOG.NPC, "purging npc %s", npc_id)
+		Printer:Log(LOG.RUN, CAT.NPC, "purging npc %s", npc_id)
 		npcd.purge_npc(npc_id)
 	end
 end
@@ -649,10 +649,12 @@ function game_play_start()
 	RegisterScriptCallback("actor_on_update", actor_on_update)
 end
 
-function on_game_start()
-	printf("/[NPCD][MAIN] Manager on_game_start")
-	-- RegisterScriptCallback("npcd_on_loaded_state", npcd_on_loaded_state)
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_manager actor_on_first_update")
+end
 
+function on_game_start()
+	printf("$[NPCD][MAIN] npcd_manager on_game_start")
 	RegisterScriptCallback("actor_on_update", game_play_start)
 	RegisterScriptCallback("squad_on_npc_death", squad_on_npc_death)
 	RegisterScriptCallback("npcd_squad_update", npcd_squad_update)
@@ -661,4 +663,5 @@ function on_game_start()
     RegisterScriptCallback("save_state", save_state)
 	RegisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
 	RegisterScriptCallback("game_object_on_net_spawn", game_object_on_net_spawn)
+	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

@@ -119,4 +119,8 @@
 	<string id="ui_mcm_lst_npcd_kb_mod_alt">
 		<text>ALT</text>
 	</string>	
+	<!--Notifications  -->
+	<string id="ui_mcm_npcd_notification_perk_discovery">
+		<text>You have discovered a new perk: %c[d_cyan]%s.</text>
+	</string>  		
 </string_table>

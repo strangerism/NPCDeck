@@ -303,7 +303,7 @@ function roll_npc_perk(npc_id, perk_id)
 		npcs[npc_id].Perk[perk.id]["id"]  = perk.id
 		npcs[npc_id].Perk[perk.id].rank  = 0  -- 0 stands for acquired TODO revise this
 		local npc = npcdu.get_npc_obj(npc_id)
-		npcdu.print_tip(perk.roll_success_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
+		-- npcdu.print_tip(perk.roll_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
 		return true
 	end
 end
@@ -467,4 +467,41 @@ end
 
 function set_ability(npc_id, ability)
     npcs[npc_id].Ability[ability.id] = ability
+end
+
+NPCD_STATS = {
+	PERK = "Perk",
+	NPCS = "Npcs",
+	ACTOR = "Actor"
+}
+
+Stats = {}
+Stats["Perk"] = {}
+Stats["Npcs"] = {}
+Stats["Actor"] = {}
+
+function set_stat(stat_type, key, stat)
+	Stats[stat_type][key] = stat
+end
+
+function get_stat(stat_type, key)
+	return Stats[stat_type][key]
+end
+
+function set_discovered(perk_id)
+	if Stats.Perk[perk_id] and Stats.Perk[perk_id].discovered then return false end
+	if not Stats.Perk[perk_id] then
+		Stats.Perk[perk_id] = {}
+	end
+	Stats.Perk[perk_id]["discovered"] = true
+	return true
+end
+
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd actor_on_first_update")
+end
+
+function on_game_start()
+    printf("$[NPCD][Main] npcd on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 end

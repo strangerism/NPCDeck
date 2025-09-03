@@ -390,6 +390,9 @@ end
 
 HUD = nil
 function activate_hud()
+	if not Printer then
+		get_printer()
+	end
 	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar activate_hud")
 	RegisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
 	RegisterScriptCallback("on_console_execute",on_console_execute)
@@ -403,6 +406,9 @@ function activate_hud()
 end
 
 function deactivate_hud()
+	if not Printer then
+		get_printer()
+	end	
 	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar deactivate_hud")
 	if HUD ~= nil then
 		HUD:ClearControls()
@@ -435,16 +441,15 @@ function on_console_execute(name)
 		HUD:Update(true)
 	end
 end
-
 function actor_on_first_update()
-	printf("-[NPCD][Main] Hud actor_on_first_update")
+    printf("$[NPCD][Main] npcd_hud actor_on_first_update")
 end
 
 if AddScriptCallback then
 	AddScriptCallback("npcd_hud_update")
 end
 function on_game_start()
-	-- Printer:Log(LOG.START, CAT.UI,"Hud on_game_start")
-	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+    printf("$[NPCD][Main] npcd_hud on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("npcd_hud_update", npcd_hud_update)
 end

@@ -105,7 +105,7 @@ function get_salute_noperks()
 end
 
 function get_npc_profile(actor, npc)
-	return npcd_dialogs.dialog_get_npc_profile(actor, npc)
+	return dialog_get_npc_profile(actor, npc)
 end
 
 function dialog_update_npc_info(actor, npc)
@@ -119,6 +119,16 @@ function dialog_update_npc_info(actor, npc)
 			npc_info.last_smart_seen = nil -- TODO
 			npcd.set_npc_info(npc:id(), npc_info)
 		end
+	end
+end
+
+function update_discovered(perk)
+	if npcd.set_discovered(perk.id) then
+		local npcd_notification = "ui_mcm_npcd_notification_perk_discovery"
+		if perk.discovery_desc then
+			npcd_notification = perk.discovery_desc
+		end
+		npcdu.print_tip(npcd_notification, 10000, perk.name and game.translate_string(perk.name))
 	end
 end
 
@@ -142,6 +152,8 @@ function dialog_get_npc_profile(actor, npc)
 				profile_dialog = profile_dialog .. "\\n" .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module)
 
 				profile_dialog = profile_dialog .. "\\n"
+				-- check if perk is discovered and send notification if so
+				update_discovered(perk)
 			end
 			return profile_dialog
 		end
@@ -271,9 +283,15 @@ function get_paid_companion_dialog_text_individually_text()
 	return game.translate_string("st_paid_companion_dialog_text_individually", true)
 end
 
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_dialogs actor_on_first_update")
+end
+
 function on_game_start()
 	-- Custom Companion Squad Size by Catspaw compatibility
-	RegisterScriptCallback("on_game_load", update_settings)
+    printf("$[NPCD][Main] npcd_dialogs on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)	
+    RegisterScriptCallback("npcd_started", update_settings)
 	RegisterScriptCallback("on_option_change", update_settings)
 end
 

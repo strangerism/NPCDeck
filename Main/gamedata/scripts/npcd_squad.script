@@ -226,3 +226,12 @@ function clone_stalker(npc, stop_inv_duplication, stop_tasks_transfer)
 
 	return se_clone.id
 end
+
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_squad actor_on_first_update")
+end
+
+function on_game_start()
+    printf("$[NPCD][Main] npcd_squad on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+end

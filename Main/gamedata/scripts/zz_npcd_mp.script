@@ -85,3 +85,13 @@ function axr_companions.deactivate_hud()
 	axrc_OG_deactivate_hud()
 	npcd_hud.deactivate_hud()
 end
+
+
+function actor_on_first_update()
+    printf("$[NPCD][Main] zz_npcd_mp actor_on_first_update")
+end
+
+function on_game_start()
+    printf("$[NPCD][Main] zz_npcd_mp on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+end
