@@ -39,7 +39,7 @@ end
 
 function add_action_slot(npc_id, feat_id, force_index)
     local key = get_actionslot_key(npc_id, feat_id)
-    local feat = npcd.get_npc_feat(npc_id, feat_id)
+    local feat = npcd.get_npc_feats(npc_id, feat_id)
     local index = force_index or npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id) or 0
     Printer:Debug(LOG.ADD, CAT.CONF,"add action slot %s for npc %s and ability %s", index, npc_id, feat_id)
     local feat_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
@@ -73,7 +73,7 @@ function bind_action_slot(npc_id, feat_id)
         return false
     end
 
-    local feat = npcd.get_npc_feat(npc_id, feat_id)
+    local feat = npcd.get_npc_feats(npc_id, feat_id)
     local new_index = npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id)
     local new_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
     
