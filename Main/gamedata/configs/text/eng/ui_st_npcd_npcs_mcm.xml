@@ -37,11 +37,8 @@
 	<string id="ui_mcm_st_npcd_npcs_community">
 		<text>%%c[d_cyan]Faction:%%c[d_white] %s</text>
 	</string>
-	<!-- <string id="ui_mcm_st_npcd_npcs_rank">
-		<text>%%c[d_cyan]Faction:%%c[d_white] %s</text>
-	</string>	 -->
 	<string id="ui_mcm_st_npcd_npcs_rank">
-		<text>%%c[d_cyan]Ranko:%%c[d_white] %s [%s]</text>
+		<text>%%c[d_cyan]Rank:%%c[d_white] %s [%s]</text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_reputation">
 		<text>%%c[d_cyan]Reputation:%%c[d_white] %s [%s]</text>
@@ -83,20 +80,21 @@
 		<text>%%c[d_cyan]Attitude (General Goodwill) towards player:%%c[d_white] %s</text>
 	</string>
 		<string id="ui_mcm_st_npcd_npcs_attitude_desc">
-		<text>The goodwill of the npc towards the player (if not previously met, it starts at 0)
-/n - when below -999, the npc is hostile
-/n - when above 999, the npc is friendly
-/n - in between values, the npc is neutral
+		<text>
+		- The goodwill of the npc towards the player (if not previously met, it starts at 0)
+		\n |- when below -999, the npc is hostile
+		\n |- when above 999, the npc is friendly
+		\n |- in between values, the npc is neutral
 </text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwil_personal">
 		<text>%%c[d_cyan]Goodwill (Personal):%%c[d_white] %s [%s]</text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwil_personal_desc">
-		<text>Personal goodwill towards the player. This is affected by the player's action (e.g. doing tasks, etc).
+		<text>- Personal goodwill towards the player. This is affected by the player's action (e.g. doing tasks, etc).
 		</text>
 	</string>	
-	<string id="ui_mcm_st_npcd_npcs_goodwill_rank">
+	<!-- <string id="ui_mcm_st_npcd_npcs_goodwill_rank">
 		<text>%%c[d_cyan]Goodwill (Rank):%%c[d_white] %s</text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwill_rank_desc">
@@ -107,12 +105,13 @@
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwill_reputation_desc">
 		<text>%%c[d_blue]Static%%c[d_white] goodwill that comes from the reputation difference between the two stalkers. It changes as the stalkers ranks' reputation changes.</text>
-	</string>	
+	</string>	 -->
 	<string id="ui_mcm_st_npcd_npcs_goodwill_faction">
 		<text>%%c[d_cyan]Goodwill (Community-Stalker):%%c[d_white] %s</text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwill_faction_desc">
-		<text>The goodwill of the npc's community towards the player. This is affected by the player's action (e.g. doing tasks, etc).
+		<text>
+		- The goodwill of the npc's community towards the player. This is affected by the player's action (e.g. doing tasks, etc).
 		\nThe same goodwill is used to 
 		</text>
 	</string>	
@@ -123,6 +122,6 @@
 		<text>%%c[d_cyan]Sympathy:%%c[d_white] %s</text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_sympathy_desc">
-		<text>%%c[d_blue]Static%%c[d_white] goodwill that comes from the relation between the two stalkers' factions. It changes as the factions' relation changes.</text>
+		<text>DDDD</text>
 	</string>	
 </string_table>
