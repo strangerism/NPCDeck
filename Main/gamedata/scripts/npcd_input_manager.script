@@ -22,9 +22,9 @@ function InputManager:__init(id, activation_input)
         [0] = { 
             call = "on_key_press",         
             action = function(key) 
-                if ui_mcm.simple_press(id, key) then
+                ui_mcm.simple_press(id, key, function() 
                     npcd_manager.activate(activation_input)
-                end
+                end)
             end 
         },
         [1] = { 
@@ -116,4 +116,5 @@ end
 function on_game_start()
     printf("$[NPCD][Main] npcd_input_manager on_game_start")
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+    get_printer()
 end
