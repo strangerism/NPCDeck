@@ -16,6 +16,9 @@
 	<string id="ui_mcm_menu_npcd_npcs_all">
 		<text>All</text>
 	</string>
+	<string id="ui_mcm_menu_npcd_npcs_favorite">
+		<text>Favorite</text>
+	</string>	
 	<string id="ui_mcm_st_npcd_npcs_empty_list">
 		<text>No NPCs found</text>
 	</string>		
@@ -81,7 +84,7 @@
 	</string>
 		<string id="ui_mcm_st_npcd_npcs_attitude_desc">
 		<text>
-		- The goodwill of the npc towards the player (if not previously met, it starts at 0)
+		- General goodwill of the npc towards the player. It includes static goodwill (from faction and rank relations) and dynamic (personal or faction based, see below)
 		\n |- when below -999, the npc is hostile
 		\n |- when above 999, the npc is friendly
 		\n |- in between values, the npc is neutral
@@ -91,7 +94,10 @@
 		<text>%%c[d_cyan]Goodwill (Personal):%%c[d_white] %s [%s]</text>
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwil_personal_desc">
-		<text>- Personal goodwill towards the player. This is affected by the player's action (e.g. doing tasks, etc).
+		<text>
+		- Personal goodwill of the npc towards the player. 
+		\n |- If not previously met, it starts at 0
+		\n |- This is affected by the player's action (e.g. doing tasks, etc).
 		</text>
 	</string>	
 	<!-- <string id="ui_mcm_st_npcd_npcs_goodwill_rank">
@@ -111,8 +117,9 @@
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwill_faction_desc">
 		<text>
-		- The goodwill of the npc's community towards the player. This is affected by the player's action (e.g. doing tasks, etc).
-		\nThe same goodwill is used to 
+		- The goodwill of the npc's faction towards the player. 
+		\n |- This is affected by the player's action (e.g. doing tasks, etc).
+		\n |- The same goodwill is used to establish a trader stock's supply level
 		</text>
 	</string>	
 	<string id="ui_mcm_st_npcd_npcs_goodwill_communities">

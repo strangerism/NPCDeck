@@ -505,6 +505,19 @@ function set_discovered(perk_id)
 	return true
 end
 
+function set_favorite(npc_id, favorite)
+	if not npcs[npc_id] then return end
+	if not Stats.Npcs[npc_id] then
+		Stats.Npcs[npc_id] = {}
+	end
+
+	Stats.Npcs[npc_id]["favorite"] = favorite
+end
+
+function get_favorite(npc_id)
+	return Stats.Npcs[npc_id] and Stats.Npcs[npc_id]["favorite"] or false
+end
+
 function actor_on_first_update()
     printf("$[NPCD][Main] npcd actor_on_first_update")
 end
@@ -512,4 +525,5 @@ end
 function on_game_start()
     printf("$[NPCD][Main] npcd on_game_start")
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+	get_printer()
 end

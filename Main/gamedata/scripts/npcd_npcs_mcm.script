@@ -5,6 +5,7 @@ MENU_TYPE = {
     SQUAD = "squad",
     RECRUITABLE = "recruitable",
     DEAD = "dead",
+    FAVORITE = "favorite",
 }
 
 function on_mcm_load()
@@ -12,10 +13,11 @@ function on_mcm_load()
 
 	op = { 
             id = "npcs", text = "ui_mcm_menu_npcs", gr = {
-                { id = "squad", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.SQUAD, gr = get_npcs_menu(MENU_TYPE.SQUAD)},
-                { id = "all", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.ALL, gr = get_npcs_menu(MENU_TYPE.ALL)},
-                { id = "recruitable", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.RECRUITABLE, gr = get_npcs_menu(MENU_TYPE.RECRUITABLE)},
-                { id = "dead", text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.DEAD, gr = get_npcs_menu(MENU_TYPE.DEAD)},
+                { id = MENU_TYPE.SQUAD, text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.SQUAD, gr = get_npcs_menu(MENU_TYPE.SQUAD)},
+                { id = MENU_TYPE.FAVORITE, text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.FAVORITE, gr = get_npcs_menu(MENU_TYPE.FAVORITE)},
+                { id = MENU_TYPE.ALL, text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.ALL, gr = get_npcs_menu(MENU_TYPE.ALL)},
+                { id = MENU_TYPE.RECRUITABLE, text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.RECRUITABLE, gr = get_npcs_menu(MENU_TYPE.RECRUITABLE)},
+                { id = MENU_TYPE.DEAD, text = "ui_mcm_menu_npcd_npcs_" .. MENU_TYPE.DEAD, gr = get_npcs_menu(MENU_TYPE.DEAD)},
 
                 --- ranked
                 
@@ -39,16 +41,19 @@ function get_npc(npc_id, menu_type)
     if menu_type == MENU_TYPE.DEAD then
         return not npc_deck.alive and npc_deck or nil
     end
+    if menu_type == MENU_TYPE.FAVORITE then
+        return npcd.get_favorite(npc_id) and npc_deck or nil
+    end    
 end
 
 function get_relation_desc(value)
-    if value == -1 then
+    if value == 2 then
         return game.translate_string("ui_mcm_st_npcd_npcs_enemy")
     end
-    if value == 0 then
+    if value == 1 then
         return game.translate_string("ui_mcm_st_npcd_npcs_neutral")
     end
-    if value == 1 then 
+    if value == 0 then 
         return game.translate_string("ui_mcm_st_npcd_npcs_friend")
     end
     return ""

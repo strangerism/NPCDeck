@@ -647,6 +647,12 @@ function game_play_start()
 	update_actionbar()
 	SendScriptCallback("npcd_started")
 	RegisterScriptCallback("actor_on_update", actor_on_update)
+
+	local npc = npcdu.get_npc_obj(19804)
+	if npc then
+		npc:set_goodwill(699, db.actor)
+		printf("- npc relation %s", npc:relation(db.actor))
+	end
 end
 
 function actor_on_first_update()
@@ -664,4 +670,5 @@ function on_game_start()
 	RegisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
 	RegisterScriptCallback("game_object_on_net_spawn", game_object_on_net_spawn)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+	get_printer()
 end

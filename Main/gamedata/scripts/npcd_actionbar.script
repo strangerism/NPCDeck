@@ -385,6 +385,7 @@ function on_game_start()
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
     RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("npcd_started", on_npcd_started)
+    get_printer()
     -- RegisterScriptCallback("npcd_actionbar_refresh", refresh_actionbar)
 end
 

@@ -452,4 +452,5 @@ function on_game_start()
     printf("$[NPCD][Main] npcd_hud on_game_start")
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	RegisterScriptCallback("npcd_hud_update", npcd_hud_update)
+	get_printer()
 end

@@ -36,28 +36,65 @@ function on_xml_read()
 						<script_text>npcd_dialogs.get_dialog_skill_answer</script_text>
 						<next>2</next>
 						<next>42</next>
-					</phrase>					
+					</phrase>		
+								
 					<phrase id="2"> <!-- Actor ask background following answer 1-->
 						<precondition>npcd_dialogs.npc_has_perks</precondition>
 						<script_text>npcd_dialogs.get_background</script_text>
 						<next>3</next>
 					</phrase>
+
 					<phrase id="3"> <!-- NPC answer background -->
 						<precondition>npcd_dialogs.npc_has_perks</precondition>
 						<script_text>npcd_dialogs.get_npc_profile</script_text>
 						<next>411</next>
 						<next>412</next>
+						<next>413</next>						
+						<next>421</next>
+						<next>422</next>
+						<next>423</next>
 					</phrase>
-					<phrase id="411"> <!-- Actor -->
+
+					<phrase id="411"> <!-- Actor --> 
 						<precondition>npcd_dialogs.npc_has_perks</precondition>
-						<precondition>npcd_dialogs.npc_is_insquad</precondition>
-						<script_text>npcd_dialogs.get_squad_salute</script_text>
+						<precondition>npcd_dialogs.npc_isnot_insquad</precondition>
+						<script_text>npcd_dialogs.get_salute</script_text>
 					</phrase>
 					<phrase id="412"> <!-- Actor -->
 						<precondition>npcd_dialogs.npc_has_perks</precondition>
 						<precondition>npcd_dialogs.npc_isnot_insquad</precondition>
-						<script_text>npcd_dialogs.get_salute</script_text>
+						<precondition>npcd_dialogs.is_unfavorite</precondition>
+						<script_text>npcd_dialogs.get_favorite</script_text>
+						<action>npcd_dialogs.set_favorite</action>
+					</phrase>
+					<phrase id="413"> <!-- Actor -->
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<precondition>npcd_dialogs.npc_isnot_insquad</precondition>
+						<precondition>npcd_dialogs.is_favorite</precondition>
+						<script_text>npcd_dialogs.get_unfavorite</script_text>
+						<action>npcd_dialogs.set_unfavorite</action>
 					</phrase>					
+					
+					<phrase id="421"> <!-- Actor --> 
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<precondition>npcd_dialogs.npc_is_insquad</precondition>
+						<script_text>npcd_dialogs.get_squad_salute</script_text>
+					</phrase>
+					<phrase id="422"> <!-- Actor -->
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<precondition>npcd_dialogs.npc_is_insquad</precondition>
+						<precondition>npcd_dialogs.is_unfavorite</precondition>
+						<script_text>npcd_dialogs.get_squad_favorite</script_text>
+						<action>npcd_dialogs.set_favorite</action>
+					</phrase>
+					<phrase id="423"> <!-- Actor -->
+						<precondition>npcd_dialogs.npc_has_perks</precondition>
+						<precondition>npcd_dialogs.npc_is_insquad</precondition>
+						<precondition>npcd_dialogs.is_favorite</precondition>
+						<script_text>npcd_dialogs.get_squad_unfavorite</script_text>
+						<action>npcd_dialogs.set_unfavorite</action>
+					</phrase>					
+
 					<phrase id="42"> <!-- Actor -->
 						<precondition>npcd_dialogs.npc_hasnot_perks</precondition>
 						<script_text>npcd_dialogs.get_salute_noperks</script_text>

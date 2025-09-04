@@ -96,12 +96,57 @@ function get_salute()
 	return game.translate_string("st_npcd_npc_dialogs_salute", true)
 end
 
+function get_favorite()
+	return game.translate_string("st_npcd_npc_dialogs_favorite", true)
+end
+
+function get_unfavorite()
+	return game.translate_string("st_npcd_npc_dialogs_unfavorite", true)
+end
+
 function get_squad_salute()
 	return game.translate_string("st_npcd_npc_dialogs_squad_salute", true)
 end
 
+function get_squad_favorite()
+	return game.translate_string("st_npcd_npc_dialogs_squad_favorite", true)
+end
+
+function get_squad_unfavorite()
+	return game.translate_string("st_npcd_npc_dialogs_squad_unfavorite", true)
+end
+
 function get_salute_noperks()
 	return game.translate_string("st_npcd_npc_dialogs_salute_noperks", true)
+end
+
+function is_favorite(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		local favorite = npcd.get_favorite(npc:id())
+		Printer:Debug(LOG.RUN, CAT.NPC,"is npc %s favorite %s", npc:id(), favorite)
+		return favorite
+	end
+end
+
+function is_unfavorite(actor, npc)
+	return not is_favorite(actor, npc)
+end
+
+function set_favorite(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s favorite", npc:id())
+		npcd.set_favorite(npc:id(), true)
+	end
+end
+
+function set_unfavorite(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s unfavorite", npc:id())
+		npcd.set_favorite(npc:id(), false)
+	end
 end
 
 function get_npc_profile(actor, npc)
@@ -293,6 +338,7 @@ function on_game_start()
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)	
     RegisterScriptCallback("npcd_started", update_settings)
 	RegisterScriptCallback("on_option_change", update_settings)
+	get_printer()
 end
 
 function update_settings()

@@ -44,12 +44,24 @@
 	</string>
     <string id="st_npcd_npc_dialogs_background_response5">
 		<text>I left my family because I could not stand them. Maybe it's because of who I am</text>
-	</string>					
+	</string>
     <string id="st_npcd_npc_dialogs_salute">
 		<text>Nice skills. Maybe we'll work together one day.</text>
+	</string>				
+    <string id="st_npcd_npc_dialogs_unfavorite">
+		<text>Well. I expected something better. Good luck out there (Unfavorite him).</text>
 	</string>
+    <string id="st_npcd_npc_dialogs_favorite">
+		<text>Nice skills. We should work together one day (Favorite him).</text>
+	</string>	
     <string id="st_npcd_npc_dialogs_squad_salute">
 		<text>Nice. Keep going.</text>
+	</string>	
+    <string id="st_npcd_npc_dialogs_squad_unfavorite">
+		<text>All righty. Keep it going but don't sweat (Unfavorite him).</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_squad_favorite">
+		<text>You are doing great. I should hold onto you (Favorite him).</text>
 	</string>	
     <string id="st_npcd_npc_dialogs_salute_noperks">
 		<text>Nevermind. Bye.</text>

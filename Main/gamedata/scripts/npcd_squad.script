@@ -211,6 +211,11 @@ function clone_stalker(npc, stop_inv_duplication, stop_tasks_transfer)
 	local goodwill = npc:goodwill(db.actor)
 	se_clone:force_set_goodwill(goodwill, db.actor)
 
+	-- copy sympathy
+	local sympathy = npc:sympathy()
+	printf("-sympathy %s", sympathy)
+	-- se_cloneset_sympathy(sympathy)
+
 	-- copy npc statistics (stalker kills, mutant kills, artifacts found, etc)
 	copy_statistics(se_npc, se_clone)
 
@@ -234,4 +239,5 @@ end
 function on_game_start()
     printf("$[NPCD][Main] npcd_squad on_game_start")
     RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+	get_printer()
 end
