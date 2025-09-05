@@ -22,7 +22,7 @@ function on_xml_read()
 			<dialog id="npcd_dialogs_ask_npc_background">
 				<precondition>npcd_dialogs.npcd_started</precondition>
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
-				<precondition>dialogs_axr_companion.is_actor_friend</precondition>
+				<precondition>npcd_dialogs.is_actor_not_enemy</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
 				<precondition>tasks_guide.not_prec_1</precondition>
 				<phrase_list>

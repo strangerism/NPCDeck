@@ -437,7 +437,7 @@ function actor_on_net_destroy()
 end
 
 function on_console_execute(name)
-	if name == "action_draw" and HUD then
+	if name == "hud_draw" and HUD then
 		HUD:Update(true)
 	end
 end

@@ -58,27 +58,163 @@ function npc_isnot_insquad(actor, npc)
 	return not npc_is_insquad(actor, npc)
 end
 
-local asked_skills = false
+function is_actor_not_enemy(actor, npc)
+	return txr_paid_companions.is_actor_natural(actor, npc) or dialogs_axr_companion.is_actor_friend(actor, npc)
+end
+
+-- OG_txr_paid_companions_is_squad_competent = txr_paid_companions.is_squad_competent
+-- function txr_paid_companions.is_squad_competent(actor,npc)
+-- 	local npc = dialogs.who_is_npc(actor,npc)
+
+-- 	local squad = get_object_squad(npc)
+-- 	if not (squad) then
+-- 		return false
+-- 	end
+
+-- 	local section = squad:section_name()
+-- 	--printf("-txr_paid_companions | squad on dialog - id: %s - section: %s", squad.id, section)
+	
+-- 	local rand = 0
+-- 	dialog_squad[squad.id] = dialog_squad[squad.id] or {}
+	
+-- 	if string.find(section,"novice") then
+-- 		rand = 100
+-- 		dialog_squad[squad.id].money = dialog_squad[squad.id].money or (math.random(180,240)/100)
+-- 	elseif string.find(section,"veteran") then
+-- 		rand = 70
+-- 		dialog_squad[squad.id].money = dialog_squad[squad.id].money or (math.random(180,240)/100)
+-- 	elseif string.find(section,"advanced") then
+-- 		rand = 40
+-- 		dialog_squad[squad.id].money = dialog_squad[squad.id].money or (math.random(130,160)/100)
+-- 	else
+-- 		dialog_squad[squad.id].money = dialog_squad[squad.id].money or (math.random(80,120)/100)
+-- 	end
+	
+	
+-- 	if (dialog_squad[squad.id].can_work == "true") or ((dialog_squad[squad.id].can_work ~= "false") and (math.random(1,100) <= rand)) then
+-- 		dialog_squad[squad.id].can_work = "true"
+-- 		return true
+-- 	end
+	
+-- 	dialog_squad[squad.id].can_work = "false"
+-- 	return false
+-- end
+
+
+local function get_goodwill_inc(npc)
+	local relation = npc:relation(db.actor)
+	if relation == 1 then
+		return 200
+	elseif relation == 0 then
+		return 50
+	else
+		return 0
+	end
+end
+
+-- OG_xr_effects_complete_task_inc_goodwill = xr_effects.complete_task_inc_goodwill
+-- function xr_effects.complete_task_inc_goodwill(actor,npc,p)
+-- 	Printer:Log(LOG.INFO, CAT.NPC,"MP complete_task_inc_goodwill")
+-- 	-- param1 - amount of goodwill to increase
+-- 	-- param2+ - community
+-- 	if npc then
+-- 		Printer:Log(LOG.INFO, CAT.NPC, "complete_task_inc_goodwill npc %s %s", npc:id(), npc:character_name())
+-- 	else
+-- 		Printer:Log(LOG.ERROR, CAT.NPC, "complete_task_inc_goodwill no npc")
+-- 	end
+-- 	local multi = game_difficulties.get_eco_factor("goodwill") or 1
+-- 	local amt = tonumber(p[1])*multi or 50
+-- 	for i=2,#p do
+-- 		xr_effects.inc_faction_goodwill_to_actor(db.actor, nil, {p[i], amt, true})
+-- 	end
+-- end
+
+OG_xr_effects_inc_faction_goodwill_to_actor = xr_effects.inc_faction_goodwill_to_actor
+function xr_effects.inc_faction_goodwill_to_actor(actor, npc, p)
+	Printer:Log(LOG.ADD, CAT.NPC,"MP inc_faction_goodwill_to_actor")
+	if npc then
+		Printer:Log(LOG.INFO, CAT.NPC, "inc_faction_goodwill_to_actor npc %s %s", npc:id(), npc:character_name())
+	else
+		Printer:Log(LOG.ERROR, CAT.NPC, "inc_faction_goodwill_to_actor no npc")
+	end
+	OG_xr_effects_inc_faction_goodwill_to_actor(actor, npc, p)
+
+-- personal goodwill is given only if completing the task in person 
+if db.actor:is_talking() then
+	local speaker = mob_trade.GetTalkingNpc()
+	Printer:Log(LOG.ADD, CAT.NPC, "changing npc %s goodwill by %s", speaker:id(), get_goodwill_inc(speaker))
+	speaker:change_goodwill(get_goodwill_inc(speaker), db.actor)
+end
+end
+
+-- OG_xr_effects_inc_goodwill_by_tasker_id = xr_effects.inc_goodwill_by_tasker_id
+-- function xr_effects.inc_goodwill_by_tasker_id(actor, npc, p)
+-- -- param1 - task_id
+-- -- param2 - amount of goodwill to increase
+-- 	if not (p and p[1] and p[2]) then
+-- 		return
+-- 	end
+-- 	Printer:Log(LOG.ADD, CAT.NPC,"MP inc_goodwill_by_tasker_id")
+-- 	local tm = task_manager.get_task_manager()
+-- 	local task_info = tm.task_info
+-- 	local giver_id = task_info[p[1]].task_giver_id
+-- 	local npc = giver_id and db.storage[giver_id] and db.storage[giver_id].object
+
+-- 	if npc then
+-- 		local comm = character_community(npc)
+-- 		comm = (comm == "trader") and "stalker" or comm
+-- 		local multi = game_difficulties.get_eco_factor("goodwill") or 1
+-- 		local amt = tonumber(p[2])*multi or 50
+-- 		xr_effects.inc_faction_goodwill_to_actor(db.actor, nil, {comm, amt, true})
+
+-- 		Printer:Log(LOG.ADD, CAT.NPC, "changing npc %s goodwill by %s", npc:id(), get_goodwill_inc(npc))
+-- 		npc:change_goodwill(get_goodwill_inc(npc), db.actor)
+-- 	end
+-- end
+
+-- OG_xr_effects_inc_goodwill_by_tasker_comm = xr_effects.inc_goodwill_by_tasker_comm
+-- function xr_effects.inc_goodwill_by_tasker_comm(actor,npc,p)
+-- -- param1 - task_id
+-- -- param2 - amount of goodwill to increase
+
+-- 	if not (p and p[1] and p[2]) then
+-- 		return
+-- 	end
+	
+-- 	local var = load_var(db.actor, p[1])
+-- 	local comm = var and var.task_giver_comm
+-- 	if (not comm) and db.actor:is_talking() then 
+-- 		local speaker = mob_trade.GetTalkingNpc()
+-- 		comm = character_community(speaker)
+-- 	end
+-- 	if (not comm) then
+-- 		printe("! ERROR %s | no community could be gathered")
+-- 		return
+-- 	end
+	
+-- 	comm = (comm == "trader") and "stalker" or comm
+-- 	local multi = game_difficulties.get_eco_factor("goodwill") or 1
+-- 	local amt = tonumber(p[2])*multi or 50
+-- 	inc_faction_goodwill_to_actor(db.actor, nil, {comm, amt, true})
+
+-- 	local speaker = mob_trade.GetTalkingNpc()
+-- 	if speaker then
+-- 		Printer:Log(LOG.ADD, CAT.NPC, "changing npc %s goodwill by %s", speaker:id(), get_goodwill_inc(speaker))
+-- 		npc:change_goodwill(get_goodwill_inc(speaker), db.actor)
+-- 	end
+-- end
+
 function get_dialog_ask_is_skilled(actor, npc)
 	-- printf("actor %s npc %s", actor, npc)
 	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
-	-- if npc_has_perks(actor, npc) then
-	-- 	asked_skills = true
-	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_skills", true)
-	-- else
-	-- 	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
-	-- end
 end
 
 function get_dialog_skill_answer(actor, npc)
 	-- printf("get_dialog_skill_answer actor %s npc %s", actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
-		if npcd.has_perks(npc:id()) then -- and not asked_skills then
+		if npcd.has_perks(npc:id()) then
 			return game.translate_string("st_npcd_npc_dialogs_skill_answer_yes1", true)
-		-- elseif npcd.has_perks(npc:id()) and asked_skills then
-		-- 	asked_skills = false
-		-- 	return game.translate_string("st_npcd_npc_dialogs_skill_answer_yes2", true)
 		else
 			return game.translate_string("st_npcd_npc_dialogs_skill_answer_no", true)
 		end
@@ -189,14 +325,15 @@ function dialog_get_npc_profile(actor, npc)
 		if npc_perks then
 			for _, npc_perk in pairs(npc_perks) do
 				local perk = npcd.get_perk(npc_perk.id, npc_id)
-				if perk.dialog then
-					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true)
-				end
 				local st_perk_name = game.translate_string(perk.name, true) or ""
 				local st_perk_module = game.translate_string("ui_mcm_npcd_module_menu_" .. perk.module, true) or perk.module or ""
 				profile_dialog = profile_dialog .. "\\n" .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module)
-
 				profile_dialog = profile_dialog .. "\\n"
+				if perk.dialog then
+					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true)
+				end
+				profile_dialog = profile_dialog .. "\\n"
+
 				-- check if perk is discovered and send notification if so
 				update_discovered(perk)
 			end

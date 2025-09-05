@@ -70,6 +70,6 @@
 		<text>I don't have any skills. I was messing with you, haha.</text>
     </string>
     <string id="st_npcd_npc_dialogs_perk_desc">
-		<text>Perk: %s [%s]</text>
+		<text>%%c[d_cyan]- Perk: %s [%s]%%c[d_orange]</text>
 	</string>	
 </string_table>

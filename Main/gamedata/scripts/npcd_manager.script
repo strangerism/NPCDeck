@@ -637,6 +637,8 @@ function game_play_start()
 		UnregisterScriptCallback("on_option_change", on_option_change)
 		UnregisterScriptCallback("load_state", load_state)
 		UnregisterScriptCallback("save_state", save_state)
+		UnregisterScriptCallback("game_object_on_net_spawn", game_object_on_net_spawn)
+		UnregisterScriptCallback("actor_on_first_update", actor_on_first_update)
 		return
 	end
 	-- NPCD BOOTING
@@ -647,12 +649,6 @@ function game_play_start()
 	update_actionbar()
 	SendScriptCallback("npcd_started")
 	RegisterScriptCallback("actor_on_update", actor_on_update)
-
-	local npc = npcdu.get_npc_obj(19804)
-	if npc then
-		npc:set_goodwill(699, db.actor)
-		printf("- npc relation %s", npc:relation(db.actor))
-	end
 end
 
 function actor_on_first_update()
@@ -671,4 +667,15 @@ function on_game_start()
 	RegisterScriptCallback("game_object_on_net_spawn", game_object_on_net_spawn)
 	RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
 	get_printer()
+end
+
+function debug_test(name, npc_id, goodwill)
+	printf("on_console_execute %s %s %s", name, npc_id, goodwill)
+	if name == "hud_draw" then
+		local npc = npcdu.get_npc_obj(npc_id)
+		if npc then
+			npc:set_goodwill(goodwill, db.actor)
+			printf("- npc relation %s", npc:relation(db.actor))
+		end
+	end
 end
