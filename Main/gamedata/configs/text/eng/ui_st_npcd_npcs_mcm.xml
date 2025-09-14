@@ -46,6 +46,12 @@
 	<string id="ui_mcm_st_npcd_npcs_reputation">
 		<text>%%c[d_cyan]Reputation:%%c[d_white] %s [%s]</text>
 	</string>
+	<string id="ui_mcm_st_npcd_npcs_squad_id">
+		<text>%%c[d_cyan]Squad ID:%%c[d_white] %s</text>
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_commander">
+		<text>%%c[d_cyan]Is commander:%%c[d_white] %s</text>
+	</string>		
 	<string id="ui_mcm_st_npcd_npcs_alive">
 		<text>%%c[d_cyan]Alive:%%c[d_white] %s</text>
 	</string>

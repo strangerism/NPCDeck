@@ -669,13 +669,21 @@ function on_game_start()
 	get_printer()
 end
 
-function debug_test(name, npc_id, goodwill)
-	printf("on_console_execute %s %s %s", name, npc_id, goodwill)
-	if name == "hud_draw" then
-		local npc = npcdu.get_npc_obj(npc_id)
-		if npc then
-			npc:set_goodwill(goodwill, db.actor)
-			printf("- npc relation %s", npc:relation(db.actor))
-		end
+-- npcd_manager.debug_set_goodwill()
+-- npcd_manager.debug_set_community_goodwill()
+
+function debug_set_goodwill(npc_id, goodwill)
+	local npc = npcdu.get_npc_obj(npc_id)
+	if npc then
+		npc:set_goodwill(goodwill, db.actor)
+		printf("- npc relation %s", npc:relation(db.actor))
+	end
+end
+
+function debug_set_community_goodwill(npc_id, goodwill)
+	local npc = npcdu.get_npc_obj(npc_id)
+	if npc then
+		npc:set_community_goodwill(character_community(db.actor), goodwill)
+		printf("- npc relation %s", npc:relation(db.actor))
 	end
 end

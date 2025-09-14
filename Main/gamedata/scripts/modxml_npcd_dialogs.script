@@ -5,10 +5,12 @@ function on_game_start()
 		if dialog_list:has("friendly_companion_dialog") then
 			dialog_list:add("friendly_companion_dialog_individually")
 			dialog_list:add("npcd_dialogs_ask_npc_background")
+			dialog_list:add("npcd_dialogs_ask_squad_info")
 		end
 		if dialog_list:has("paid_companion_dialog") then
 			dialog_list:add("npcd_dialogs_ask_npc_background")
 			dialog_list:add("paid_companion_dialog_individually")
+			dialog_list:add("npcd_dialogs_ask_squad_info")
 		end	
 	end)
 end
@@ -19,10 +21,30 @@ function on_xml_read()
 			printf("-[NPCD][Main] Build perk background dialog")
 			local companion_dialogues = 
 			[[
+
+<!-- NPCD Perks Profiles Dialogs -->
+
+			<dialog id="npcd_dialogs_ask_squad_info">
+				<precondition>npcd_dialogs.npcd_started</precondition>
+				<precondition>dialogs_axr_companion.is_non_story</precondition>
+				<precondition>npcd_relations.is_actor_not_enemy</precondition>
+				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
+				<precondition>tasks_guide.not_prec_1</precondition>
+				<phrase_list>
+					<phrase id="0"> <!-- Actor ask squad info -->
+						<text>st_npcd_npc_dialogs_ask_squad_info</text>
+						<next>1</next>
+					</phrase>
+					<phrase id="1"> <!-- NPC answers -->
+						<script_text>npcd_dialogs.get_dialog_get_squad_info</script_text>
+					</phrase>					
+				</phrase_list>
+			</dialog>	
+
 			<dialog id="npcd_dialogs_ask_npc_background">
 				<precondition>npcd_dialogs.npcd_started</precondition>
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
-				<precondition>npcd_dialogs.is_actor_not_enemy</precondition>
+				<precondition>npcd_relations.is_actor_not_enemy</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
 				<precondition>tasks_guide.not_prec_1</precondition>
 				<phrase_list>
@@ -101,11 +123,14 @@ function on_xml_read()
 					</phrase>					
 				</phrase_list>
 			</dialog>	
-			
+
+<!-- NPCD Individual Recruiting Dialogs -->
+
 			<dialog id="friendly_companion_dialog_individually">
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
 				<precondition>dialogs_axr_companion.is_not_actor_companion</precondition>
 				<precondition>dialogs_axr_companion.is_actor_friend</precondition>
+				<precondition>npcd_relations.is_npc_willing_to_join_actor</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
 				<precondition>npcd_dialogs.is_room_for_one_in_actor_squad</precondition>
 				<precondition>npcd_dialogs.not_a_one_man_squad</precondition>
@@ -114,10 +139,17 @@ function on_xml_read()
 					<phrase id="0">
 						<script_text>npcd_dialogs.get_friend_companion_ask_join_individually_text</script_text>
 						<next>1</next>
+						<next>2</next>
 					</phrase>
-					<phrase id="1">
+					<phrase id="1"> <!-- npc -->
+						<precondition>npcd_relations.is_npc_available_to_join</precondition>
 						<text>axr_phrase_friend_companion_answer_join</text>
 						<action>npcd_dialogs.become_actor_companion_individually</action>
+						<action>dialogs.break_dialog</action>
+					</phrase>
+					<phrase id="2"> <!-- npc -->
+						<precondition>npcd_relations.is_npc_not_available_to_join</precondition>
+						<text>st_npcd_npc_not_available</text>
 						<action>dialogs.break_dialog</action>
 					</phrase>
 				</phrase_list>
@@ -128,6 +160,7 @@ function on_xml_read()
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
 				<precondition>dialogs_axr_companion.is_not_actor_companion</precondition>
 				<precondition>txr_paid_companions.is_actor_natural</precondition>
+				<precondition>npcd_relations.is_npc_willing_to_work_for_hire</precondition>
 				<precondition>txr_paid_companions.is_paid_companion_faction</precondition>
 				<precondition>txr_paid_companions.is_not_dangerous_map</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
@@ -141,15 +174,15 @@ function on_xml_read()
 						<next>2</next>
 					</phrase>
 					<phrase id="1"> <!-- npc -->
-						<precondition>txr_paid_companions.is_squad_competent</precondition>
+						<precondition>npcd_relations.is_npc_competent</precondition>
 						<script_text>txr_paid_companions.st_paid_companion_dialog_text_1</script_text>
 						<next>3</next>
 						<next>4</next>
 						<next>5</next>
 					</phrase>
 					<phrase id="2"> <!-- npc -->
-						<precondition>txr_paid_companions.is_squad_not_competent</precondition>
-						<text>st_paid_companion_dialog_text_2</text>
+						<precondition>npcd_relations.is_npc_not_competent</precondition>
+						<text>st_npcd_npc_not_available</text>
 						<next>9</next>
 					</phrase>
 					<phrase id="9"> <!-- actor -->
@@ -192,6 +225,20 @@ function on_xml_read()
 			]]
 
 			xml_obj:insertFromXMLString(companion_dialogues)
+
+            local res = xml_obj:query("dialog[id='paid_companion_dialog'] phrase[id='2']>text")
+            if res[1] then
+				printf("-[NPCD][Main] found paid_companion_dialog text element")
+                local el = res[1]
+                local el_text = xml_obj:getText(el)
+                if el_text then
+					printf("-[NPCD][Main] overriding paid_companion_dialog text")
+                    -- Set new text
+                    xml_obj:setText(el, "st_npcd_squad_not_available")
+                end
+            else
+				printf("![NPCD][Main] cannot override paid_companion_dialog")
+			end
 		end
 	end)
 end

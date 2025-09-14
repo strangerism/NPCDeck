@@ -12,7 +12,9 @@ if AddScriptCallback then
 	RegisterScriptCallback("npcd_on_log_update", get_printer)
 end
 
---- NPCD Perks Dialog API
+--- NPCD Dialog APIs
+
+-- Dialogs NPCD Preconditions
 
 function npcd_started()
 	return npcd_manager.NPCD_BOOTED
@@ -58,41 +60,54 @@ function npc_isnot_insquad(actor, npc)
 	return not npc_is_insquad(actor, npc)
 end
 
-function is_actor_not_enemy(actor, npc)
-	return txr_paid_companions.is_actor_natural(actor, npc) or dialogs_axr_companion.is_actor_friend(actor, npc)
-end
-
-local function get_goodwill_inc(npc)
-	local relation = npc:relation(db.actor)
-	if relation == 1 then
-		return 200
-	elseif relation == 0 then
-		return 50
-	else
-		return 0
+function is_favorite(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		local favorite = npcd.get_favorite(npc:id())
+		Printer:Debug(LOG.RUN, CAT.NPC,"is npc %s favorite %s", npc:id(), favorite)
+		return favorite
 	end
 end
 
-OG_xr_effects_inc_faction_goodwill_to_actor = xr_effects.inc_faction_goodwill_to_actor
-function xr_effects.inc_faction_goodwill_to_actor(actor, npc, p)
-	Printer:Log(LOG.ADD, CAT.NPC,"MP inc_faction_goodwill_to_actor")
-	if npc then
-		Printer:Log(LOG.INFO, CAT.NPC, "inc_faction_goodwill_to_actor npc %s %s", npc:id(), npc:character_name())
-	else
-		Printer:Log(LOG.ERROR, CAT.NPC, "inc_faction_goodwill_to_actor no npc")
-	end
-	OG_xr_effects_inc_faction_goodwill_to_actor(actor, npc, p)
+function is_unfavorite(actor, npc)
+	return not is_favorite(actor, npc)
+end
 
-	-- personal goodwill is given only if completing the task in person 
-	if db.actor:is_talking() then
-		local speaker = mob_trade.GetTalkingNpc()
-		Printer:Debug(LOG.ADD, CAT.NPC, "changing npc %s goodwill by %s", speaker:id(), get_goodwill_inc(speaker))
-		speaker:change_goodwill(get_goodwill_inc(speaker), db.actor)
+-- Dialogs NPCD Actions
+
+function set_favorite(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s favorite", npc:id())
+		npcd.set_favorite(npc:id(), true)
 	end
 end
 
-function get_dialog_ask_is_skilled(actor, npc)
-	-- printf("actor %s npc %s", actor, npc)
+function set_unfavorite(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s unfavorite", npc:id())
+		npcd.set_favorite(npc:id(), false)
+	end
+end
+
+function dialog_update_npc_info(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"update npc info")
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		npcd.set_show_profile(npc:id(), true)
+		local npc_info = npcd.get_npc_info(npc:id())
+		if npc_info then
+			npc_info.last_time_seen = time_global()
+			npc_info.last_smart_seen = nil -- TODO
+			npcd.set_npc_info(npc:id(), npc_info)
+		end
+	end
+end
+
+-- Dialogs phrases getters
+
+function get_dialog_ask_is_skilled()
 	return game.translate_string("st_npcd_npc_dialogs_ask_is_skilled", true)
 end
 
@@ -101,12 +116,32 @@ function get_dialog_skill_answer(actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
 		if npcd.has_perks(npc:id()) then
-			return game.translate_string("st_npcd_npc_dialogs_skill_answer_yes1", true)
+			local profile_dialog = game.translate_string("st_npcd_npc_dialogs_skill_answer_yes1", true) .. "\\n \\n"
+			profile_dialog = profile_dialog .. string.format(game.translate_string("st_npcd_npc_dialogs_standings"), npc:general_goodwill(db.actor), npcd_relations.get_relation_desc(npc:relation(db.actor)), npc:goodwill(db.actor))
+			return profile_dialog
 		else
 			return game.translate_string("st_npcd_npc_dialogs_skill_answer_no", true)
 		end
 	else
 		return game.translate_string("st_npcd_npc_dialogs_skill_answer_no", true)
+	end
+end
+
+function get_dialog_get_squad_info(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"get_dialog_get_squad_info")
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+		local squad = get_object_squad(npc)
+		if squad then
+			local section = squad:section_name()
+			Printer:Debug(LOG.RUN, CAT.NPC,"squad %s", section)
+			local rank = string.match(section, "[^_]+$")
+			local size = utils_obj.get_squad_count(npc)
+			Printer:Debug(LOG.RUN, CAT.NPC,"rank %s", rank)
+			Printer:Debug(LOG.RUN, CAT.NPC,"size %s", size)
+			return string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank)
+		end
+		
 	end
 end
 
@@ -143,54 +178,11 @@ function get_salute_noperks()
 	return game.translate_string("st_npcd_npc_dialogs_salute_noperks", true)
 end
 
-function is_favorite(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		local favorite = npcd.get_favorite(npc:id())
-		Printer:Debug(LOG.RUN, CAT.NPC,"is npc %s favorite %s", npc:id(), favorite)
-		return favorite
-	end
-end
-
-function is_unfavorite(actor, npc)
-	return not is_favorite(actor, npc)
-end
-
-function set_favorite(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s favorite", npc:id())
-		npcd.set_favorite(npc:id(), true)
-	end
-end
-
-function set_unfavorite(actor, npc)
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s unfavorite", npc:id())
-		npcd.set_favorite(npc:id(), false)
-	end
-end
-
 function get_npc_profile(actor, npc)
 	return dialog_get_npc_profile(actor, npc)
 end
 
-function dialog_update_npc_info(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"update npc info")
-	local npc = dialogs.who_is_npc(actor, npc)
-	if npc and npc:alive() then
-		npcd.set_show_profile(npc:id(), true)
-		local npc_info = npcd.get_npc_info(npc:id())
-		if npc_info then
-			npc_info.last_time_seen = time_global()
-			npc_info.last_smart_seen = nil -- TODO
-			npcd.set_npc_info(npc:id(), npc_info)
-		end
-	end
-end
-
-function update_discovered(perk)
+local function update_discovered(perk)
 	if npcd.set_discovered(perk.id) then
 		local npcd_notification = "ui_mcm_npcd_notification_perk_discovery"
 		if perk.discovery_desc then
@@ -214,12 +206,11 @@ function dialog_get_npc_profile(actor, npc)
 				local perk = npcd.get_perk(npc_perk.id, npc_id)
 				local st_perk_name = game.translate_string(perk.name, true) or ""
 				local st_perk_module = game.translate_string("ui_mcm_npcd_module_menu_" .. perk.module, true) or perk.module or ""
-				profile_dialog = profile_dialog .. "\\n" .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module)
-				profile_dialog = profile_dialog .. "\\n"
+				profile_dialog = profile_dialog .. string.format(game.translate_string("st_npcd_npc_dialogs_perk_desc"), st_perk_name, st_perk_module)
 				if perk.dialog then
-					profile_dialog = profile_dialog .. game.translate_string(perk.dialog, true)
+					profile_dialog = profile_dialog .. "\\n \\n" .. game.translate_string(perk.dialog, true)
 				end
-				profile_dialog = profile_dialog .. "\\n"
+				profile_dialog = profile_dialog .. "\\n \\n"
 
 				-- check if perk is discovered and send notification if so
 				update_discovered(perk)
@@ -230,7 +221,7 @@ function dialog_get_npc_profile(actor, npc)
 	return game.translate_string("st_npcd_npc_dialogs_npc_has_no_perks", true)
 end
 
---- NPC Joining Dialog API
+--- NPC Dialog Joining Actions API
 --- 
 
 -- Taken from Individually Recruitable Companions, written by G_FLAT credits to G_FLAT

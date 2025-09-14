@@ -1,0 +1,381 @@
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_relations")
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
+function get_relation_desc(value)
+    if value == 2 then
+        return game.translate_string("ui_mcm_st_npcd_npcs_enemy")
+    end
+    if value == 1 then
+        return game.translate_string("ui_mcm_st_npcd_npcs_neutral")
+    end
+    if value == 0 then 
+        return game.translate_string("ui_mcm_st_npcd_npcs_friend")
+    end
+    return ""
+end
+
+-- NPC Standings effects
+
+-- Relations
+
+-- game_object.enemy 2
+-- game_object.friend 0
+-- game_object.neutral 1
+
+-- General Goodwill
+
+-- - Neutral (0-999)
+-- - can get tasks
+-- - can inspect profile
+-- - can pay recruit (squad - chance based - only from veteran or advanced squad)
+
+-- - Friend (1000-1999)
+-- - can get tasks
+-- - can inspect profile
+-- - can recruit (squad - advanced only)
+
+-- - Trusted (2000-3000)
+-- - can get tasks
+-- - can inspect profile
+-- - can recruit (squad - veteran and advanced )
+-- - can recruit (individually - chance based - only from veteran and above) 
+
+function is_attitude_neutral(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local attitude = npc:general_goodwill(actor)
+        if attitude >= 0 and attitude <= 999 then
+            return true
+        end
+    end
+    return false
+end
+
+function is_attitude_friendly(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local attitude = npc:general_goodwill(actor)
+        if attitude >= 1000 and attitude <= 1999 then
+            return true
+        end
+    end
+    return false
+end
+
+function is_attitude_trusted(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local attitude = npc:general_goodwill(actor)
+        if attitude >= 2000 then
+            return true
+        end
+    end
+    return false
+end
+
+-- Personal Goodwill
+
+--> competency checks
+
+-- - Neutral (0-499)
+-- - can pay recruit (individually - chance based - only from veteran and above)
+
+-- - Respected (500-999)
+-- - can pay recruit (individually - only from veteran and above)
+
+--> availability check
+
+-- - Friend (1000-1499)
+-- - can recruit (individually - chance based - from any squad)
+
+-- - Trusted (1500-2000)
+-- - can recruit (individually - from any squad)
+
+function is_goodwill_neutral(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local goodwill = npc:goodwill(actor)
+        if goodwill >= 0 and goodwill < 500 then
+            return true
+        end
+    end
+    return false
+end
+
+function is_goodwill_respected(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local goodwill = npc:goodwill(actor)
+        if goodwill >= 500 and goodwill <= 999 then
+            return true
+        end
+    end
+    return false
+end
+
+function is_goodwill_friendly(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local goodwill = npc:goodwill(actor)
+        if goodwill >= 1000 and goodwill <= 1499 then
+            return true
+        end
+    end
+    return false
+end
+
+function is_goodwill_trusted(actor, npc)
+	local npc = dialogs.who_is_npc(actor, npc)
+	if npc and npc:alive() then
+        local goodwill = npc:goodwill(actor)
+        if goodwill >= 1500 then
+            return true
+        end
+    end
+    return false
+end
+
+
+-- Squad Recruitment preconditions
+
+function is_squad_willing_to_work_for_hire(actor, npc)
+    return is_attitude_neutral(actor, npc)
+end
+
+function is_squad_willing_to_join_actor(actor, npc)
+    return is_attitude_friendly(actor, npc) or is_attitude_trusted(actor, npc)
+end
+
+-- Individually Recruitment preconditions
+
+function is_npc_willing_to_work_for_hire(actor, npc)
+	local willing = is_goodwill_neutral(actor, npc) or is_goodwill_respected(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_willing_to_work_for_hire %s", willing)
+    return willing
+end
+
+function is_npc_willing_to_join_actor(actor, npc)
+    return is_attitude_trusted(actor, npc) or is_goodwill_friendly(actor, npc) or is_goodwill_trusted(actor, npc)
+end
+
+-- Vanilla relation functions
+
+function is_actor_not_enemy(actor, npc)
+	return txr_paid_companions.is_actor_natural(actor, npc) or dialogs_axr_companion.is_actor_friend(actor, npc)
+end
+
+--- Personal Goodwill Gains
+
+local function get_goodwill_inc(npc)
+	local relation = npc:relation(db.actor)
+	if relation == 1 then
+		return 200
+	elseif relation == 0 then
+		return 50
+	else
+		return 0
+	end
+end
+
+-- task gains
+
+OG_xr_effects_inc_faction_goodwill_to_actor = xr_effects.inc_faction_goodwill_to_actor
+function xr_effects.inc_faction_goodwill_to_actor(actor, npc, p)
+	Printer:Log(LOG.ADD, CAT.NPC,"MP inc_faction_goodwill_to_actor")
+	if npc then
+		Printer:Log(LOG.INFO, CAT.NPC, "inc_faction_goodwill_to_actor npc %s %s", npc:id(), npc:character_name())
+	else
+		Printer:Log(LOG.ERROR, CAT.NPC, "inc_faction_goodwill_to_actor no npc")
+	end
+	OG_xr_effects_inc_faction_goodwill_to_actor(actor, npc, p)
+
+	-- personal goodwill is given only if completing the task in person 
+	if db.actor:is_talking() then
+		local speaker = mob_trade.GetTalkingNpc()
+		Printer:Debug(LOG.ADD, CAT.NPC, "changing npc %s goodwill by %s", speaker:id(), get_goodwill_inc(speaker))
+		speaker:change_goodwill(get_goodwill_inc(speaker), db.actor)
+	end
+end
+
+-- kill gains
+
+-- TBD
+
+---
+
+-- NPCD Paid Squad joining rules 
+
+-- Squad rankings
+
+-- Novice
+-- Advanced
+-- Veteran
+-- Alpha
+-- Sniper
+
+-- for spawns check squad_descr_default_
+
+-- NPC Rankings 
+
+-- novice
+-- trainee
+-- experienced
+-- professional
+-- veteran
+-- expert
+-- master
+-- legend
+
+-- from game_relations.ltx
+
+-- actor must be in the neutral zone with the squad faction attitude to use this api in dialogs
+OG_txr_paid_companions_is_squad_competent = txr_paid_companions.is_squad_competent
+function txr_paid_companions.is_squad_competent(actor,npc)
+	local npc = dialogs.who_is_npc(actor,npc)
+
+	local squad = get_object_squad(npc)
+	if not (squad) then
+		return false
+	end
+
+    local OG = txr_paid_companions
+	local section = squad:section_name()
+	--printf("-txr_paid_companions | squad on dialog - id: %s - section: %s", squad.id, section)
+	
+	local rand = 0
+	OG.dialog_squad[squad.id] = OG.dialog_squad[squad.id] or {}
+	
+    local cur_time = game.get_game_time()
+
+    if OG.dialog_squad[squad.id] and OG.dialog_squad[squad.id].task_cooldown and math.floor(game.get_game_time():diffSec(OG.dialog_squad[squad.id].task_cooldown)) > 86400 then
+        -- 24H task cooldown passed, reset availability check
+        OG.dialog_squad[squad.id].can_work = nil
+    end
+    OG.dialog_squad[squad.id].task_cooldown = cur_time
+	
+    if string.find(section,"veteran") then
+		rand = 70
+		OG.dialog_squad[squad.id].money = OG.dialog_squad[squad.id].money or (math.random(180,240)/100)
+	elseif string.find(section,"advanced") then
+		rand = 50
+		OG.dialog_squad[squad.id].money = OG.dialog_squad[squad.id].money or (math.random(130,160)/100)
+	else
+		OG.dialog_squad[squad.id].money = OG.dialog_squad[squad.id].money or (math.random(80,120)/100)
+	end
+	
+	
+	if (OG.dialog_squad[squad.id].can_work == "true") or ((OG.dialog_squad[squad.id].can_work ~= "false") and (math.random(1,100) <= rand)) then
+		OG.dialog_squad[squad.id].can_work = "true"
+		return true
+	end
+	
+	OG.dialog_squad[squad.id].can_work = "false"
+	return false
+end
+
+-- NPC ratings
+
+-- rating = novice, 3499, trainee, 6499, experienced, 8999, professional, 11999, veteran, 14499, expert, 17499, master, 26999, legend
+
+local dialog_npc = {}
+
+-- actor must be in the neutral zone with npc to use this api in dialogs
+function is_npc_competent(actor,npc)
+	local npc = dialogs.who_is_npc(actor,npc)
+	local npc_id = npc:id()
+	local rand = 0
+	dialog_npc[npc_id] = dialog_npc[npc_id] or {}
+
+    local cur_time = game.get_game_time()
+
+    if dialog_npc[npc_id] and dialog_npc[npc_id].task_cooldown and math.floor(game.get_game_time():diffSec(dialog_npc[npc_id].task_cooldown)) > 86400 then
+        -- 24H task cooldown passed, reset availability check
+        dialog_npc[npc_id].can_work = nil
+    end
+    dialog_npc[npc_id].task_cooldown = cur_time
+
+    if npc:rank() > 17499 then -- master and legend
+		rand = is_goodwill_respected(actor,npc) and 100 or 80
+		dialog_npc[npc_id].money = dialog_npc[npc_id].money or (math.random(180,240)/100)
+	elseif npc:rank() > 14499 then -- expert
+		rand = is_goodwill_respected(actor,npc) and 100 or 60
+		dialog_npc[npc_id].money = dialog_npc[npc_id].money or (math.random(130,160)/100)
+	elseif npc:rank() > 11999 then -- veteran
+        rand = is_goodwill_respected(actor,npc) and 100 or 40
+		dialog_npc[npc_id].money = dialog_npc[npc_id].money or (math.random(80,120)/100)
+	end
+
+	-- if (dialog_npc[npc_id].can_work == "true") or ( (dialog_npc[npc_id].can_work ~= "false") and ( (is_goodwill_neutral(actor, npc) and (math.random(1,100) <= rand))) ) then
+	if (dialog_npc[npc_id].can_work == "true") or is_goodwill_respected(actor, npc) or ((dialog_npc[npc_id].can_work ~= "false") and (math.random(1,100) <= rand)) then
+		dialog_npc[npc_id].can_work = "true"
+		return true
+	end
+
+	dialog_npc[npc_id].can_work = "false"
+	return false
+end
+
+function is_npc_not_competent(actor,npc)
+    return not is_npc_competent(actor,npc)
+end
+
+-- actor must be in the friend zone with npc to use this api in dialogs
+function is_npc_available_to_join(actor,npc)
+	local npc = dialogs.who_is_npc(actor,npc)
+	local npc_id = npc:id()
+	local rand = 0
+	dialog_npc[npc_id] = dialog_npc[npc_id] or {}
+
+    local cur_time = game.get_game_time()
+
+    if dialog_npc[npc_id] and dialog_npc[npc_id].task_cooldown and math.floor(game.get_game_time():diffSec(dialog_npc[npc_id].task_cooldown)) > 86400 then
+        -- 24H task cooldown passed, reset availability check
+        dialog_npc[npc_id].can_work = nil
+    end
+    dialog_npc[npc_id].task_cooldown = cur_time
+
+    if npc:rank() > 17499 then -- master and legend
+		rand = is_goodwill_trusted(actor, npc) and 100 or 80
+	elseif npc:rank() > 14499 then -- expert
+		rand = is_goodwill_trusted(actor, npc) and 100 or 70
+	elseif npc:rank() > 11999 then -- veteran
+        rand = is_goodwill_trusted(actor, npc) and 100 or 60
+	else -- below
+		 rand = is_goodwill_trusted(actor, npc) and 100 or 40
+	end
+
+	-- if (dialog_npc[npc_id].can_work == "true") or ( (dialog_npc[npc_id].can_work ~= "false") and ( (is_goodwill_neutral(actor, npc) and (math.random(1,100) <= rand))) ) then
+	if (dialog_npc[npc_id].can_work == "true") or is_goodwill_respected(actor, npc) or ((dialog_npc[npc_id].can_work ~= "false") and (math.random(1,100) <= rand)) then
+		dialog_npc[npc_id].can_work = "true"
+		return true
+	end
+
+	dialog_npc[npc_id].can_work = "false"
+	return false
+end
+
+function is_npc_not_available_to_join(actor,npc)
+	return not is_npc_available_to_join(actor,npc)
+end
+
+local function save_state(m_data)
+	m_data.npcd_dialog_npc = dialog_npc
+end
+
+local function load_state(m_data) 
+	dialog_npc = m_data.npcd_dialog_npc or dialog_npc
+	m_data.npcd_dialog_npc = nil
+end
+
+function on_game_start()
+	RegisterScriptCallback("save_state",save_state)
+	RegisterScriptCallback("load_state",load_state)
+end

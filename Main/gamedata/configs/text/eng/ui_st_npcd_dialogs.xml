@@ -10,7 +10,7 @@
 
 <string_table>
     <string id="st_npcd_npc_dialogs_ask_is_skilled">
-		<text>Do you have any special skills?</text>
+		<text>Do you have any special skills? %c[d_orange][Perks]%c[ui_8]</text>
 	</string>
     <string id="st_npcd_npc_dialogs_ask_skills">
 		<text>Hey, remember me your skills.</text>
@@ -69,7 +69,30 @@
     <string id="st_npcd_npc_dialogs_npc_has_no_perks">
 		<text>I don't have any skills. I was messing with you, haha.</text>
     </string>
-    <string id="st_npcd_npc_dialogs_perk_desc">
-		<text>%%c[d_cyan]- Perk: %s [%s]%%c[d_orange]</text>
+    <string id="st_npcd_npc_dialogs_standings">
+		<text>%%c[d_cyan] NPC Goodwill:%%c[ui_8]
+		\n%%c[d_orange]- General:%%c[ui_8] %s [%s]
+		\n%%c[d_orange]- Personal:%%c[ui_8] %s
+		</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_squad_info">
+		<text>%%c[d_cyan] Squad:%%c[ui_8]
+		\n%%c[d_orange]- Size:%%c[ui_8] %s
+		\n%%c[d_orange]- Rank:%%c[ui_8] %s
+		\n
+		\n We can always take some jobs if the pay is good.
+		</text>
+	</string>		
+    <string id="st_npcd_npc_dialogs_ask_squad_info">
+		<text>What business do you have here? %c[d_orange][Squad Info]%c[ui_8]</text>
 	</string>	
+    <string id="st_npcd_npc_dialogs_perk_desc">
+		<text>%%c[d_orange]- Perk:%%c[ui_8] %%c[d_cyan]%s [%s]%%c[ui_8]</text>
+	</string>
+	<string id="st_npcd_squad_not_available">
+		<text>Sorry, we have other jobs already. Try again some another day (reset 24H).</text>
+	</string>	
+	<string id="st_npcd_npc_not_available">
+		<text>Sorry, I have this job to finish first. Try again some another day (reset 24H).</text>
+	</string>		
 </string_table>
