@@ -49,19 +49,19 @@
 		<text>Nice skills. Maybe we'll work together one day.</text>
 	</string>				
     <string id="st_npcd_npc_dialogs_unfavorite">
-		<text>Well. I expected something better. Good luck out there (Unfavorite him).</text>
+		<text>Well. I expected something better. Good luck out there %c[d_orange](Unfavorite him)%c[ui_8].</text>
 	</string>
     <string id="st_npcd_npc_dialogs_favorite">
-		<text>Nice skills. We should work together one day (Favorite him).</text>
+		<text>Nice skills. We should work together one day %c[d_orange](Favorite him)%c[ui_8].</text>
 	</string>	
     <string id="st_npcd_npc_dialogs_squad_salute">
 		<text>Nice. Keep going.</text>
 	</string>	
     <string id="st_npcd_npc_dialogs_squad_unfavorite">
-		<text>All righty. Keep it going but don't sweat (Unfavorite him).</text>
+		<text>All righty. Keep it going but don't sweat %c[d_orange](Unfavorite him)%c[ui_8].</text>
 	</string>
     <string id="st_npcd_npc_dialogs_squad_favorite">
-		<text>You are doing great. I should hold onto you (Favorite him).</text>
+		<text>You are doing great. I should hold onto you %c[d_orange](Favorite him)%c[ui_8].</text>
 	</string>	
     <string id="st_npcd_npc_dialogs_salute_noperks">
 		<text>Nevermind. Bye.</text>
@@ -79,9 +79,14 @@
 		<text>%%c[d_cyan] Squad:%%c[ui_8]
 		\n%%c[d_orange]- Size:%%c[ui_8] %s
 		\n%%c[d_orange]- Rank:%%c[ui_8] %s
+		\n%%c[d_orange]- Joinable:%%c[ui_8] %s
+		\n%%c[d_orange]- Recruitable:%%c[ui_8] %s
 		\n
 		\n We can always take some jobs if the pay is good.
 		</text>
+	</string>	
+    <string id="st_npcd_npc_dialogs_squad_only">
+		<text>Entire squad only</text>
 	</string>		
     <string id="st_npcd_npc_dialogs_ask_squad_info">
 		<text>What business do you have here? %c[d_orange][Squad Info]%c[ui_8]</text>

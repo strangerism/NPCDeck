@@ -1,3 +1,5 @@
+local npcdu = npcd_utils
+
 function get_printer()
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_relations")
@@ -364,6 +366,35 @@ end
 
 function is_npc_not_available_to_join(actor,npc)
 	return not is_npc_available_to_join(actor,npc)
+end
+
+function is_npc_recruitable(npc_id)
+	local npc = npcdu.get_npc_obj(npc_id)
+	if not npc then return false end
+	local friendly_companion = xr_conditions.is_squad_commander(db.actor, npc) and dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_room_in_actor_squad(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc)
+	local friendly_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_willing_to_join_actor(db.actor, npc) and is_npc_available_to_join(db.actor, npc)
+	local paid_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and txr_paid_companions.is_actor_natural(db.actor, npc) and txr_paid_companions.is_paid_companion_faction(db.actor, npc) and txr_paid_companions.is_not_dangerous_map(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_willing_to_work_for_hire(db.actor, npc) and is_npc_competent(db.actor, npc)
+	return friendly_companion_individually or paid_companion_individually or (friendly_companion and game.translate_string("st_npcd_npc_dialogs_squad_only", true)) or false
+end
+
+function is_squad_recruitable(actor,npc)
+	local npc = dialogs.who_is_npc(actor,npc)
+	local squad = get_object_squad(npc)
+	if not squad then return false end
+
+	local joinable = false
+	local section = squad:section_name()
+	if string.find(section,"veteran") and string.find(section,"advanced") then
+		joinable = true
+	else
+		joinable = false
+	end	
+	return joinable
+end
+
+function is_squad_joinable(actor,npc)
+	local npc = dialogs.who_is_npc(actor,npc)
+	return dialogs_axr_companion.is_actor_friend(actor, npc)
 end
 
 local function save_state(m_data)

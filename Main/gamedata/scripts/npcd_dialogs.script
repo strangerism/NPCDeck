@@ -139,7 +139,7 @@ function get_dialog_get_squad_info(actor, npc)
 			local size = utils_obj.get_squad_count(npc)
 			Printer:Debug(LOG.RUN, CAT.NPC,"rank %s", rank)
 			Printer:Debug(LOG.RUN, CAT.NPC,"size %s", size)
-			return string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank)
+			return string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank, npcd_relations.is_squad_joinable(actor,npc), npcd_relations.is_squad_recruitable(actor,npc))
 		end
 		
 	end
