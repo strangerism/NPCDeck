@@ -141,16 +141,15 @@ function on_xml_read()
 						<next>1</next>
 						<next>2</next>
 					</phrase>
-					<phrase id="1"> <!-- npc -->
-						<precondition>npcd_relations.is_npc_available_to_join</precondition>
+					<phrase id="1">
+						<precondition>npcd_relations.is_npc_available</precondition>
 						<text>axr_phrase_friend_companion_answer_join</text>
 						<action>npcd_dialogs.become_actor_companion_individually</action>
 						<action>dialogs.break_dialog</action>
 					</phrase>
-					<phrase id="2"> <!-- npc -->
-						<precondition>npcd_relations.is_npc_not_available_to_join</precondition>
+					<phrase id="2">
+						<precondition>npcd_relations.is_npc_not_available</precondition>
 						<text>st_npcd_npc_not_available</text>
-						<action>dialogs.break_dialog</action>
 					</phrase>
 				</phrase_list>
 			</dialog>

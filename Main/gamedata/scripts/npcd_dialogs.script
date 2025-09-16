@@ -240,20 +240,25 @@ local custom_actor_squadsize_folkhero 	= 4
 local hascustomsquadsize				= false
 
 function become_actor_companion_individually(actor, npc)
-	
+	Printer:Debug(LOG.RUN, CAT.NPC,"become_actor_companion_individually")
 	local npc = dialogs.who_is_npc(actor, npc)
 	local clone_id = npcd_squad.clone_stalker(npc)
 	
 	if clone_id then
 		local npc_id = npc:id()
+		local npc_goodwill = npc:goodwill(db.actor)
 
 		local se_obj = alife_object(npc_id)
 		safe_release_manager.release(se_obj)
 		
-		CreateTimeEvent("clone_become_companion_event", "clone_become_companion_" .. clone_id, 0, function(npc_id, clone_id)
+		CreateTimeEvent("clone_become_companion_event", "clone_become_companion_" .. clone_id, 0, function(npc_id, clone_id, npc_goodwill)
 			printf("clone_become_companion_" .. clone_id)
 			local clone = level.object_by_id(clone_id)
 			if clone then
+				-- set clone goodwill to what the original npc had
+				-- somehow the goodwill is not reseted properly on clone, so we force it again here
+				clone:set_goodwill(npc_goodwill, db.actor)
+
 				npcd_manager.ncpd_recruit(npc_id, clone_id)
 				dialogs_axr_companion.become_actor_companion(db.actor, clone)
 				db.actor:run_talk_dialog(clone)
@@ -261,7 +266,7 @@ function become_actor_companion_individually(actor, npc)
 			else
 				return false
 			end
-		end, npc_id, clone_id)
+		end, npc_id, clone_id, npc_goodwill)
 	else
 		actor:run_talk_dialog(npc)
 	end
@@ -269,18 +274,22 @@ function become_actor_companion_individually(actor, npc)
 end
 
 function become_paid_actor_companion_individually_and_register(actor, npc)
-	
+	Printer:Debug(LOG.RUN, CAT.NPC,"become_paid_actor_companion_individually_and_register")
 	local npc = dialogs.who_is_npc(actor, npc)
 	local clone_id = npcd_squad.clone_stalker(npc)
 	
 	if clone_id then
-		
+		local npc_goodwill = npc:goodwill(db.actor)
 		local se_obj = alife_object(npc:id())
 		safe_release_manager.release(se_obj)
 	
-		CreateTimeEvent("clone_become_paid_companion_event", "clone_become_paid_companion_" .. clone_id, 0, function(id)
+		CreateTimeEvent("clone_become_paid_companion_event", "clone_become_paid_companion_" .. clone_id, 0, function(id, npc_goodwill)
 			local clone = level.object_by_id(id)
 			if clone then
+				-- set clone goodwill to what the original npc had
+				-- somehow the goodwill is not reseted properly on clone, so we force it again here
+				clone:set_goodwill(npc_goodwill, db.actor)
+
 				npcd_manager.ncpd_recruit(npc_id, clone_id)
 				dialogs_axr_companion.become_actor_companion(db.actor, clone)
 				txr_paid_companions.register_paid_companion(db.actor, clone)
@@ -289,7 +298,7 @@ function become_paid_actor_companion_individually_and_register(actor, npc)
 			else
 				return false
 			end
-		end, clone_id)
+		end, clone_id, npc_goodwill)
 	else
 		actor:run_talk_dialog(npc)
 	end

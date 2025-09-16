@@ -56,7 +56,7 @@ function get_npcs_menu(menu_type)
         local npc_deck = get_npc(npcs_id_list[i], menu_type)
         if npc_deck then
             -- printf("[NPCD][MCM] found npcs %s", npc_deck.id)
-            npcdu.printlog_table("NPCS", npc_deck)
+            -- npcdu.printlog_table("NPCS", npc_deck)
             local npc = npcdu.get_object_by_id(npc_deck.id)
             if npc then
                 -- printf("-[NPCD][MCM] adding npcs %s menu", npc_deck.id)

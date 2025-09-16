@@ -190,6 +190,7 @@ end
 function clone_stalker(npc, stop_inv_duplication, stop_tasks_transfer)
 	-- get npc's squad's section name
 	local se_npc = alife_object(npc:id())
+	if not se_npc then return end
 	local squad_section = alife_object(se_npc.group_id):section_name()
 	if not squad_section then return end
 	
@@ -202,18 +203,19 @@ function clone_stalker(npc, stop_inv_duplication, stop_tasks_transfer)
 	-- populate squad with clone of same section as npc
 	local sec = npc:section()
 	local se_clone = create_one_npc(clone_squad, sec, pos, lvid, gvid)
-	
+	if not se_clone then return end
 	-- copy npc data onto clone (name, visual, rank, etc)
 	local data = utils_stpk.get_stalker_data(se_npc)
 	utils_stpk.set_stalker_data(data, se_clone)
 
 	-- copy goodwill with player
 	local goodwill = npc:goodwill(db.actor)
+	-- Printer:Debug(LOG.ADD, CAT.NPC,"goodwill %s", goodwill)
 	se_clone:force_set_goodwill(goodwill, db.actor)
 
 	-- copy sympathy
 	local sympathy = npc:sympathy()
-	printf("-sympathy %s", sympathy)
+	-- printf("-sympathy %s", sympathy)
 	-- se_cloneset_sympathy(sympathy)
 
 	-- copy npc statistics (stalker kills, mutant kills, artifacts found, etc)

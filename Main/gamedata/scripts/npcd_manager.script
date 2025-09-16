@@ -195,15 +195,14 @@ end
 function npcs_updater()
 	Printer:Log(LOG.RUN, CAT.CONF,"npcs npcs_updater")
 	local npcs_list = npcd.get_npcs_id_list()
-	Printer:LogTable("NPCS list", npcs_list)
-	printf("%s",#npcs_list)
+	-- Printer:LogTable("NPCS list", npcs_list)
 	for i = 1, #npcs_list do
 		local npc_id = npcs_list[i]
 		Printer:Trace(LOG.INFO, CAT.CONF, "updating npc %s", npc_id)
 		local se_npc = alife_object(npc_id)
 		local npc_deck = npcd.get_npc(npc_id)
 		if se_npc and se_npc:alive() and npc_deck.has_profile then
-			Printer:Debug(LOG.RUN, CAT.CONF,"updating profile for npc %s %s %s", npc_id, se_npc:name(), se_npc:character_name())
+			Printer:Trace(LOG.RUN, CAT.CONF,"updating profile for npc %s %s %s", npc_id, se_npc:name(), se_npc:character_name())
 			local npc_info = npcd.get_npc_info(se_npc.id)
 			npc_info.can_recruit = npcd_relations.is_npc_recruitable(se_npc.id)
 			npcd.set_npc_info(se_npc.id, npc_info)
