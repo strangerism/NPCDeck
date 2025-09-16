@@ -56,7 +56,7 @@ function get_npcs_menu(menu_type)
         local npc_deck = get_npc(npcs_id_list[i], menu_type)
         if npc_deck then
             -- printf("[NPCD][MCM] found npcs %s", npc_deck.id)
-            -- npcdu.printlog_table("NPCS", npc_deck)
+            npcdu.printlog_table("NPCS", npc_deck)
             local npc = npcdu.get_object_by_id(npc_deck.id)
             if npc then
                 -- printf("-[NPCD][MCM] adding npcs %s menu", npc_deck.id)
@@ -77,10 +77,15 @@ function get_npcs_menu(menu_type)
                 -- npcs info
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_alive", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_alive"), npc_deck.alive)})
                 -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_has_profile", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_has_profile"), npc_deck.has_profile)})
-                table.insert(npc_menu.gr, { id = npc_deck.id .. "_can_recruit", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_can_recruit"), npcd_relations.is_npc_recruitable(npc:id()))})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_can_recruit", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_can_recruit"), npc_deck.Info.can_recruit )})
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_joined", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_joined"), npc_deck.Info.last_joined or "")})
-                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), npc_deck.Info.last_time_seen or "")})
-                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_smart_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_smart_seen"), npc_deck.Info.last_smart_seen or "")})
+                if npc_deck.Info.last_time_seen then
+                    local Y, M, D, h, m, s, ms = npc_deck.Info.last_time_seen:get()
+                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), string.format("%04d-%02d-%02d %02d:%02d:%02d", Y, M, D, h, m, s))})
+                else
+                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), "")})
+                end
+                -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_smart_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_smart_seen"), npc_deck.Info.last_smart_seen or "")})
                 
                 -- perks
                 -- printf("-[NPCD][MCM] adding npcs %s menu perks", npcs_id_list[i])

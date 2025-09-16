@@ -178,10 +178,10 @@ function add_npc(npc_id)
 	npcs[npc_id]["has_profile"] = false
 	npcs[npc_id]["alive"] = true
 	npcs[npc_id]["show_profile"] = false
-	npcs[npc_id]["can_recruit"] = false
 	npcs[npc_id]["Perk"] = {}
 	npcs[npc_id]["Ability"] = {}
 	npcs[npc_id]["Info"] = {}
+	npcs[npc_id]["Info"]["can_recruit"] = nil
 	npcs[npc_id]["Info"]["last_joined"] = nil
 	npcs[npc_id]["Info"]["last_time_seen"] = nil
 	npcs[npc_id]["Info"]["last_smart_seen"] = nil

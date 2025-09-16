@@ -98,7 +98,8 @@ function dialog_update_npc_info(actor, npc)
 		npcd.set_show_profile(npc:id(), true)
 		local npc_info = npcd.get_npc_info(npc:id())
 		if npc_info then
-			npc_info.last_time_seen = time_global()
+			npc_info.can_recruit = npcd_relations.is_npc_recruitable(npc:id())
+			npc_info.last_time_seen = game.get_game_time()
 			npc_info.last_smart_seen = nil -- TODO
 			npcd.set_npc_info(npc:id(), npc_info)
 		end
