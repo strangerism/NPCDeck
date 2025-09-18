@@ -37,17 +37,17 @@ end
 -- - Neutral (0-999)
 -- - can get tasks
 -- - can inspect profile
--- - can pay recruit (squad - chance based - only from veteran or advanced squad)
+-- - can hire (squad - chance based - only from veteran or advanced squad)
 
 -- - Friend (1000-1999)
 -- - can get tasks
 -- - can inspect profile
--- - can recruit (squad - advanced only)
+-- - can recruit (squad - any)
 
 -- - Trusted (2000-3000)
 -- - can get tasks
 -- - can inspect profile
--- - can recruit (squad - veteran and advanced )
+-- - can recruit (squad - any )
 -- - can recruit (individually - chance based - only from veteran and above) 
 
 local function is_attitude_neutral(npc)
@@ -85,10 +85,10 @@ end
 --> competency checks
 
 -- - Neutral (0-499)
--- - can pay recruit (individually - chance based - only from veteran and above)
+-- - can hire (individually - chance based - only from veteran and above)
 
 -- - Respected (500-999)
--- - can pay recruit (individually - only from veteran and above)
+-- - can hire (individually - only from veteran and above)
 
 --> availability check
 
@@ -386,31 +386,33 @@ function is_npc_recruitable(npc_id)
 	local npc = npcdu.get_npc_obj(npc_id)
 	if not npc then return false end
 	local friendly_companion = xr_conditions.is_squad_commander(db.actor, npc) and dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_room_in_actor_squad(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc)
-	-- Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable friendly_companion %s", tostring(friendly_companion))
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable friendly_companion %s", tostring(friendly_companion))
 	local friendly_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_willing_to_join_actor(db.actor, npc) and is_npc_available(db.actor, npc)
-	-- Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable friendly_companion_individually %s", tostring(friendly_companion_individually))
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable friendly_companion_individually %s", tostring(friendly_companion_individually))
 	local paid_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and txr_paid_companions.is_actor_natural(db.actor, npc) and txr_paid_companions.is_paid_companion_faction(db.actor, npc) and txr_paid_companions.is_not_dangerous_map(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_willing_to_work_for_hire(db.actor, npc) and is_npc_competent(db.actor, npc)
-	-- Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable paid_companion_individually %s", tostring(paid_companion_individually))
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable paid_companion_individually %s", tostring(paid_companion_individually))
 	return friendly_companion_individually or paid_companion_individually or (friendly_companion and game.translate_string("st_npcd_npc_dialogs_squad_only", true)) or false
 end
 
-function is_squad_recruitable(actor,npc)
+function is_squad_hireable(actor,npc)
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	local squad = get_object_squad(npc)
 	if not squad then return false end
 
-	local joinable = false
+	local hireable = false
 	local section = squad:section_name()
-	if string.find(section,"veteran") and string.find(section,"advanced") then
-		joinable = true
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_squad_hireable section %s", section)
+	if string.find(section,"veteran") or string.find(section,"advanced") then
+		hireable = true
 	else
-		joinable = false
-	end	
-	return joinable
+		hireable = false
+	end
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_squad_hireable %s", tostring(hireable))
+	return hireable
 end
 
-function is_squad_joinable(actor,npc)
+function is_squad_recruitable(actor,npc)
 	return dialogs_axr_companion.is_actor_friend(actor, npc)
 end
 
@@ -426,4 +428,5 @@ end
 function on_game_start()
 	RegisterScriptCallback("save_state",save_state)
 	RegisterScriptCallback("load_state",load_state)
+	get_printer()
 end

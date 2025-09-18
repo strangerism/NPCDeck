@@ -79,12 +79,19 @@
 		<text>%%c[d_cyan] Squad:%%c[ui_8]
 		\n%%c[d_orange]- Size:%%c[ui_8] %s
 		\n%%c[d_orange]- Rank:%%c[ui_8] %s
-		\n%%c[d_orange]- Joinable:%%c[ui_8] %s
 		\n%%c[d_orange]- Recruitable:%%c[ui_8] %s
+		\n%%c[d_orange]- Hireable:%%c[ui_8] %s
 		\n
-		\n We can always take some jobs if the pay is good.
+		</text>
+	</string>
+    <string id="st_npcd_npc_dialogs_squad_recruitable">
+		<text>We are always interested to join you.
 		</text>
 	</string>	
+    <string id="st_npcd_npc_dialogs_squad_hireable">
+		<text>We can always take some jobs if the pay is good.
+		</text>
+	</string>			
     <string id="st_npcd_npc_dialogs_squad_only">
 		<text>Entire squad only</text>
 	</string>		

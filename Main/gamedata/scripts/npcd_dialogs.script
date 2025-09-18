@@ -96,14 +96,21 @@ function dialog_update_npc_info(actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
 		npcd.set_show_profile(npc:id(), true)
-		local npc_info = npcd.get_npc_info(npc:id())
-		if npc_info then
-			npc_info.can_recruit = npcd_relations.is_npc_recruitable(npc:id())
-			npc_info.last_time_seen = game.get_game_time()
-			npc_info.last_smart_seen = nil -- TODO
-			npcd.set_npc_info(npc:id(), npc_info)
-		end
 	end
+end
+
+-- Init dialogs
+
+OG_fill_priority_hello_table = dialog_manager.fill_priority_hello_table
+function dialog_manager.fill_priority_hello_table(actor, npc, dialog_name, phrase_id)
+	local npc_info = npcd.get_npc_info(npc:id())
+	if npc_info then
+		npc_info.can_recruit = npcd_relations.is_npc_recruitable(npc:id())
+		npc_info.last_time_seen = game.get_game_time()
+		npc_info.last_place_seen = dynamic_news_helper.GetPointDescription(db.actor)
+		npcd.set_npc_info(npc:id(), npc_info)
+	end
+	OG_fill_priority_hello_table(actor, npc, dialog_name, phrase_id)
 end
 
 -- Dialogs phrases getters
@@ -140,7 +147,9 @@ function get_dialog_get_squad_info(actor, npc)
 			local size = utils_obj.get_squad_count(npc)
 			Printer:Debug(LOG.RUN, CAT.NPC,"rank %s", rank)
 			Printer:Debug(LOG.RUN, CAT.NPC,"size %s", size)
-			return string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank, npcd_relations.is_squad_joinable(actor,npc), npcd_relations.is_squad_recruitable(actor,npc))
+			local squad_info_dialog = string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank, npcd_relations.is_squad_recruitable(actor,npc), npcd_relations.is_squad_hireable(actor,npc))
+			squad_info_dialog = squad_info_dialog .. "\\n \\n" .. ( npcd_relations.is_squad_hireable(actor,npc) and game.translate_string("st_npcd_npc_dialogs_squad_hireable", true) or game.translate_string("st_npcd_npc_dialogs_squad_recruitable", true) )
+			return squad_info_dialog
 		end
 		
 	end
@@ -259,7 +268,7 @@ function become_actor_companion_individually(actor, npc)
 				-- somehow the goodwill is not reseted properly on clone, so we force it again here
 				clone:set_goodwill(npc_goodwill, db.actor)
 
-				npcd_manager.ncpd_recruit(npc_id, clone_id)
+				npcd_manager.npcd_recruit(npc_id, clone_id)
 				dialogs_axr_companion.become_actor_companion(db.actor, clone)
 				db.actor:run_talk_dialog(clone)
 				return true
@@ -290,7 +299,7 @@ function become_paid_actor_companion_individually_and_register(actor, npc)
 				-- somehow the goodwill is not reseted properly on clone, so we force it again here
 				clone:set_goodwill(npc_goodwill, db.actor)
 
-				npcd_manager.ncpd_recruit(npc_id, clone_id)
+				npcd_manager.npcd_recruit(npc_id, clone_id)
 				dialogs_axr_companion.become_actor_companion(db.actor, clone)
 				txr_paid_companions.register_paid_companion(db.actor, clone)
 				db.actor:run_talk_dialog(clone)

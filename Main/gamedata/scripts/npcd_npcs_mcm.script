@@ -26,24 +26,32 @@ function on_mcm_load()
 	return op
 end
 
-function get_npc(npc_id, menu_type)
+local function is_not_friend(npc_id)
+    local npc = npcdu.get_object_by_id(npc_id)
+    if not npc then return false end
+    return not (npcd_relations.is_actor_not_enemy(db.actor, npc))
+end
 
+function get_npc(npc_id, menu_type)
+    printf("-[NPCD][MCM] get_npc %s menu_type %s", npc_id, menu_type)
     local npc_deck = npcd.get_npc(npc_id)
+    if not npc_deck or not npc_deck.has_profile then return nil end
+    if is_not_friend(npc_id) then return nil end
     if menu_type == MENU_TYPE.SQUAD then
         return npcd_squad.is_actor_squad(npc_id) and npc_deck or nil
     end
     if menu_type == MENU_TYPE.ALL then
-        return npc_deck.has_profile and npc_deck or nil
+        return npc_deck
     end
     if menu_type == MENU_TYPE.RECRUITABLE then
-        return npc_deck.recruitable and npc_deck or nil
+        return npc_deck.Info.can_recruit and npc_deck or nil
     end
     if menu_type == MENU_TYPE.DEAD then
         return not npc_deck.alive and npc_deck or nil
     end
     if menu_type == MENU_TYPE.FAVORITE then
         return npcd.get_favorite(npc_id) and npc_deck or nil
-    end    
+    end
 end
 
 function get_npcs_menu(menu_type)
@@ -78,53 +86,64 @@ function get_npcs_menu(menu_type)
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_alive", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_alive"), npc_deck.alive)})
                 -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_has_profile", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_has_profile"), npc_deck.has_profile)})
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_can_recruit", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_can_recruit"), npc_deck.Info.can_recruit )})
-                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_joined", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_joined"), npc_deck.Info.last_joined or "")})
+                local last_joined = ""
+                if npc_deck.Info.last_joined then
+                    local Y, M, D, h, m, s, ms = npc_deck.Info.last_joined:get()
+                    last_joined = string.format("%04d-%02d-%02d %02d:%02d:%02d", Y, M, D, h, m, s)
+                end
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_joined", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_joined"), last_joined)})
+                local last_time_seen = ""
                 if npc_deck.Info.last_time_seen then
                     local Y, M, D, h, m, s, ms = npc_deck.Info.last_time_seen:get()
-                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), string.format("%04d-%02d-%02d %02d:%02d:%02d", Y, M, D, h, m, s))})
-                else
-                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), "")})
+                    last_time_seen = string.format("%04d-%02d-%02d %02d:%02d:%02d", Y, M, D, h, m, s)
                 end
-                -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_smart_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_smart_seen"), npc_deck.Info.last_smart_seen or "")})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_time_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_time_seen"), last_time_seen)})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_place_seen", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_place_seen"), npc_deck.Info.last_place_seen or "")})
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_last_place_tracked", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_last_place_tracked"), npc_deck.Info.last_place_tracked or "")})
                 
                 -- perks
                 -- printf("-[NPCD][MCM] adding npcs %s menu perks", npcs_id_list[i])
                 table.insert(npc_menu.gr, { id = "divider", type = "line" })
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_perks", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_perks")})
-                
-                for perk_id, _ in pairs(npc_deck.Perk) do
-                    local perk = npcd.get_perk(perk_id)
-                    if perk then
-                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_perk"), game.translate_string(perk.name) , game.translate_string(perk.description))})
-                    end
-                end
-
-                -- abilities
-                -- printf("-[NPCD][MCM] adding npcs %s menu abilities", npcs_id_list[i])
-                table.insert(npc_menu.gr, { id = "divider", type = "line" })
-                table.insert(npc_menu.gr, { id = npc_deck.id .. "_abilties", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_abilities")})
-                local npc_feats_list = npcd.get_npc_feats(npc:id())
-                for j = 1, #npc_feats_list do
-                    local npc_feat = npc_feats_list[j]
-                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = npc_feat.name, size = {512,50}, spacing = 5, borderless=true, })
-                    -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. feat.perk_id .. "_" .. feat.id, type = "desc", text = feat.name})
-                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_desc", type = "desc", text = game.translate_string(npc_feat.description)})
-                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_feat_rank"), npcdu.get_feat_rank(npc:id()))})
-                    if npc_feat.stats then
-                        for key, value in pairs(npc_feat.stats) do
-                            local mcm_prefix = "ui_mcm_"
-                            local stat_hint
-                            if key == npcd.FEAT_SETTING.STAT.COOLDOWN then
-                                stat_hint = "st_npcd_feats_stats_cooldown"
-                            elseif key == npcd.FEAT_SETTING.STAT.LIFE then
-                                stat_hint = "st_npcd_feats_stats_life"
-                            else
-                                stat_hint = "npcd_module_" .. npc_feat.perk_module .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_" .. key
-                            end
-                            table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_stats_" .. key, type = "desc", text = string.format(game.translate_string(mcm_prefix .. stat_hint) .. ": %s", value)})
+                -- show perks and abilities only if npc was enquired first
+                if npc_deck.show_profile then
+                    for perk_id, _ in pairs(npc_deck.Perk) do
+                        local perk = npcd.get_perk(perk_id)
+                        if perk then
+                            table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_perk"), game.translate_string(perk.name) , game.translate_string(perk.description))})
                         end
                     end
+
+                    -- abilities
+                    -- printf("-[NPCD][MCM] adding npcs %s menu abilities", npcs_id_list[i])
+                    table.insert(npc_menu.gr, { id = "divider", type = "line" })
+                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_abilties", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_abilities")})
+                    local npc_feats_list = npcd.get_npc_feats(npc:id())
+                    for j = 1, #npc_feats_list do
+                        local npc_feat = npc_feats_list[j]
+                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = npc_feat.name, size = {512,50}, spacing = 5, borderless=true, })
+                        -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. feat.perk_id .. "_" .. feat.id, type = "desc", text = feat.name})
+                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_desc", type = "desc", text = game.translate_string(npc_feat.description)})
+                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_feat_rank"), npcdu.get_feat_rank(npc:id()))})
+                        if npc_feat.stats then
+                            for key, value in pairs(npc_feat.stats) do
+                                local mcm_prefix = "ui_mcm_"
+                                local stat_hint
+                                if key == npcd.FEAT_SETTING.STAT.COOLDOWN then
+                                    stat_hint = "st_npcd_feats_stats_cooldown"
+                                elseif key == npcd.FEAT_SETTING.STAT.LIFE then
+                                    stat_hint = "st_npcd_feats_stats_life"
+                                else
+                                    stat_hint = "npcd_module_" .. npc_feat.perk_module .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_" .. key
+                                end
+                                table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_stats_" .. key, type = "desc", text = string.format(game.translate_string(mcm_prefix .. stat_hint) .. ": %s", value)})
+                            end
+                        end
+                    end         
+                else
+                    table.insert(npc_menu.gr, { id = npc_deck.id .. "_perks_info", type = "desc", text = game.translate_string("ui_mcm_st_npcd_npcs_perks_info")})
                 end
+
                 -- Standings with actor
                 -- printf("-[NPCD][MCM] adding npcs %s menu standings", npcs_id_list[i])
                 table.insert(npc_menu.gr, { id = "divider", type = "line" })

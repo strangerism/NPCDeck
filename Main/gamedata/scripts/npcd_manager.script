@@ -455,7 +455,7 @@ local function recruit_npc(npc_id, clone_id)
 			Printer:Log(LOG.ADD, CAT.CONF, "recruiting npc %s through clone %s", npc_id, clone_id)			
 			-- npc profile already exists, remap to the clone id
 			if npcd.remap_npc(npc_id, clone_id) then
-				npcd.set_recruited(clone_id, true)	
+				npcd.set_recruited(clone_id, true)
 			else
 				-- cannot remap - there was a problem
 				Printer:Log(LOG.ERROR, CAT.NPC, "cannot remap npc %s to new id %s", npc_id, clone_id)
@@ -468,9 +468,15 @@ local function recruit_npc(npc_id, clone_id)
 		-- npc recruited through vanilla squad joining dialog (can be 1 npc or more at the same time)
 		npcd.set_recruited(npc_id, true)
 	end
+	local npc_info = npcd.get_npc_info(npc_id)
+	if npc_info then
+		npc_info.last_time_seen = game.get_game_time()
+		npc_info.last_place_seen = dynamic_news_helper.GetPointDescription(db.actor)
+		npcd.set_npc_info(npc_id, npc_info)
+	end
 end
 
-function ncpd_recruit(npc_id, clone_id)
+function npcd_recruit(npc_id, clone_id)
 	if not NPCD_BOOTED then return end
 	recruit_npc(npc_id, clone_id)
 end

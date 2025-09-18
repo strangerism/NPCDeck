@@ -184,7 +184,8 @@ function add_npc(npc_id)
 	npcs[npc_id]["Info"]["can_recruit"] = nil
 	npcs[npc_id]["Info"]["last_joined"] = nil
 	npcs[npc_id]["Info"]["last_time_seen"] = nil
-	npcs[npc_id]["Info"]["last_smart_seen"] = nil
+	npcs[npc_id]["Info"]["last_place_seen"] = nil
+	npcs[npc_id]["Info"]["last_place_tracked"] = nil
 	npcs[npc_id]["Info"]["codec_frequency"] = nil
 	return true
 end
@@ -207,6 +208,14 @@ end
 function set_recruited(npc_id, enlist)
 	if not npcs[npc_id] then return end
 	npcs[npc_id].recruited = enlist
+	if enlist then
+		npcs[npc_id].Info.last_joined = game.get_game_time()
+	end
+end
+
+function is_recruited(npc_id)
+	if not npcs[npc_id] then return false end
+	return npcs[npc_id].recruited
 end
 
 function set_deck(deck)
@@ -248,6 +257,21 @@ end
 function set_npc_info(npc_id, info)
     if not npc_id or not info then return end
     npcs[npc_id].Info = info
+end
+
+function set_last_joined(npc_id, time)
+	if not npcs[npc_id] then return end
+	npcs[npc_id].Info.last_joined = time
+end
+
+function set_last_place_seen(npc_id, place)
+	if not npcs[npc_id] then return end
+	npcs[npc_id].Info.last_place_seen = place
+end
+
+function  set_last_place_tracked(npc_id, place)
+	if not npcs[npc_id] then return end
+	npcs[npc_id].Info.last_place_tracked = place
 end
 
 function get_npc_perk(npc_id, perk_id)
