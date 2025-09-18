@@ -105,7 +105,7 @@ OG_fill_priority_hello_table = dialog_manager.fill_priority_hello_table
 function dialog_manager.fill_priority_hello_table(actor, npc, dialog_name, phrase_id)
 	local npc_info = npcd.get_npc_info(npc:id())
 	if npc_info then
-		npc_info.can_recruit = npcd_relations.is_npc_recruitable(npc:id())
+		npc_info.can_recruit = npcd_relations.can_recruit(npc:id())
 		npc_info.last_time_seen = game.get_game_time()
 		npc_info.last_place_seen = dynamic_news_helper.GetPointDescription(db.actor)
 		npcd.set_npc_info(npc:id(), npc_info)

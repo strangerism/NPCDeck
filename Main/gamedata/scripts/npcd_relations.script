@@ -143,34 +143,34 @@ end
 
 -- Squad Recruitment preconditions
 
-function is_squad_willing_to_work_for_hire(actor, npc)
-	local npc = dialogs.who_is_npc(actor,npc)
-	if not npc then return false end
-    return is_attitude_neutral(npc)
-end
+-- function is_squad_willing_to_work_for_hire(actor, npc)
+-- 	local npc = dialogs.who_is_npc(actor,npc)
+-- 	if not npc then return false end
+--     return is_attitude_neutral(npc)
+-- end
 
-function is_squad_willing_to_join_actor(actor, npc)
-	local npc = dialogs.who_is_npc(actor,npc)
-	if not npc then return false end
-    return is_attitude_friendly(npc) or is_attitude_trusted(npc)
-end
+-- function is_squad_willing_to_join_actor(actor, npc)
+-- 	local npc = dialogs.who_is_npc(actor,npc)
+-- 	if not npc then return false end
+--     return is_attitude_friendly(npc) or is_attitude_trusted(npc)
+-- end
 
--- Individually Recruitment preconditions
+-- Individually joining preconditions
 
-function is_npc_willing_to_work_for_hire(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_willing_to_work_for_hire")
+function is_npc_hireable(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_hireable")
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	-- log the outcome of each check below
 	Printer:Debug(LOG.INFO, CAT.NPC,"goodwill_neutral %s", tostring(is_goodwill_neutral(npc)))
 	Printer:Debug(LOG.INFO, CAT.NPC,"goodwill_respected %s", tostring(is_goodwill_respected(npc)))
 	local willing = is_goodwill_neutral(npc) or is_goodwill_respected(npc)
-	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_willing_to_work_for_hire %s", willing)
+	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_hireable %s", willing)
     return willing
 end
 
-function is_npc_willing_to_join_actor(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_willing_to_join_actor")
+function is_npc_recruitable(actor, npc)
+	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable")
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	-- log the outcome of each check below
@@ -311,7 +311,7 @@ function is_npc_competent(actor,npc)
 
     if dialog_npc[npc_id] and dialog_npc[npc_id].task_cooldown and math.floor(game.get_game_time():diffSec(dialog_npc[npc_id].task_cooldown)) > 86400 then
         -- 24H task cooldown passed, reset availability check
-		Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_competent reset cooldown")
+		Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_competent reset cooldown")
         dialog_npc[npc_id].can_work = nil
 		dialog_npc[npc_id].task_cooldown = game.get_game_time()
     end
@@ -351,7 +351,7 @@ function is_npc_available(actor,npc)
 
     if dialog_npc[npc_id] and dialog_npc[npc_id].task_cooldown and math.floor(game.get_game_time():diffSec(dialog_npc[npc_id].task_cooldown)) > 10 then
         -- 24H task cooldown passed, reset availability check
-		Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_available reset cooldown")
+		Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available reset cooldown")
         dialog_npc[npc_id].can_work = nil
 		dialog_npc[npc_id].task_cooldown = game.get_game_time()
     end
@@ -363,18 +363,18 @@ function is_npc_available(actor,npc)
 	elseif npc:rank() > 11999 then -- veteran
         rand = is_goodwill_trusted(npc) and 100 or 60
 	else -- below
-		Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_available below veteran is trusted %s", is_goodwill_trusted(npc))
+		Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available below veteran is trusted %s", is_goodwill_trusted(npc))
 		rand = is_goodwill_trusted(npc) and 100 or 40
 	end
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_available rand %s", rand)
+	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available rand %s", rand)
 	if (dialog_npc[npc_id].can_work == "true") or is_goodwill_respected(npc) or ((dialog_npc[npc_id].can_work ~= "false") and (math.random(1,100) <= rand)) then
 		dialog_npc[npc_id].can_work = "true"
-		Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_available true")
+		Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available true")
 		return true
 	end
 
 	dialog_npc[npc_id].can_work = "false"
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_available false")
+	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available false")
 	return false
 end
 
@@ -382,17 +382,19 @@ function is_npc_not_available(actor,npc)
 	return (not is_npc_available(actor,npc))
 end
 
-function is_npc_recruitable(npc_id)
+function can_recruit(npc_id)
 	local npc = npcdu.get_npc_obj(npc_id)
 	if not npc then return false end
 	local friendly_companion = xr_conditions.is_squad_commander(db.actor, npc) and dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_room_in_actor_squad(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable friendly_companion %s", tostring(friendly_companion))
-	local friendly_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_willing_to_join_actor(db.actor, npc) and is_npc_available(db.actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable friendly_companion_individually %s", tostring(friendly_companion_individually))
-	local paid_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and txr_paid_companions.is_actor_natural(db.actor, npc) and txr_paid_companions.is_paid_companion_faction(db.actor, npc) and txr_paid_companions.is_not_dangerous_map(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_willing_to_work_for_hire(db.actor, npc) and is_npc_competent(db.actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable paid_companion_individually %s", tostring(paid_companion_individually))
+	Printer:Debug(LOG.INFO, CAT.NPC,"can_recruit friendly_companion %s", tostring(friendly_companion))
+	local friendly_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_recruitable(db.actor, npc) and is_npc_available(db.actor, npc)
+	Printer:Debug(LOG.INFO, CAT.NPC,"can_recruit friendly_companion_individually %s", tostring(friendly_companion_individually))
+	local paid_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and txr_paid_companions.is_actor_natural(db.actor, npc) and txr_paid_companions.is_paid_companion_faction(db.actor, npc) and txr_paid_companions.is_not_dangerous_map(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_hireable(db.actor, npc) and is_npc_competent(db.actor, npc)
+	Printer:Debug(LOG.INFO, CAT.NPC,"can_recruit paid_companion_individually %s", tostring(paid_companion_individually))
 	return friendly_companion_individually or paid_companion_individually or (friendly_companion and game.translate_string("st_npcd_npc_dialogs_squad_only", true)) or false
 end
+
+-- squad joining states
 
 function is_squad_hireable(actor,npc)
 	local npc = dialogs.who_is_npc(actor,npc)
@@ -402,19 +404,20 @@ function is_squad_hireable(actor,npc)
 
 	local hireable = false
 	local section = squad:section_name()
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_squad_hireable section %s", section)
 	if string.find(section,"veteran") or string.find(section,"advanced") then
 		hireable = true
 	else
 		hireable = false
 	end
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_squad_hireable %s", tostring(hireable))
+	Printer:Debug(LOG.INFO, CAT.NPC,"is_squad_hireable %s", tostring(hireable))
 	return hireable
 end
 
 function is_squad_recruitable(actor,npc)
 	return dialogs_axr_companion.is_actor_friend(actor, npc)
 end
+
+-- NPC dialog state management
 
 local function save_state(m_data)
 	m_data.npcd_dialog_npc = dialog_npc

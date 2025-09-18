@@ -131,7 +131,7 @@ function on_xml_read()
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
 				<precondition>dialogs_axr_companion.is_not_actor_companion</precondition>
 				<precondition>dialogs_axr_companion.is_actor_friend</precondition>
-				<precondition>npcd_relations.is_npc_willing_to_join_actor</precondition>
+				<precondition>npcd_relations.is_npc_recruitable</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>
 				<precondition>npcd_dialogs.is_room_for_one_in_actor_squad</precondition>
 				<precondition>npcd_dialogs.not_a_one_man_squad</precondition>
@@ -160,7 +160,7 @@ function on_xml_read()
 				<precondition>dialogs_axr_companion.is_non_story</precondition>
 				<precondition>dialogs_axr_companion.is_not_actor_companion</precondition>
 				<precondition>txr_paid_companions.is_actor_natural</precondition>
-				<precondition>npcd_relations.is_npc_willing_to_work_for_hire</precondition>
+				<precondition>npcd_relations.is_npc_hireable</precondition>
 				<precondition>txr_paid_companions.is_paid_companion_faction</precondition>
 				<precondition>txr_paid_companions.is_not_dangerous_map</precondition>
 				<precondition>dialogs_axr_companion.is_not_hostage_task_giver</precondition>

@@ -204,7 +204,7 @@ function npcs_updater()
 		if se_npc and se_npc:alive() and npc_deck.has_profile then
 			Printer:Trace(LOG.RUN, CAT.CONF,"updating profile for npc %s %s %s", npc_id, se_npc:name(), se_npc:character_name())
 			local npc_info = npcd.get_npc_info(se_npc.id)
-			npc_info.can_recruit = npcd_relations.is_npc_recruitable(se_npc.id)
+			npc_info.can_recruit = npcd_relations.can_recruit(se_npc.id)
 			npcd.set_npc_info(se_npc.id, npc_info)
 		end
 	end

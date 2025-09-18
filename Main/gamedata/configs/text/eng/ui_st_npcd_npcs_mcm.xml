@@ -97,9 +97,10 @@
 		<string id="ui_mcm_st_npcd_npcs_attitude_desc">
 		<text>
 		- Attitude of the npc towards the player. It includes static goodwill (from faction and rank relations) and dynamic goodwill (personal or faction based, see below)
+		\n |- %c[d_purple]cannot be increased directly%c[white]
 		\n |- when below -999, the npc is %c[red]hostile%c[white]
+		\n |- between 0-999, the npc is %c[gray]neutral%c[white] - you can only hire through squad, chance based (24 hour reset) and only advanced/veteran squads
 		\n |- when above 999, the npc is %c[green]friendly%c[white] - you can recruit through squad
-		\n |- in between values, the npc is %c[gray]neutral%c[white] - you can only hire through squad, chance based (24 hour reset) and only advanced/veteran squads
 		\n |- when above 1999, the npc is %c[orange]trusted%c[white] - you can recruit through squad or individually, chance based (24 hour reset) and only advanced/veteran squads
 </text>
 	</string>
@@ -108,13 +109,13 @@
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwil_personal_desc">
 		<text>
-		- Personal goodwill of the npc towards the player. This is affected by the player's action (e.g. doing tasks, etc).
+		- Personal goodwill of the npc towards the player. This is affected by the player's action (e.g. doing tasks, etc). It is the main factor that allows you to individually recruit/hire the npc.
 		\n |- when below -999, the npc is %c[red]hostile%c[white]
 		\n |- between 0-499, the npc is %c[gray]neutral%c[white] - you can hire individually, chance based (24 hour reset) and only from advanced/veteran squads 
 		\n |- between 500-999, the npc is %c[blue]respected%c[white] - you can hire individually, only advanced/veteran squads 
 		\n |- between 1000-1499, the npc is %c[green]friendly%c[white] - you can recruit individually, chance based (24 hour reset) from from any squads
 		\n |- between 1500-2000, the npc is %c[orange]trusted%c[white] - you can recruit individually from any squads
-
+		\n |- %c[d_purple][TIP]%c[white] Raise this if you want to release and recruit an npc from a squad
 		</text>
 	</string>	
 	<!-- <string id="ui_mcm_st_npcd_npcs_goodwill_rank">
@@ -134,9 +135,11 @@
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_goodwill_faction_desc">
 		<text>
-		- The goodwill of the npc's faction towards the player. 
-		\n |- This is affected by the player's action (e.g. doing tasks, etc).
-		\n |- The same goodwill is used to establish a trader stock's supply level
+		- The goodwill of the npc's faction towards the player. This is affected by the player's action (e.g. doing tasks, etc) towards the faction. 
+		\n |- It will affect the overall attidute of the faction's npcs towards the player.
+		\n |- It is the same goodwill that is used to establish a trader stock's supply level.
+		\n |- This will not raise the npcs personal goodwill.
+		\n |- %c[d_purple][TIP]%c[white] Raise this if you want to start recruiting novice squads
 		</text>
 	</string>	
 	<string id="ui_mcm_st_npcd_npcs_goodwill_communities">
