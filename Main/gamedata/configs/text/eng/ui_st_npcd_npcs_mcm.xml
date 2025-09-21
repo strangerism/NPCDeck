@@ -78,7 +78,10 @@
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_perks_info">
 		<text>You must meet the npc first and ask about skills to be able see this section</text>
-	</string>	
+	</string>
+	<string id="ui_mcm_st_npcd_npcs_standings_info">
+		<text>Cannnot show standings for NPC that are not online (in this map)</text>
+	</string>		
 	<string id="ui_mcm_st_npcd_npcs_perk">
 		<text>- [%%c[d_cyan]%s%%c[d_white]] %s</text>
 	</string>	

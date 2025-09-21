@@ -98,7 +98,8 @@ local function resume_npc_ability_execution(npc_id, feat)
 	if feat.type == FEAT_TYPE.ACTIVE then
 		if npcd.ability_registered(npc_id, feat.id) then
 			Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s restarts execution %s", npc_id, feat.id)
-			if feat.mode == FEAT_MODE.MANUAL then
+			local npc_ability = npcd.get_ability(npc_id, feat.id)
+			if feat.mode == FEAT_MODE.MANUAL and (npc_ability.state == ABILITY_STATE.COOLDOWN or npc_ability.state == ABILITY_STATE.READING) then
 				add_cooldown_execution(npc_id, feat.id)
 			end
 			if feat.mode == FEAT_MODE.AUTO then

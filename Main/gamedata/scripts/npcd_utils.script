@@ -86,6 +86,23 @@ function get_desc_rank(npc_id)
 	return npc and ranks.get_se_obj_rank_name(npc) or ""
 end
 
+function get_npc_rank(npc)
+	if type(npc.id) == "function" then
+		return npc:character_rank()
+	else
+		local npc_data = utils_stpk.get_stalker_data(npc)
+		return npc:rank()
+	end
+end
+
+function get_npc_reputation(npc)
+	if type(npc.id) == "function" then
+		return npc:character_reputation()
+	else
+		return npc:reputation()
+	end
+end
+
 local RANK = {
 	novice = 1,
 	trainee = 1,
