@@ -29,6 +29,18 @@
 	<string id="ui_mcm_npcd_actionbar_main_show_empty_desc">
 		<text>Shows the full bar with any empty slot</text>
 	</string>
+	<string id="ui_mcm_npcd_actionbar_main_offset_x">
+		<text>Orizontal Offset</text>
+	</string>
+	<string id="ui_mcm_npcd_actionbar_main_offset_x_desc">
+		<text>The orizontal offset of the actionbar in respect to the top-left corner of the screen</text>
+	</string>
+	<string id="ui_mcm_npcd_actionbar_main_offset_y">
+		<text>Vertical Offset</text>
+	</string>
+	<string id="ui_mcm_npcd_actionbar_main_offset_y_desc">
+		<text>The vertical offset of the actionbar in respect to the top-left corner of the screen</text>
+	</string>		
      <string id="ui_mcm_menu_npcd_actionbar_slots">
         <text>Slots</text>
     </string>

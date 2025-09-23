@@ -285,6 +285,10 @@ function UINPCDActionBar:InitControls()
 
 	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
 	
+	local dialog_x = self.dialog:GetWndPos().x
+	local dialog_y = self.dialog:GetWndPos().y
+	self.dialog:SetWndPos( vector2():set( dialog_x + (npcd_actionbar.settings.offset_x or 20), dialog_y + (npcd_actionbar.settings.offset_y or 30) ) )
+
 	local actionbar_slots = npcd_actionbar.count_slots()
 	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "InitControls actionbar available slots %s", actionbar_slots.available)
 	for i=1, actionbar_slots.available do

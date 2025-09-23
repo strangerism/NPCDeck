@@ -19,7 +19,9 @@ function get_actionbar_menu()
         { id = "title", type = "slide", link = "ui_options_slider_player", text = "ui_mcm_npcd_actionbar_main_title", size = {512,50}, spacing = 20 },
         { id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_actionbar_main_desc" },
 		{ id = "max_slots", type = "input", val = 2, def = 8, min = 1, max = npcd_actionbar.MAX_SLOTS},
-		{ id = "show_empty", type = "check", val = 1, def = true }
+		{ id = "show_empty", type = "check", val = 1, def = true },
+		{ id = "offset_x", type = "track", val = 2, step = 1, def = 180, max = 1024, min = 0 },
+		{ id = "offset_y", type = "track", val = 2, step = 1, def = 720, max = 768, min = 0 },
     }
 
 	-- add main menu to actionbar menu
