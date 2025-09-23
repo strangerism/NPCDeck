@@ -73,7 +73,7 @@ function axr_companions.activate_hud()
 	end
 	Printer:Trace(LOG.INFO, CAT.NPC, "MP activate_hud")
 	axrc_OG_activate_hud()
-	npcd_hud.activate_hud()
+	npcd_actionbar_hud.activate_hud()
 end
 
 axrc_OG_deactivate_hud = axr_companions.deactivate_hud
@@ -83,7 +83,7 @@ function axr_companions.deactivate_hud()
 	end
 	Printer:Trace(LOG.INFO, CAT.NPC, "MP deactivate_hud")
 	axrc_OG_deactivate_hud()
-	npcd_hud.deactivate_hud()
+	npcd_actionbar_hud.deactivate_hud()
 end
 
 

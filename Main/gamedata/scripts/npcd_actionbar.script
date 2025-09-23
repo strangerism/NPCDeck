@@ -317,8 +317,8 @@ function reset_actionbar()
     Printer:Debug(LOG.RUN, CAT.UI_ACTION, "reset actionbar")
     -- Get current squad
     if not npcd_squad.squad_available() then
-        Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_hud_update but no squad available")
-        SendScriptCallback("npcd_hud_update")
+        Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_actionbar_hud_update but no squad available")
+        SendScriptCallback("npcd_actionbar_hud_update")
         return
     end
 
@@ -354,7 +354,7 @@ function refresh_actionbar()
     bind_actionbar_slots()
 
     -- refresh hud
-    SendScriptCallback("npcd_hud_update")
+    SendScriptCallback("npcd_actionbar_hud_update")
 end
 
 -- if AddScriptCallback then

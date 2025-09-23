@@ -1,0 +1,311 @@
+
+local npcdu = npcd_utils
+local SECOND_KEY_DESC = npcd.SECOND_KEY_DESC 
+
+function get_printer()
+	if not Printer then
+		Printer = npcd_logging.get_printer("npcd_actionbar_hud")
+	end 
+	LOG = Printer:GetLogTypes()
+	CAT = Printer:GetLogCategories()
+end
+if AddScriptCallback then
+	RegisterScriptCallback("npcd_on_log_update", get_printer)
+end
+
+local ABILITY_STATE = npcd.ABILITY_STATE
+
+local SLOT_STATE = {
+	READY = "READY",
+	COOLDOWN = "COOLDOWN",
+	READING = "READING",
+	EMPTY = "EMPTY",
+	HIDDEN = "HIDDEN",
+}
+
+local HUD_MODE = {
+	STATIC = "STATIC",
+	FLASHING = "FLASHING"
+}
+
+function clear_actionbar_slot(slot_hud, state)
+	slot_hud.state = state or SLOT_STATE.EMPTY
+	if slot_hud.ability then
+		slot_hud.ability.icon:Show(false)
+		slot_hud.ability.cd:Show(false)
+		slot_hud.ability.hotkey_mode:Show(false)
+		slot_hud.ability.hotkey_bind:Show(false)
+		slot_hud.ability = nil
+	end
+end
+
+function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, index, mode)
+	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"add ability %s to actionbar slot %s", ability.id, index)
+	clear_actionbar_slot(slot_hud, ability.state)
+	slot_hud.ability = {}
+
+	-- slot background
+	if ability.state == ABILITY_STATE.COOLDOWN then
+		slot_hud.background:Show(false)
+		slot_hud.background:InitTexture("ui_npcd_hud_slot_cooldown")
+	else
+		slot_hud.background:Show(false)
+		slot_hud.background:InitTexture("ui_npcd_hud_slot_ready")
+	end
+	if mode == HUD_MODE.STATIC then
+		Printer:Trace(LOG.INFO, CAT.UI_ACTION,"Init STATIC action slot %s with ability %s", index, ability.id)
+		slot_hud.ability.icon = self.xml:InitStatic("action_bar:slot:static", slot_hud.base)
+		-- slot_hud.state = SLOT_STATE.COOLDOWN
+	else
+		Printer:Trace(LOG.INFO, CAT.UI_ACTION,"Init FLASHING action slot %s with ability %s", index, ability.id)
+		slot_hud.ability.icon = self.xml:InitStatic("action_bar:slot:flashing", slot_hud.base)
+		-- slot_hud.state = SLOT_STATE.READING
+	end
+	slot_hud.ability.icon:InitTexture(ability.icon_slot)
+	slot_hud.ability.icon:SetWndSize(vector2():set(slot_hud.ability.icon:GetWidth() * self.scale, slot_hud.ability.icon:GetHeight() * self.scale ))
+	
+	-- ability cooldown							
+	slot_hud.ability.cd = self.xml:InitProgressBar("action_bar:slot:cooldown", slot_hud.ability.icon)
+	slot_hud.ability.cd:SetWndSize(vector2():set(slot_hud.ability.icon:GetWidth(), slot_hud.ability.icon:GetHeight()))
+	-- set ratio
+	slot_hud.ability.hotkey_mode =self. xml:InitTextWnd("action_bar:slot:hotkey_mode", slot_hud.base)
+	slot_hud.ability.hotkey_mode:SetFont(GetFontSmall())
+	local text
+	local second_key = action_slot.activation_input.activation_key.second_key
+	if second_key and second_key ~= 0 then
+		text = game.translate_string(SECOND_KEY_DESC[second_key])
+	end
+	slot_hud.ability.hotkey_mode:SetText(text or "")
+	slot_hud.ability.hotkey_bind = self.xml:InitTextWnd("action_bar:slot:hotkey_bind", slot_hud.base)
+	slot_hud.ability.hotkey_bind:SetFont(GetFontSmall())
+	text = nil
+	if action_slot.activation_input.activation_key.keybind then
+		text = ui_mcm.display_key(action_slot.activation_input.activation_key.keybind)
+	end		
+	slot_hud.ability.hotkey_bind:SetText(text or "")
+	-- set ratio
+	utils_xml.correct_ratio(slot_hud.ability.icon)
+	utils_xml.correct_ratio(slot_hud.ability.cd)
+	utils_xml.correct_ratio(slot_hud.ability.hotkey_mode)
+	utils_xml.correct_ratio(slot_hud.ability.hotkey_bind)
+	-- show
+	slot_hud.background:Show(true)
+	slot_hud.ability.icon:Show(true)
+	slot_hud.ability.cd:Show(true)
+	slot_hud.ability.hotkey_mode:Show(true)
+	slot_hud.ability.hotkey_bind:Show(true)
+	return slot_hud
+end
+
+class "UINPCDActionBar" (CUIScriptWnd)
+
+function UINPCDActionBar:__init() super()
+	self.slot = {}
+	self._tmr 			= time_global()
+	self.update_rate	= 2000 --[ms]
+	self.clr_list = {
+		["def"]     = GetARGB(255,255,255,255),
+		["stalker"] = GetARGB(255,255,255,100),
+		["bandit"]  = GetARGB(255,120,201,79),
+		["ecolog"]  = GetARGB(255,255,128,100),
+		["csky"]    = GetARGB(255,100,200,255),
+		["dolg"]    = GetARGB(255,255,100,100),
+		["freedom"] = GetARGB(255,100,255,100),
+		["killer"]  = GetARGB(255,100,100,255),
+		["army"]    = GetARGB(255,100,128,255),
+		["monolith"]= GetARGB(255,120,201,79),
+	}
+
+	self:InitControls()
+end
+
+function UINPCDActionBar:__finalize()
+end
+
+function UINPCDActionBar:InitControls()
+	Printer:Trace(LOG.START, CAT.UI, "UINPCDActionBar:InitControls")
+	self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_npcd_hud.xml")
+	local xml =  self.xml
+	-- init NPCD actionbar
+	self.dialog = xml:InitStatic("action_bar", self)
+	self.index  = 0
+	self.scale  = 1
+	self.W      = 55
+	self.offset = 2
+
+	self.actionbar_slots_list = npcd_actionbar.get_actionbar_slots_list()
+	
+	local dialog_x = self.dialog:GetWndPos().x
+	local dialog_y = self.dialog:GetWndPos().y
+	self.dialog:SetWndPos( vector2():set( dialog_x + (npcd_actionbar.settings.offset_x or 20), dialog_y + (npcd_actionbar.settings.offset_y or 30) ) )
+
+	local actionbar_slots = npcd_actionbar.count_slots()
+	Printer:Trace(LOG.INFO, CAT.UI_ACTION, "InitControls actionbar available slots %s", actionbar_slots.available)
+	for i=1, actionbar_slots.available do
+		-- init NPCD actionbar's slots	
+		self.slot[i]                   = {}
+		self.slot[i].base              = xml:InitStatic("action_bar:slot", self.dialog)
+		local x = (i-1)*(self.W + self.offset) * 1
+		self.slot[i].base:SetWndPos( vector2():set( 0+x , 0 ) )
+		self.slot[i].background        = xml:InitStatic("action_bar:slot:background", self.slot[i].base)
+		self.slot[i].hotkey_mode         = xml:InitTextWnd("action_bar:slot:hotkey_mode", self.slot[i].base)
+		self.slot[i].hotkey_bind          = xml:InitTextWnd("action_bar:slot:hotkey_bind", self.slot[i].base)
+		for _,ele in pairs(self.slot[i]) do
+			utils_xml.correct_ratio(ele)
+		end
+		self.slot[i].state = SLOT_STATE.EMPTY
+		if npcd_actionbar.settings.show_empty then
+			Printer:Trace(LOG.START, CAT.UI_ACTION, "show empty slots %s", i)
+			self.slot[i].background:Show(true)
+			self.slot[i].base:Show(true)
+		else
+			Printer:Trace(LOG.START, CAT.UI_ACTION, "hide empty slots %s", i)
+			self.slot[i].background:Show(false)
+			self.slot[i].base:Show(false)
+		end
+	end
+end
+
+function UINPCDActionBar:Update(force)
+	-- Printer:Trace(LOG.RUN, CAT.UI_ACTION, "UINPCDActionBar:Update")
+	CUIScriptWnd.Update(self)
+	
+	local tg = time_global()
+	if force then
+		self._tmr = tg - 1
+	end
+	if self._tmr >= tg then
+		return
+	end
+	self._tmr = tg + self.update_rate
+
+	local to_show = main_hud_shown()
+	-- update the actionbar
+	for i=1, #self.slot do
+		if to_show then
+			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
+			local slot_hud = self.slot[i]
+			-- if slot_hud then
+				local action_slot = self.actionbar_slots_list[i]
+				if action_slot then
+					local ability = npcd.get_ability(action_slot.npc_id, action_slot.feat_id)
+					if ability then
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
+						if (ability.state ~= slot_hud.state) then
+							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
+						end
+						if ability.state == ABILITY_STATE.COOLDOWN then
+							local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
+							Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
+							slot_hud.ability.cd:SetProgressPos(bar)
+						end
+					else
+						Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find npc %s ability %s for actionbar slot %s", action_slot.npc_id, action_slot.feat_id, action_slot.index)
+					end
+					self.slot[i].background:Show(true)
+					self.slot[i].base:Show(true)
+				else
+					clear_actionbar_slot(slot_hud)
+					if not npcd_actionbar.settings.show_empty then
+						Printer:Trace(LOG.START, CAT.UI_ACTION, " show empty slots %s", i)
+						self.slot[i].background:Show(false)
+						self.slot[i].base:Show(true)
+					else
+						Printer:Trace(LOG.START, CAT.UI_ACTION, " hide empty slots %s", i)
+						self.slot[i].background:Show(true)
+						self.slot[i].base:Show(true)
+					end
+				end
+			-- end
+		else
+			self.slot[i].base:Show(false)
+		end
+	end
+end
+
+function UINPCDActionBar:ClearControls()
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "ClearControls")
+	for i=1, #self.slot do
+		local slot_hud = self.slot[i]
+		if slot_hud then
+			clear_actionbar_slot(slot_hud)
+			slot_hud.background:Show(false)
+			slot_hud.background = nil
+		end
+	end
+end
+
+function npcd_actionbar_hud_update()
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "npcd_actionbar_hud_update")
+	deactivate_hud()
+	activate_hud()
+end
+
+HUD = nil
+function activate_hud()
+	if not Printer then
+		get_printer()
+	end
+	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar activate_hud")
+	RegisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
+	RegisterScriptCallback("on_console_execute",on_console_execute)
+	RegisterScriptCallback("GUI_on_show",update_hud)
+	RegisterScriptCallback("GUI_on_hide",update_hud)
+	
+	if HUD == nil then
+		HUD = UINPCDActionBar()
+		get_hud():AddDialogToRender(HUD)
+	end
+end
+
+function deactivate_hud()
+	if not Printer then
+		get_printer()
+	end	
+	Printer:Log(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar deactivate_hud")
+	if HUD ~= nil then
+		HUD:ClearControls()
+		get_hud():RemoveDialogToRender(HUD)
+		HUD = nil
+	end
+	
+	UnregisterScriptCallback("actor_on_net_destroy",actor_on_net_destroy)
+	UnregisterScriptCallback("on_console_execute",on_console_execute)
+	UnregisterScriptCallback("GUI_on_show",update_hud)
+	UnregisterScriptCallback("GUI_on_hide",update_hud)
+end
+
+function update_hud()
+	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"NPCD Actionbar update_hud")
+	if HUD ~= nil then
+		HUD:Update(true)
+	end
+end
+
+function actor_on_net_destroy()
+	if HUD ~= nil then
+		get_hud():RemoveDialogToRender(HUD)
+		HUD = nil
+	end
+end
+
+function on_console_execute(name)
+	if name == "hud_draw" and HUD then
+		HUD:Update(true)
+	end
+end
+function actor_on_first_update()
+    printf("$[NPCD][Main] npcd_hud actor_on_first_update")
+end
+
+if AddScriptCallback then
+	AddScriptCallback("npcd_actionbar_hud_update")
+end
+function on_game_start()
+    printf("$[NPCD][Main] npcd_hud on_game_start")
+    RegisterScriptCallback("actor_on_first_update", actor_on_first_update)
+	RegisterScriptCallback("npcd_actionbar_hud_update", npcd_actionbar_hud_update)
+	get_printer()
+end
