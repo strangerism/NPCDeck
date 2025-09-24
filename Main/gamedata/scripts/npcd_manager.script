@@ -103,6 +103,9 @@ local function resume_npc_ability_execution(npc_id, feat)
 				add_cooldown_execution(npc_id, feat.id)
 			end
 			if feat.mode == FEAT_MODE.AUTO then
+				if npc_ability.state ~= ABILITY_STATE.READY then
+					add_cooldown_execution(npc_id, feat.id) -- resume current cooldown if not in READY
+				end
 				add_poll_execution(npc_id, feat)
 			end
 		end
