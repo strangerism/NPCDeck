@@ -129,11 +129,11 @@ local function is_goodwill_friendly(npc)
 end
 
 local function is_goodwill_trusted(npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_goodwill_trusted")
-	Printer:Debug(LOG.INFO, CAT.NPC,"npc %s", npc and npc:id() or "nil")
+	-- Printer:Debug(LOG.RUN, CAT.NPC,"is_goodwill_trusted")
+	-- Printer:Debug(LOG.INFO, CAT.NPC,"npc %s", npc and npc:id() or "nil")
 	if npc and npc:alive() then
         local goodwill = npc:goodwill(db.actor)
-		Printer:Debug(LOG.INFO, CAT.NPC,"is_goodwill_trusted npc %s goodwill %s", npc:id(), goodwill)
+		-- Printer:Debug(LOG.INFO, CAT.NPC,"is_goodwill_trusted npc %s goodwill %s", npc:id(), goodwill)
         if goodwill >= 1500 then
             return true
         end
@@ -158,25 +158,23 @@ end
 -- Individually joining preconditions
 
 function is_npc_hireable(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_hireable")
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	-- log the outcome of each check below
-	Printer:Debug(LOG.INFO, CAT.NPC,"goodwill_neutral %s", tostring(is_goodwill_neutral(npc)))
-	Printer:Debug(LOG.INFO, CAT.NPC,"goodwill_respected %s", tostring(is_goodwill_respected(npc)))
-	local willing = is_goodwill_neutral(npc) or is_goodwill_respected(npc)
-	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_hireable %s", willing)
-    return willing
+	Printer:Trace(LOG.INFO, CAT.NPC,"goodwill_neutral %s", tostring(is_goodwill_neutral(npc)))
+	Printer:Trace(LOG.INFO, CAT.NPC,"goodwill_respected %s", tostring(is_goodwill_respected(npc)))
+	local hireable = is_goodwill_neutral(npc) or is_goodwill_respected(npc)
+	Printer:Trace(LOG.INFO, CAT.NPC,"is_npc_hireable %s", hireable)
+    return hireable
 end
 
 function is_npc_recruitable(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_recruitable")
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	-- log the outcome of each check below
-	Printer:Debug(LOG.INFO, CAT.NPC,"attitude_trusted %s", tostring(is_attitude_trusted(npc)))
-	Printer:Debug(LOG.INFO, CAT.NPC,"goodwill_friendly %s", tostring(is_goodwill_friendly(npc)))
-	Printer:Debug(LOG.INFO, CAT.NPC,"goodwill_trusted %s", tostring(is_goodwill_trusted(npc)))
+	Printer:Trace(LOG.INFO, CAT.NPC,"attitude_trusted %s", tostring(is_attitude_trusted(npc)))
+	Printer:Trace(LOG.INFO, CAT.NPC,"goodwill_friendly %s", tostring(is_goodwill_friendly(npc)))
+	Printer:Trace(LOG.INFO, CAT.NPC,"goodwill_trusted %s", tostring(is_goodwill_trusted(npc)))
     return is_attitude_trusted(npc) or is_goodwill_friendly(npc) or is_goodwill_trusted(npc)
 end
 
@@ -190,9 +188,9 @@ end
 
 local function get_goodwill_inc(npc)
 	local relation = npc:relation(db.actor)
-	if relation == 1 then
+	if relation == 1 then --neutral
 		return 200
-	elseif relation == 0 then
+	elseif relation == 0 then -- friend
 		return 50
 	else
 		return 0
@@ -345,7 +343,7 @@ end
 
 -- actor must be in the friend zone with npc to use this api in dialogs
 function is_npc_available(actor,npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"is_npc_available")
+	Printer:Trace(LOG.RUN, CAT.NPC,"is_npc_available")
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	local npc_id = npc:id()
@@ -366,18 +364,18 @@ function is_npc_available(actor,npc)
 	elseif npc:rank() > 11999 then -- veteran
         rand = is_goodwill_trusted(npc) and 100 or 60
 	else -- below
-		Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available below veteran is trusted %s", is_goodwill_trusted(npc))
+		Printer:Trace(LOG.INFO, CAT.NPC,"is_npc_available below veteran is trusted %s", is_goodwill_trusted(npc))
 		rand = is_goodwill_trusted(npc) and 100 or 40
 	end
-	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available rand %s", rand)
+	Printer:Trace(LOG.INFO, CAT.NPC,"is_npc_available rand %s", rand)
 	if (dialog_npc[npc_id].can_work == "true") or is_goodwill_respected(npc) or ((dialog_npc[npc_id].can_work ~= "false") and (math.random(1,100) <= rand)) then
 		dialog_npc[npc_id].can_work = "true"
-		Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available true")
+		Printer:Trace(LOG.INFO, CAT.NPC,"is_npc_available true")
 		return true
 	end
 
 	dialog_npc[npc_id].can_work = "false"
-	Printer:Debug(LOG.INFO, CAT.NPC,"is_npc_available false")
+	Printer:Trace(LOG.INFO, CAT.NPC,"is_npc_available false")
 	return false
 end
 
@@ -389,11 +387,11 @@ function can_recruit(npc_id)
 	local npc = npcdu.get_npc_obj(npc_id)
 	if not npc then return false end
 	local friendly_companion = xr_conditions.is_squad_commander(db.actor, npc) and dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_room_in_actor_squad(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc)
-	Printer:Debug(LOG.INFO, CAT.NPC,"can_recruit friendly_companion %s", tostring(friendly_companion))
+	Printer:Trace(LOG.INFO, CAT.NPC,"can_recruit friendly_companion %s", tostring(friendly_companion))
 	local friendly_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and dialogs_axr_companion.is_actor_friend(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_recruitable(db.actor, npc) and is_npc_available(db.actor, npc)
-	Printer:Debug(LOG.INFO, CAT.NPC,"can_recruit friendly_companion_individually %s", tostring(friendly_companion_individually))
+	Printer:Trace(LOG.INFO, CAT.NPC,"can_recruit friendly_companion_individually %s", tostring(friendly_companion_individually))
 	local paid_companion_individually = dialogs_axr_companion.is_non_story(db.actor, npc) and txr_paid_companions.is_actor_natural(db.actor, npc) and txr_paid_companions.is_paid_companion_faction(db.actor, npc) and txr_paid_companions.is_not_dangerous_map(db.actor, npc) and dialogs_axr_companion.is_not_hostage_task_giver(db.actor, npc) and tasks_guide.not_prec_1(db.actor, npc) and is_npc_hireable(db.actor, npc) and is_npc_competent(db.actor, npc)
-	Printer:Debug(LOG.INFO, CAT.NPC,"can_recruit paid_companion_individually %s", tostring(paid_companion_individually))
+	Printer:Trace(LOG.INFO, CAT.NPC,"can_recruit paid_companion_individually %s", tostring(paid_companion_individually))
 	return friendly_companion_individually or paid_companion_individually or (friendly_companion and game.translate_string("st_npcd_npc_dialogs_squad_only", true)) or false
 end
 
@@ -412,7 +410,7 @@ function is_squad_hireable(actor,npc)
 	else
 		hireable = false
 	end
-	Printer:Debug(LOG.INFO, CAT.NPC,"is_squad_hireable %s", tostring(hireable))
+	Printer:Trace(LOG.INFO, CAT.NPC,"is_squad_hireable %s", tostring(hireable))
 	return hireable
 end
 
