@@ -221,8 +221,11 @@ end
 
 -- kill gains
 
--- TBD
-
+local GOODWILL_REWARD_FOR_KILL = 10
+function increase_goodwill_kill(npc)
+	Printer:Debug(LOG.ADD, CAT.NPC, "changing npc %s goodwill by %s", npc:id(), GOODWILL_REWARD_FOR_KILL)
+	npc:change_goodwill(GOODWILL_REWARD_FOR_KILL, db.actor)
+end
 ---
 
 -- NPCD Paid Squad joining rules 

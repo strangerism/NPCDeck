@@ -504,6 +504,18 @@ function squad_on_npc_death(squad,se_npc)
 	end
 end
 
+function npc_on_death(victim, who)
+	Printer:Debug(LOG.RUN, CAT.NPC,"npc_on_death victim %s killed by %s", victim and victim:name() or "nil", who and who:name() or "nil")
+	if not (victim and who) then
+		return
+	end
+	if IsStalker(who) and npcd_squad.is_actor_squad(who:id()) then
+
+		Printer:Debug(LOG.INFO, CAT.NPC, "Enemy %s killed by squad member %s", victim:name(), who:character_name())
+		npcd_relations.increase_goodwill_kill(who)
+	end
+end
+
 --------------- SQUAD UPDATES (abilities registration)
 
 function npcd_squad_abilities_registration()
@@ -710,6 +722,7 @@ function on_game_start()
 	printf("$[NPCD][MAIN] npcd_manager on_game_start")
 	RegisterScriptCallback("actor_on_update", game_play_start)
 	RegisterScriptCallback("squad_on_npc_death", squad_on_npc_death)
+	RegisterScriptCallback("npc_on_death_callback", npc_on_death)
 	RegisterScriptCallback("npcd_squad_update", npcd_squad_update)
 	RegisterScriptCallback("on_option_change", on_option_change)
     RegisterScriptCallback("load_state", load_state)
