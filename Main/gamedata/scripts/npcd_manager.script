@@ -131,18 +131,18 @@ function restart_npc_execution(npc_id)
 	return true
 end
 
-local function start_npcd_execution()
-	Printer:Debug(LOG.RUN, CAT.EXEC,"start_npcd_execution")
-
-	-- restart saved execution checkpoints
+local function restart_squad_executions()
 	local clist = npcd_squad.squad_get_clist()
 	for i = 1, #clist do
 		restart_npc_execution(clist[i])
 	end
+end
 
+local function start_npcd_execution()
+	Printer:Debug(LOG.RUN, CAT.EXEC,"start_npcd_execution")
 	-- start the npcd sim tasks
-	CreateTimeEvent("npcd_manager", "npcs_sweaper", 0, npcs_sweaper)
-	CreateTimeEvent("npcd_manager", "npcs_profiler", 0, npcs_profiler)
+	CreateTimeEvent("npcd_manager", "npcs_sweaper", 3, npcs_sweaper)
+	CreateTimeEvent("npcd_manager", "npcs_profiler", 5, npcs_profiler)
 	CreateTimeEvent("npcd_manager", "npcs_updater", 10, npcs_updater)
 end
 
@@ -559,6 +559,26 @@ local function npcd_squad_update()
 	CreateTimeEvent("npcd_manager", "do_npcd_squad_update", 1, do_npcd_squad_update)
 end
 
+
+
+local function resume_squad_state()
+	Printer:Debug(LOG.RUN, CAT.NPC,"resume_squad_state")
+	npcd_squad.update_squad_info()
+	current_clist = npcd_squad.squad_get_clist()
+	if npcd_squad.squad_available() then
+		Printer:Debug(LOG.RUN, CAT.NPC,"resuming squad state")
+		SendScriptCallback("npcd_post_squad_update")
+		CreateTimeEvent("npcd_manager", "npcd_squad_abilities_re-registration", 1, function ()
+			npcd_squad_abilities_registration()
+			-- restart squad executions
+			restart_squad_executions()
+			return true
+		end)
+	else
+		Printer:Debug(LOG.WARN, CAT.NPC,"no squad available")
+	end
+end
+
 --------------- NPCD STATE MGMT
 
 function save_state(m_data)
@@ -673,12 +693,13 @@ function game_play_start()
 	end
 	-- NPCD BOOTING
 	Printer:Log(LOG.START, CAT.EXEC, "NPCD BOOTED")
-	npcd_squad.update_squad_info()
-	current_clist = npcd_squad.squad_get_clist()
-	start_npcd_execution()
-	update_actionbar()
-	SendScriptCallback("npcd_started")
-	RegisterScriptCallback("actor_on_update", actor_on_update)
+	resume_squad_state()
+	CreateTimeEvent("npcd_manager", "start_npcd_execution", 3, function ()
+		start_npcd_execution()
+		SendScriptCallback("npcd_started")
+		RegisterScriptCallback("actor_on_update", actor_on_update)
+		return true
+	end)
 end
 
 function actor_on_first_update()
