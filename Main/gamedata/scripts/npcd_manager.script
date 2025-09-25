@@ -190,6 +190,7 @@ function npcs_profiler()
 		if se_npc and IsStalker(se_npc) and se_npc:alive() and not npc_deck.has_profile then
 			Printer:Debug(LOG.RUN, CAT.CONF,"creating new profile for npc %s %s %s", npc_id, se_npc:name(), se_npc:character_name())
 			npcd.create_profile(npc_id)
+			npcd.get_npc_data(npc_id) -- initialize npc data for MCM
 		end
 	end
 	ResetTimeEvent("npcd_manager", "npcs_profiler", 60)
@@ -594,24 +595,43 @@ end
 --------------- NPCD STATE MGMT
 
 function save_state(m_data)
-	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck Save State")
+	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck State - Saving")
     if not m_data.npcd then
         m_data.npcd = {}
     end 
     -- save the state
+
+	-- npcs decks
     m_data.npcd.npcs = npcd.get_deck()
+	-- npcs stats
+	m_data.npcd.stats = npcd.get_stats()
+	-- npcs data for MCM
+	m_data.npcd.data = npcd.get_data()
+
+	
+
 	Printer:LogTable("NPCDeck", m_data.npcd.npcs)
+	Printer:LogTable("NPCStats", m_data.npcd.stats)
+	Printer:LogTable("NPCs MCM Data", m_data.npcd.data)
 end
 
 function load_state(m_data)
 	if not Printer then
 		get_printer()
 	end
-	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck Load State")
+	Printer:Log(LOG.ADD, CAT.CONF,"NPCDeck State - Loading")
 	if m_data.npcd and m_data.npcd.npcs then
         -- cache the state
         npcd.set_deck(m_data.npcd.npcs)
 		Printer:LogTable("NPCDeck", npcd.get_deck())
+	end
+	if m_data.npcd and m_data.npcd.stats then
+		npcd.set_stats(m_data.npcd.stats)
+		Printer:LogTable("NPCStats", npcd.get_stats())
+	end
+	if m_data.npcd and m_data.npcd.data then
+		npcd.set_data(m_data.npcd.data)
+		Printer:LogTable("NPCs MCM Data", npcd.get_data())
 	end
 	SendScriptCallback("npcd_on_loaded_state")
 end

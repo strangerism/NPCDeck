@@ -501,46 +501,103 @@ function set_ability(npc_id, ability)
     npcs[npc_id].Ability[ability.id] = ability
 end
 
+-- NPCS STATS
+
 NPCD_STATS = {
 	PERK = "Perk",
 	NPCS = "Npcs",
 	ACTOR = "Actor"
 }
 
-Stats = {}
-Stats["Perk"] = {}
-Stats["Npcs"] = {}
-Stats["Actor"] = {}
+local stats = {}
+stats["Perk"] = {}
+stats["Npcs"] = {}
+stats["Actor"] = {}
+
+function get_stats()
+	return stats
+end
+
+function set_stats(s)
+	stats = s
+end
 
 function set_stat(stat_type, key, stat)
-	Stats[stat_type][key] = stat
+	stats[stat_type][key] = stat
 end
 
 function get_stat(stat_type, key)
-	return Stats[stat_type][key]
+	return stats[stat_type][key]
 end
 
 function set_discovered(perk_id)
-	if Stats.Perk[perk_id] and Stats.Perk[perk_id].discovered then return false end
-	if not Stats.Perk[perk_id] then
-		Stats.Perk[perk_id] = {}
+	if stats.Perk[perk_id] and stats.Perk[perk_id].discovered then return false end
+	if not stats.Perk[perk_id] then
+		stats.Perk[perk_id] = {}
 	end
-	Stats.Perk[perk_id]["discovered"] = true
+	stats.Perk[perk_id]["discovered"] = true
 	return true
 end
 
 function set_favorite(npc_id, favorite)
 	if not npcs[npc_id] then return end
-	if not Stats.Npcs[npc_id] then
-		Stats.Npcs[npc_id] = {}
+	if not stats.Npcs[npc_id] then
+		stats.Npcs[npc_id] = {}
 	end
 
-	Stats.Npcs[npc_id]["favorite"] = favorite
+	stats.Npcs[npc_id]["favorite"] = favorite
 end
 
 function get_favorite(npc_id)
-	return Stats.Npcs[npc_id] and Stats.Npcs[npc_id]["favorite"] or false
+	return stats.Npcs[npc_id] and stats.Npcs[npc_id]["favorite"] or false
 end
+
+-- NPCS DATA for MCM
+
+local data = {}
+function get_npc_data(id)
+	Printer:Log(LOG.RUN, CAT.CONF,"getting npc %s data", id)
+	if not id then return nil end
+    local npc = npcdu.get_npc_obj(id) -- or alife_object(id)
+    if npc and IsStalker(npc) then
+        local npc_data = {}
+        npc_data.id = id
+        npc_data.name = npc:character_name()
+        npc_data.community = character_community(npc)
+        npc_data.rank_name = ranks.get_obj_rank_name(npc)
+        npc_data.rank = npcdu.get_npc_rank(npc)
+        npc_data.reputation = npcdu.get_npc_reputation(npc)
+        local squad = get_object_squad(npc)
+        npc_data.squad_id = squad and squad.id or nil
+        npc_data.squad_commander = squad and squad:commander_id() == npc.id or false
+        npc_data.standings = {
+            attitude = npc:general_goodwill(db.actor),
+            relation = npc:relation(db.actor),
+            goodwill_personal = npc:goodwill(db.actor),
+            goodwill_actor_faction = relation_registry.community_goodwill(character_community(npc), db.actor:id()),
+            goodwill_rank = game_relations.get_rank_relation(npc, db.actor),
+            goodwill_reputation = game_relations.get_reputation_relation(npc, db.actor),
+            goodwill_communities = relation_registry.community_relation(character_community(npc), character_community(db.actor)),
+            sympathy = npc:sympathy(),
+        }
+		Printer:DebugTable("NPCS Data cache update", npc_data)
+        data[id] = npc_data
+        return data[id]
+    elseif data[id] then
+		Printer:DebugTable("NPCS Data cache returns", data[id])
+        return data[id]
+    end
+    return nil
+end
+
+function get_data()
+    return data
+end
+
+function set_data(new_data)
+    data = new_data
+end
+
 
 function actor_on_first_update()
     printf("$[NPCD][Main] npcd actor_on_first_update")
