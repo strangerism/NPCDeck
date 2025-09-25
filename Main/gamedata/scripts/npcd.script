@@ -120,6 +120,7 @@ local function apply_module_perks_settings(module, module_perks)
 		if perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.stats then
+					-- updating feat stats from mcm settings
 					for i = 1, #feat.stats do
 						for key, _ in pairs(feat.stats[i]) do
 							local value = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.STATS, key, i)
@@ -127,6 +128,14 @@ local function apply_module_perks_settings(module, module_perks)
 							-- Printer:Log(LOG.INFO, CAT.CONF, "updated perk %s feat %s stat %s[%s] to %s", perk.id, feat.id, key, i, value)
 						end
 					end
+				end
+				if feat.activation_key then
+					-- updating feat activation input from mcm settings
+					feat.activation_key = {
+						keybind = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.KEY) or feat.activation_key.keybind,
+						modifier = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.MODIFIER) or feat.activation_key.modifier,
+						second_key = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.SECOND_KEY) or feat.activation_key.second_key,
+					}
 				end
 			end
 		end
@@ -556,7 +565,7 @@ end
 
 local data = {}
 function get_npc_data(id)
-	Printer:Log(LOG.RUN, CAT.CONF,"getting npc %s data", id)
+	-- Printer:Log(LOG.RUN, CAT.CONF,"getting npc %s data", id)
 	if not id then return nil end
     local npc = npcdu.get_npc_obj(id) -- or alife_object(id)
     if npc and IsStalker(npc) then
@@ -580,11 +589,11 @@ function get_npc_data(id)
             goodwill_communities = relation_registry.community_relation(character_community(npc), character_community(db.actor)),
             sympathy = npc:sympathy(),
         }
-		Printer:DebugTable("NPCS Data cache update", npc_data)
+		-- Printer:DebugTable("NPCS Data cache update", npc_data)
         data[id] = npc_data
         return data[id]
     elseif data[id] then
-		Printer:DebugTable("NPCS Data cache returns", data[id])
+		-- Printer:DebugTable("NPCS Data cache returns", data[id])
         return data[id]
     end
     return nil

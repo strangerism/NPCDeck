@@ -82,6 +82,7 @@ function get_feat_activation_input(npc_id, feat)
         activation_key = activation_key,
         activation_functor = feat.activation_functor
     }
+	-- npcdu.printlog_table("get_feat_activation_input", feat_activation_input)
     return feat_activation_input
 end
 
