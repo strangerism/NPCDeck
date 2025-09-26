@@ -181,7 +181,7 @@ end
 -- Vanilla relation functions
 
 function is_actor_not_enemy(actor, npc)
-	return txr_paid_companions.is_actor_natural(actor, npc) or dialogs_axr_companion.is_actor_friend(actor, npc)
+	return npc:relation(db.actor) == game_object.neutral or npc:relation(db.actor) == game_object.friend
 end
 
 --- Personal Goodwill Gains

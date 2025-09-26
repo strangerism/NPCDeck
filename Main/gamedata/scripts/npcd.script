@@ -570,7 +570,7 @@ function get_npc_data(id)
     local npc = npcdu.get_npc_obj(id) -- or alife_object(id)
     if npc and IsStalker(npc) then
         local npc_data = {}
-        npc_data.id = id
+        npc_data.id = npc:id()
         npc_data.name = npc:character_name()
         npc_data.community = character_community(npc)
         npc_data.rank_name = ranks.get_obj_rank_name(npc)
@@ -578,7 +578,7 @@ function get_npc_data(id)
         npc_data.reputation = npcdu.get_npc_reputation(npc)
         local squad = get_object_squad(npc)
         npc_data.squad_id = squad and squad.id or nil
-        npc_data.squad_commander = squad and squad:commander_id() == npc.id or false
+        npc_data.squad_commander = squad and squad:commander_id() == npc:id() or false
         npc_data.standings = {
             attitude = npc:general_goodwill(db.actor),
             relation = npc:relation(db.actor),

@@ -18,21 +18,22 @@ local function get_npc(npc_id, menu_type)
     -- printf("-[NPCD][MCM] get_npc %s menu_type %s", npc_id, menu_type)
     local npc_deck = npcd.get_npc(npc_id)
     if not npc_deck or not npc_deck.has_profile then return nil end
-    if is_not_friend(npc_id) then return nil end
     if menu_type == MENU_TYPE.SQUAD then
         return npcd_squad.is_actor_squad(npc_id) and npc_deck or nil
-    end
-    if menu_type == MENU_TYPE.ALL then
-        return npc_deck
-    end
-    if menu_type == MENU_TYPE.RECRUITABLE then
-        return npc_deck.Info.can_recruit and npc_deck or nil
     end
     if menu_type == MENU_TYPE.DEAD then
         return not npc_deck.alive and npc_deck or nil
     end
     if menu_type == MENU_TYPE.FAVORITE then
         return npcd.get_favorite(npc_id) and npc_deck or nil
+    end
+    -- the remaining categories, only show if friends
+    if is_not_friend(npc_id) then return nil end
+    if menu_type == MENU_TYPE.ALL then
+        return npc_deck
+    end
+    if menu_type == MENU_TYPE.RECRUITABLE then
+        return npc_deck.Info.can_recruit and npc_deck or nil
     end
 end
 
