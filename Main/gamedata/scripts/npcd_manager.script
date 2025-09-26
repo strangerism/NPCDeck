@@ -477,14 +477,12 @@ function npcd_recruit(npc_id, clone_id)
 end
 
 --- NPC DEATH Callback
-
+--- 
 function squad_on_npc_death(squad,se_npc)
 	Printer:Trace(LOG.RUN, CAT.NPC,"squad_on_npc_death")
-	local npc = npcdu.get_npc_obj(se_npc.id)
-	if not npc then return end
-	local npc_id = npc:id()
+	local npc_id = se_npc.id
 	if npcd.get_npc(npc_id) then
-		Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death npc %s name %s", npc_id, npc:name())
+		Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death npc %s name %s", npc_id, se_npc:name())
 		release_npc(npc_id)
 		Printer:Debug(LOG.REMOVE, CAT.NPC,"dead npc %s released", npc_id)
 		for id,actor_squad in pairs(axr_companions.companion_squads) do
@@ -498,6 +496,10 @@ end
 function npc_on_death(victim, who)
 	Printer:Debug(LOG.RUN, CAT.NPC,"npc_on_death victim %s killed by %s", victim and victim:name() or "nil", who and who:name() or "nil")
 	if not (victim and who) then
+		return
+	end
+	if who and who:id() == db.actor then
+		Printer:Debug(LOG.INFO, CAT.NPC, "Enemy %s killed by actor", victim:name())
 		return
 	end
 	if IsStalker(who) and npcd_squad.is_actor_squad(who:id()) then
