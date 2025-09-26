@@ -318,7 +318,8 @@ function update_actionbar()
     -- Get current squad
     if not npcd_squad.squad_available() then
         Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_actionbar_hud_update but no squad available")
-        SendScriptCallback("npcd_actionbar_hud_update")
+        -- SendScriptCallback("npcd_actionbar_hud_update")
+        npcd_actionbar_hud.show(false)
         return
     end
 

@@ -237,10 +237,20 @@ function UINPCDActionBar:ClearControls()
 	end
 end
 
-function npcd_actionbar_hud_update()
+local function npcd_actionbar_hud_update()
 	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "npcd_actionbar_hud_update")
 	deactivate_hud()
 	activate_hud()
+end
+
+function show(show)
+	if HUD then
+		if show then
+			npcd_actionbar_hud_update()
+		else
+			deactivate_hud()
+		end
+	end
 end
 
 HUD = nil
