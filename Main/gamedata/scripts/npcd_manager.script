@@ -59,6 +59,7 @@ end
 Tasks = {}
 
 local function remove_execution(id)
+	if not Tasks[id] then return end
 	Printer:Debug(LOG.STOP, CAT.EXEC,"remove execution %s", id)
 	RemoveTimeEvent("npcd_manager", id)
 	Tasks[id] = nil
@@ -80,12 +81,12 @@ local function add_poll_execution(npc_id, feat)
 end
 
 local function reset_execution(id, delay)
-	Printer:Debug(LOG.ADD, CAT.EXEC,"reset execution %s", id)
+	Printer:Trace(LOG.INFO, CAT.EXEC,"resetting execution %s", id)
 	ResetTimeEvent("npcd_manager", id, delay)
 end
 
 local function remove_npc_executions(npc_id)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"remove npc %s executions",npc_id)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"removing npc %s executions",npc_id)
 	for id, execution_info in pairs(Tasks) do
 		if execution_info.npc_id == npc_id then
 			remove_execution(id)
@@ -94,10 +95,10 @@ local function remove_npc_executions(npc_id)
 end
 
 local function resume_npc_ability_execution(npc_id, feat)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"resume npc %s ability %s execution", npc_id, feat.id)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"resuming npc %s ability %s execution", npc_id, feat.id)
 	if feat.type == FEAT_TYPE.ACTIVE then
 		if npcd.ability_registered(npc_id, feat.id) then
-			Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s restarts execution %s", npc_id, feat.id)
+			Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts execution for ability %s", npc_id, feat.id)
 			local npc_ability = npcd.get_ability(npc_id, feat.id)
 			if feat.mode == FEAT_MODE.MANUAL and (npc_ability.state == ABILITY_STATE.COOLDOWN or npc_ability.state == ABILITY_STATE.READING) then
 				add_cooldown_execution(npc_id, feat.id)
@@ -113,10 +114,10 @@ local function resume_npc_ability_execution(npc_id, feat)
 end
 
 function restart_npc_execution(npc_id)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"npc %s restarts abilities execution", npc_id)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"npc %s restarting abilities execution", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
-
+	if not npcd.has_abilities(npc_id) then return false end -- npc has no abilities
 	Printer:LogTable("Restart Abilities - NPC perks:", npc_deck)
 	for _, npc_perk in pairs(npc_deck.Perk) do
 		Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts abilities for perk %s", npc_id, npc_perk.id)
@@ -139,7 +140,7 @@ local function restart_squad_executions()
 end
 
 local function start_npcd_execution()
-	Printer:Debug(LOG.RUN, CAT.EXEC,"start_npcd_execution")
+	Printer:Debug(LOG.RUN, CAT.EXEC,"starting npcd execution")
 	-- start the npcd sim tasks
 	CreateTimeEvent("npcd_manager", "npcs_sweaper", 3, npcs_sweaper)
 	CreateTimeEvent("npcd_manager", "npcs_profiler", 5, npcs_profiler)
@@ -160,13 +161,13 @@ local function teardown_npcd_execution()
 end
 
 function npcs_sweaper()
-	Printer:Log(LOG.RUN, CAT.CONF,"npcs sweaper")
+	Printer:Log(LOG.RUN, CAT.CONF,"running npcs sweaper")
 	local npcs_list = npcd.get_npcs_id_list()
 	for i = 1, #npcs_list do
 		local npc_id = npcs_list[i]
 		local se_npc = alife_object(npc_id)
 		if not se_npc then
-			Printer:Debug(LOG.REMOVE, CAT.CONF,"removing stale npc %s data", npc_id)
+			Printer:Debug(LOG.REMOVE, CAT.CONF,"remove stale npc %s data", npc_id)
 			local npc_deck = npcd.get_npc(npc_id)
 			if npc_deck.show_profile then
 				npcd.remove_npc(npc_id)
@@ -179,7 +180,7 @@ function npcs_sweaper()
 end
 
 function npcs_profiler()
-	Printer:Log(LOG.RUN, CAT.CONF,"npcs profiler")
+	Printer:Log(LOG.RUN, CAT.CONF,"running npcs profiler")
 	local npcs_list = npcd.get_npcs_id_list()
 	-- Printer:LogTable("NPCS list", npcs_list)
 	for i = 1, #npcs_list do
@@ -198,7 +199,7 @@ end
 
 
 function npcs_updater()
-	Printer:Log(LOG.RUN, CAT.CONF,"npcs npcs_updater")
+	Printer:Log(LOG.RUN, CAT.CONF,"running npcs updater")
 	local npcs_list = npcd.get_npcs_id_list()
 	-- Printer:LogTable("NPCS list", npcs_list)
 	for i = 1, #npcs_list do
@@ -220,7 +221,7 @@ end
 
 -- called by NPCD Manager custom time events
 function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
-	Printer:Trace(LOG.RUN, CAT.FEAT,"npc %s manage ability cooldown %s", npc_id, feat_id)
+	Printer:Trace(LOG.RUN, CAT.FEAT,"managing npc %s ability cooldown %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then
 		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
@@ -266,7 +267,7 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 end
 
 local function activate_ability(npc_id, feat_id)
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"npc %s tries to activate ability %s", npc_id, feat_id)
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end  -- npc died?
 
@@ -284,19 +285,17 @@ local function activate_ability(npc_id, feat_id)
 	return true
 end
 
-local function poll_ability(npc_id, feat_id)
-	Printer:Trace(LOG.RUN, CAT.ACTIV,"npc %s polling ability cooldown %s", npc_id, feat_id)
+local function actionable_ability(npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end  -- npc died?
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return false end -- ability unregistered?
-
-	Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s cheking ability cooldown %s", npc_id, feat_id)
 	if (npc_ability.state == ABILITY_STATE.COOLDOWN) then 
 		Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
 		return false
 	else
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_id)
 		return true
 	end
 end
@@ -304,10 +303,10 @@ end
 -- TODO add all cooldown timers to a table by cooldown id
 -- called by NPCD Manager custom time events
 function poll(polling_input)
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"npc %s polls ability %s", polling_input.npc_id, polling_input.feat_id)
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"polling npc %s ability %s", polling_input.npc_id, polling_input.feat_id)
 	
 	-- first poll ability is not on cooldown
-	if poll_ability(polling_input.npc_id, polling_input.feat_id) then
+	if actionable_ability(polling_input.npc_id, polling_input.feat_id) then
 		-- execute ability
 		local activated = execute(polling_input.npc_id, polling_input.activation_functor)
 		-- activate ability cooldown
@@ -323,8 +322,8 @@ end
 
 -- called by NPCD Input Manager
 function activate(activation_input)
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"input manager activates npc %s ability %s",activation_input.npc_id, activation_input.feat_id)
-	if poll_ability(activation_input.npc_id, activation_input.feat_id) then
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s",activation_input.npc_id, activation_input.feat_id)
+	if actionable_ability(activation_input.npc_id, activation_input.feat_id) then
 		-- execute ability
 		local activated = execute(activation_input.npc_id, activation_input.activation_functor)
 		-- activate ability cooldown
@@ -335,7 +334,7 @@ function activate(activation_input)
 end
 
 local function bind_ability(npc_id, feat)
-	Printer:Debug(LOG.ADD,CAT.NPC, "npc %s bind ability %s", npc_id, feat.id)
+	Printer:Debug(LOG.RUN,CAT.ACTIV, "binding npc %s ability %s", npc_id, feat.id)
 	if feat.mode == FEAT_MODE.MANUAL then
 		npcd_actionbar.add_action_slot(npc_id, feat.id)
 	end
@@ -350,7 +349,7 @@ local function bind_ability(npc_id, feat)
 end
 
 local function unbind_ability(npc_id, feat)
-	Printer:Debug(LOG.REMOVE,CAT.NPC, "npc %s unbind ability %s", npc_id,  feat.id)
+	Printer:Debug(LOG.RUN,CAT.ACTIV, "unbinding npc %s ability %s", npc_id,  feat.id)
 	if feat.mode == FEAT_MODE.MANUAL then
 		npcd_actionbar.remove_action_slot(npc_id, feat.id)
 	end
@@ -382,26 +381,25 @@ local function release_npc(npc_id)
 	if npc_deck.show_profile then
 		npcd.remove_npc(npc_id)
 	else
-		Printer:Log(LOG.RUN, CAT.NPC, "purging npc %s", npc_id)
+		Printer:Log(LOG.RUN, CAT.CONF, "purging npc %s", npc_id)
 		npcd.purge_npc(npc_id)
 	end
 end
 
 local function register_abilities(npc_id)
-	Printer:Debug(LOG.RUN, CAT.NPC,"npc %s register abilities", npc_id)
+	Printer:Debug(LOG.RUN, CAT.CONF,"registering npc %s abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	Printer:LogTable("Register Abilities - NPC perks:", npc_deck)
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
-		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s registers abilities for perk %s", npc_id, npc_perk.id)
+		Printer:Debug(LOG.INFO, CAT.CONF,"npc %s registers abilities for perk %s", npc_id, npc_perk.id)
 		local perk = npcd.get_perk(npc_perk.id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
 					if npc_can_register(npc_id, feat) then
-						Printer:Debug(LOG.ADD, CAT.NPC,"npc %s adds ability %s", npc_id, feat.id)
 						if not npcd.ability_registered(npc_id, feat.id) then
 							npcd.add_ability(npc_id, feat)
 							bind_ability(npc_id, feat)
@@ -409,7 +407,6 @@ local function register_abilities(npc_id)
 							npcd.update_ability(npc_id, feat)
 						end
 					else
-						Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
 						npcd.remove_ability(npc_id, feat.id)
 						unbind_ability(npc_id, feat)
 					end
@@ -422,17 +419,17 @@ local function register_abilities(npc_id)
 end
 
 local function unregister_abilities(npc_id)
-    Printer:Debug(LOG.RUN, CAT.NPC,"npc %s unregister abilities", npc_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"unregistering npc %s abilities", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
-		Printer:Debug(LOG.INFO, CAT.NPC,"npc %s unregister abilities for perk %s", npc_id, npc_perk.id)
+		Printer:Debug(LOG.INFO, CAT.CONF,"npc %s unregister abilities for perk %s", npc_id, npc_perk.id)
 		local perk = npcd.get_perk(npc_perk.id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
-					Printer:Debug(LOG.REMOVE, CAT.NPC,"npc %s removes ability %s", npc_id, feat.id)
+					Printer:Debug(LOG.REMOVE, CAT.CONF,"npc %s removes ability %s", npc_id, feat.id)
 					npcd.remove_ability(npc_id, feat.id)
 					unbind_ability(npc_id, feat)
 				end
@@ -457,7 +454,7 @@ local function recruit_npc(npc_id, clone_id)
 	if clone_id then
 		-- npc recruited through Individually recruitable companions mod dialogs (free, paid)
 		if npcd.get_npc(npc_id) then
-			Printer:Log(LOG.ADD, CAT.CONF, "recruiting npc %s through clone %s", npc_id, clone_id)			
+			Printer:Log(LOG.ADD, CAT.NPC, "recruit npc %s through clone %s", npc_id, clone_id)			
 			-- npc profile already exists, remap to the clone id
 			if npcd.remap_npc(npc_id, clone_id) then
 				npcd.set_recruited(clone_id, true)
@@ -466,7 +463,7 @@ local function recruit_npc(npc_id, clone_id)
 				Printer:Log(LOG.ERROR, CAT.NPC, "cannot remap npc %s to new id %s", npc_id, clone_id)
 			end
 		else
-			Printer:Log(LOG.WARN, CAT.NPC, "recruiting through clone where only the clone %s exists", clone_id)
+			Printer:Log(LOG.WARN, CAT.NPC, "recruit through clone where only the clone %s exists", clone_id)
 			npcd.set_recruited(clone_id, true)
 		end
 	else

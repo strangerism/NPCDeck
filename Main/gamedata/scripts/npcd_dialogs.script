@@ -64,7 +64,7 @@ function is_favorite(actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
 		local favorite = npcd.get_favorite(npc:id())
-		Printer:Debug(LOG.RUN, CAT.NPC,"is npc %s favorite %s", npc:id(), favorite)
+		Printer:Debug(LOG.INFO, CAT.NPC,"is npc %s favorite %s", npc:id(), favorite)
 		return favorite
 	end
 end
@@ -78,7 +78,7 @@ end
 function set_favorite(actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
-		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s favorite", npc:id())
+		Printer:Debug(LOG.INFO, CAT.NPC,"set npc %s favorite", npc:id())
 		npcd.set_favorite(npc:id(), true)
 	end
 end
@@ -86,13 +86,13 @@ end
 function set_unfavorite(actor, npc)
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
-		Printer:Debug(LOG.RUN, CAT.NPC,"set npc %s unfavorite", npc:id())
+		Printer:Debug(LOG.INFO, CAT.NPC,"set npc %s unfavorite", npc:id())
 		npcd.set_favorite(npc:id(), false)
 	end
 end
 
 function dialog_update_npc_info(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"update npc info")
+	Printer:Debug(LOG.RUN, CAT.NPC,"updating npc info")
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
 		npcd.set_show_profile(npc:id(), true)
@@ -142,11 +142,11 @@ function get_dialog_get_squad_info(actor, npc)
 		local squad = get_object_squad(npc)
 		if squad then
 			local section = squad:section_name()
-			Printer:Debug(LOG.RUN, CAT.NPC,"squad %s", section)
+			Printer:Debug(LOG.INFO, CAT.NPC,"squad %s", section)
 			local rank = string.match(section, "[^_]+$")
 			local size = utils_obj.get_squad_count(npc)
-			Printer:Debug(LOG.RUN, CAT.NPC,"rank %s", rank)
-			Printer:Debug(LOG.RUN, CAT.NPC,"size %s", size)
+			Printer:Debug(LOG.INFO, CAT.NPC,"rank %s", rank)
+			Printer:Debug(LOG.INFO, CAT.NPC,"size %s", size)
 			local squad_info_dialog = string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank, npcd_relations.is_squad_recruitable(actor,npc), npcd_relations.is_squad_hireable(actor,npc))
 			squad_info_dialog = squad_info_dialog .. "\\n \\n" .. ( npcd_relations.is_squad_hireable(actor,npc) and game.translate_string("st_npcd_npc_dialogs_squad_hireable", true) or game.translate_string("st_npcd_npc_dialogs_squad_recruitable", true) )
 			return squad_info_dialog
@@ -203,11 +203,11 @@ local function update_discovered(perk)
 end
 
 function dialog_get_npc_profile(actor, npc)
-	Printer:Debug(LOG.RUN, CAT.NPC,"get npc profile")
+	Printer:Debug(LOG.RUN, CAT.NPC,"getting npc profile")
 	local npc = dialogs.who_is_npc(actor, npc)
 	if npc and npc:alive() then
 		local npc_id = npc:id()
-		Printer:Log(LOG.RUN, CAT.CONF,"npc %s get profile", npc_id)
+		Printer:Log(LOG.INFO, CAT.CONF,"npc %s get profile", npc_id)
 		local id = math.random(5)
 		local profile_dialog = game.translate_string("st_npcd_npc_dialogs_background_response" .. id, true) .. "\\n \\n" 
 		local npc_perks = npcd.get_npc_perks(npc_id)

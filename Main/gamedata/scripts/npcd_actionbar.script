@@ -110,7 +110,7 @@ function bind_action_slot(npc_id, feat_id)
 end
 
 function add_npc_abilities_to_actionbar(npc_id)
-    Printer:Debug(LOG.RUN, CAT.CONF,"add npc %s abilities to actionbar", npc_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"adding npc %s abilities to actionbar", npc_id)
     local npc_abilities = npcd.get_abilities(npc_id)
     if npc_abilities then
         for id, ability in pairs(npc_abilities) do
@@ -158,7 +158,7 @@ function remove_npc_abilities_from_actionbar(npc_id)
 end
 
 function get_actionbar_slots_list()
-    Printer:Debug(LOG.RUN, CAT.CONF,"get actionbar slots list")
+    Printer:Debug(LOG.RUN, CAT.CONF,"getting actionbar slots list")
     -- Printer:LogTable("Actionbar", actionbar.by_index)
     local action_slots_list = {}
     local action_bar_slots = MAX_SLOTS
@@ -202,7 +202,7 @@ function get_actionbar_slots_list()
 end
 
 function remove_action_slot(npc_id, feat_id)
-    Printer:Debug(LOG.RUN, CAT.CONF,"npc %s remove ability %s action slot", npc_id, feat_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"removing npc %s ability %s action slot", npc_id, feat_id)
     local key = get_actionslot_key(npc_id, feat_id)
     local slot = actionbar.by_key[key]
     

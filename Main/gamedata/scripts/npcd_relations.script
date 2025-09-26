@@ -343,7 +343,7 @@ end
 
 -- actor must be in the friend zone with npc to use this api in dialogs
 function is_npc_available(actor,npc)
-	Printer:Trace(LOG.RUN, CAT.NPC,"is_npc_available")
+	Printer:Trace(LOG.RUN, CAT.NPC,"checking is_npc_available")
 	local npc = dialogs.who_is_npc(actor,npc)
 	if not npc then return false end
 	local npc_id = npc:id()

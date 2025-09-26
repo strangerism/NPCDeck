@@ -40,7 +40,7 @@ function clear_actionbar_slot(slot_hud, state)
 end
 
 function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, index, mode)
-	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"add ability %s to actionbar slot %s", ability.id, index)
+	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"adding ability %s to actionbar slot %s", ability.id, index)
 	clear_actionbar_slot(slot_hud, ability.state)
 	slot_hud.ability = {}
 

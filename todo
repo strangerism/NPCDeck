@@ -34,10 +34,9 @@ stuff to do
 - remove old input management
 - add mcm always_register?
 - check correct usage of objects_id instead of passing objects
-- module_mcm must update npdc.perk from mcm settings changes (keybind, stats,etc)
+- module_mcm must update npdc.perk from mcm settings changes (keybind, stats done - anything else?)
 - implement enable NPCD
 - implements enable/uninstall modules
-- add generation of perks stats in mcm menu
 - add npc stats (power, recovery)
 - add active feat to use npc power
 - add power consumption to feat stat
@@ -47,10 +46,9 @@ stuff to do
 - add MODAL to feat type
 - add npcd logging to mp patcher script
 - refactor logging boot sequence using the game_play_start event in npcd_manager
-- refactor npcd_actionbar hud into separate file
 - refactor npcd_actionbar to be standalone and pluggable
 - refactor npcd_logging to be standalone and pluggable
-- refactor npcd_hud to decouple it from axr_companion hud
+
 addons to look
 
 function for locating npc and to be used in lastseen
@@ -88,5 +86,3 @@ end
 
 
 bugs
-
-- when zoning action on bar is activated and hud cooldown

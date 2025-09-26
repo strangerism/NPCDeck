@@ -201,7 +201,7 @@ end
 
 function remap_npc(npc_id, new_id)
 	if not npc_id or not npcs[npc_id] then return false end
-	Printer:Log(LOG.RUN, CAT.CONF,"npc %s remapped to %s", npc_id, new_id)
+	Printer:Log(LOG.ADD, CAT.CONF,"npc %s remapped to %s", npc_id, new_id)
 	npcs[new_id] = npcs[npc_id]
 	npcs[new_id].id = new_id
 	-- delete old npcs
@@ -328,20 +328,17 @@ end
 
 -- returns true of the perk is rolled
 function roll_npc_perk(npc_id, perk_id)
-	Printer:Log(LOG.RUN, CAT.CONF,"npc %s rolls perk", npc_id)
+	Printer:Log(LOG.RUN, CAT.CONF,"rolling npc %s perk", npc_id)
 	if not npc_id or not perk_id or not perks[perk_id] then return end
 	Printer:Log(LOG.INFO, CAT.CONF,"perk %s is available", perk_id)
 	local perk = perks[perk_id]
-	if npcs[npc_id].Perk[perk.id] then return end
-	Printer:Log(LOG.INFO, CAT.CONF,"npc %s never rolled this perk", npc_id)
+	if npcs[npc_id].Perk[perk.id] then return end -- already has this perk
 	if roll_perk(npc_id, perk.roll_functor) then
 		npcs[npc_id].Perk[perk.id] = {}
 		npcs[npc_id].Perk[perk.id]["id"]  = perk.id
-		-- npcs[npc_id].Perk[perk.id].rank  = 0
-		-- local npc = npcdu.get_npc_obj(npc_id)
-		-- npcdu.print_tip(perk.roll_desc, 10000, npc:character_name(), npcdu.get_feat_rank_desc(npc_id, perk_id))
 		return true
 	end
+	return false
 end
 
 function get_perks_id_list()
@@ -474,8 +471,11 @@ function update_ability(npc_id, feat)
 end
 
 function remove_ability(npc_id, feat_id)
-	if not npcs[npc_id] then return end
+	if not npcs[npc_id] then return false end
+	if not npcs[npc_id].Ability[feat_id] then return false end
+	Printer:Log(LOG.REMOVE, CAT.CONF,"npc %s removes ability %s", npc_id, feat_id)
 	npcs[npc_id].Ability[feat_id] = nil
+	return true
 end
 
 function has_abilities(npc_id)
