@@ -313,8 +313,8 @@ end
 --     end
 -- end
 
-function reset_actionbar()
-    Printer:Debug(LOG.RUN, CAT.UI_ACTION, "reset actionbar")
+function update_actionbar()
+    Printer:Debug(LOG.RUN, CAT.UI_ACTION, "updating actionbar")
     -- Get current squad
     if not npcd_squad.squad_available() then
         Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_actionbar_hud_update but no squad available")
@@ -322,11 +322,11 @@ function reset_actionbar()
         return
     end
 
+    -- Reset actionbar
     clear_actionbar()
-    local squad_size = npcd_squad.squad_get_size()
-    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", squad_size)
-    
-    -- Process each squad member
+
+    -- Build actionbar from squad npcs
+    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", npcd_squad.squad_get_size())
     local slot_index = 1
     local clist = npcd_squad.squad_get_clist()
     for i=1, #clist do
@@ -339,22 +339,17 @@ function reset_actionbar()
         end
     end
     
-    refresh_actionbar()
-    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Action bar reset complete with %s slots filled", slot_index - 1)
-    -- Printer:LogTable("Reset Actionbar", actionbar.by_index)
-end
-
-function refresh_actionbar()
-    Printer:Debug(LOG.RUN, CAT.UI_ACTION, "refresh actionbar")
-
-    -- update actionbar mcm slots with new the actionbar data
+    -- update action slots mcm menu settings with the new actionbar
     npcd_actionbar_mcm.update_mcm_menu()
-    
-    -- update actionar from mcm
+
+    -- update actionbar slots bindings from the updated mcm settings
     bind_actionbar_slots()
 
     -- refresh hud
     SendScriptCallback("npcd_actionbar_hud_update")
+
+    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Action bar update complete with %s slots filled", slot_index - 1)
+    -- Printer:LogTable("Reset Actionbar", actionbar.by_index)
 end
 
 -- if AddScriptCallback then
@@ -373,7 +368,7 @@ function on_option_change()
 	settings.show_empty = npcd_mcm.get_setting("actionbar", "main/show_empty")
 	settings.offset_x = npcd_mcm.get_setting("actionbar", "main/offset_x")
 	settings.offset_y = npcd_mcm.get_setting("actionbar", "main/offset_y")
-    reset_actionbar()
+    update_actionbar()
 end
 
 function on_npcd_started()

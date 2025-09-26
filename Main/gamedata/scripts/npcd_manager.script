@@ -364,13 +364,6 @@ local function unbind_ability(npc_id, feat)
 
 end
 
---------------- ACTIONBAR UPDATES
-
-local function update_actionbar()
-	Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Manager update actionbar")
-	npcd_actionbar.reset_actionbar()
-end
-
 --------------- NPCs
 ---
 
@@ -528,7 +521,7 @@ function npcd_squad_abilities_registration()
 		end
 	end
 
-	update_actionbar()
+	npcd_actionbar.update_actionbar()
 	return true
 end
 
@@ -689,7 +682,6 @@ function actor_on_first_update()
 end
 
 function on_option_change()
-	-- update_actionbar()
 end
 
 ---- BOOT
