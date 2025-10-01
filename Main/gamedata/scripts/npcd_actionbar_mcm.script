@@ -242,6 +242,11 @@ function UIActionbarControl:InitControls()
         self.scroll:AddWindow(_st, true)
         _st:SetAutoDelete(true)
     end
+    if #commands > 0 then
+        local footer = xml:InitStatic("ctrl_lighting:cap_main",self.dialog)
+        footer:SetWndPos( vector2():set( footer:GetWndPos().x, 30 + (#commands + 1) * 30 ) )
+        footer:TextControl():SetText(game.translate_string("ui_mcm_npcd_actionbar_adjust_position_preview"))
+    end
 end
 
 function UIActionbarControl:Callback_Track(i, val)
@@ -277,7 +282,9 @@ function UIActionbarControl:OnKeyboard(dik, keyboard_action)
             if dik == DIK_keys.DIK_ESCAPE then
                 self:Close()
             end
-
+            if dik == DIK_keys.DIK_SPACE then
+                self:PreviewHud()
+            end
         end
     end
 
@@ -292,4 +299,17 @@ function UIActionbarControl:Close()
     DelayDisableControlMode()
     GUI = nil
 	-- ui_mcm.open_to("npcd/actionbar/main")
+end
+
+function UIActionbarControl:PreviewHud()
+    self:HideDialog()
+    self:Show(false)
+
+    Unregister_UI("UIActionbarControl")
+    DelayDisableControlMode()
+    GUI = nil
+	CreateTimeEvent("npcd_actionbar_mcm", "ReopenControlMode", 2, function()
+        start()
+        return true
+    end)
 end
