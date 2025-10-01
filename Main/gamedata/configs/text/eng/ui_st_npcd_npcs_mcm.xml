@@ -2,7 +2,7 @@
 
 <string_table>
 	<string id="ui_mcm_menu_npcs">
-		<text>NPCS</text>
+		<text>NPCD NPCS</text>
 	</string>		
 	<string id="ui_mcm_menu_npcd_npcs_squad">
 		<text>Squad</text>
@@ -18,6 +18,9 @@
 	</string>
 	<string id="ui_mcm_menu_npcd_npcs_favorite">
 		<text>Favorite</text>
+	</string>	
+	<string id="ui_mcm_npcd_npcs_unfavorite">
+		<text>Unfavorite</text>
 	</string>	
 	<string id="ui_mcm_st_npcd_npcs_empty_list">
 		<text>No NPCs found</text>

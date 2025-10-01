@@ -37,6 +37,19 @@ local function get_npc(npc_id, menu_type)
     end
 end
 
+local function unfavorite(npc_id, path, self)
+    printf("-[NPCD][MCM] unfavorite npc %s path %s", npc_id, path)
+    -- local UI_MCM = ui_mcm.get_gui()
+    -- if UI_MCM then
+    --     npcd.set_favorite(npc_id, false)
+    --     printf("-[NPCD][MCM] closing MCM")
+    npcd.set_favorite(npc_id, false)
+    self:On_Cancel()
+    exec_console_cmd("main_menu off")
+    CreateTimeEvent("open_mcm", path, 0.1, function() ui_mcm.open_to(path, "npcd") return true end)
+    -- end
+end
+
 local function get_npcs_menu(menu_type)
     -- printf("-[NPCD][MCM] get_npcs_menu " .. menu_type)
     local npcs_menu = {}
@@ -54,7 +67,11 @@ local function get_npcs_menu(menu_type)
                 -- printf("-[NPCD][MCM] %s adding npcs %s menu", i, npc_deck.id)
                 local npc_menu = {id = npc_deck.id, text= npc_data.name, sh=true, gr={}}
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_name", type = "slide", link = "ui_options_slider_player", text = npc_data.name, size = {512,50}, spacing = 5})
-
+                local npc_id = npc_deck.id
+                local path = "npcs/" .. menu_type .. "/" .. npc_deck.id
+                printf("-[NPCD][MCM] adding npcs %s menu path %s", npc_deck.id, path)
+                -- unfavorite button
+                table.insert(npc_menu.gr, { id = npc_deck.id .. "_unfavorite_button", type = "button", functor_ui = {unfavorite, npc_id, path}, precondition = {npcd.get_favorite, npc_id} , hint = "npcd_npcs_unfavorite"})
                 -- info
                 -- printf("-[NPCD][MCM] adding npcs %s menu info", npc_deck.id)
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_info", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_info")})
