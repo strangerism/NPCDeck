@@ -29,6 +29,12 @@
 	<string id="ui_mcm_npcd_actionbar_main_show_empty_desc">
 		<text>Shows the full bar with any empty slot</text>
 	</string>
+	<string id="ui_mcm_npcd_actionbar_main_show_always">
+		<text>Show Always</text>
+	</string>	
+	<string id="ui_mcm_npcd_actionbar_main_show_always_desc">
+		<text>Always show the bar, even with no squad</text>
+	</string>	
 	<string id="ui_mcm_npcd_actionbar_main_offset_x">
 		<text>Orizontal Offset</text>
 	</string>

@@ -29,9 +29,10 @@ function get_actionbar_menu()
         { id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_actionbar_main_desc" },
 		{ id = "max_slots", type = "input", val = 2, def = 8, min = 1, max = npcd_actionbar.MAX_SLOTS},
 		{ id = "show_empty", type = "check", val = 1, def = true },
+        { id = "show_always", type = "check", val = 1, def = false },
 		{ id = "divider", type = "line" },
-		{ id = "offset_x", type = "track", val = 2, step = 1, def = 180, max = 1024, min = 0 },
-		{ id = "offset_y", type = "track", val = 2, step = 1, def = 720, max = 768, min = 0 },        
+		{ id = "offset_x", type = "input", val = 2, def = 180, max = 1024, min = 0 },
+		{ id = "offset_y", type = "input", val = 2, def = 720, max = 768, min = 0 },
 		{ id = "divider", type = "line" },
 		{ id = "adjust_position", type = "button", functor_ui = {start_ui}, precondition = {level_present}},
     }

@@ -316,7 +316,7 @@ end
 function update_actionbar()
     Printer:Debug(LOG.RUN, CAT.UI_ACTION, "updating actionbar")
     -- Get current squad
-    if not npcd_squad.squad_available() then
+    if not npcd_squad.squad_available() and not settings.show_always then
         Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_actionbar_hud_update but no squad available")
         -- SendScriptCallback("npcd_actionbar_hud_update")
         npcd_actionbar_hud.show(false)
@@ -367,6 +367,7 @@ settings = {
 function on_option_change()
 	settings.max_slots = npcd_mcm.get_setting("actionbar", "main/max_slots")
 	settings.show_empty = npcd_mcm.get_setting("actionbar", "main/show_empty")
+    settings.show_always = npcd_mcm.get_setting("actionbar", "main/show_always")
 	settings.offset_x = npcd_mcm.get_setting("actionbar", "main/offset_x")
 	settings.offset_y = npcd_mcm.get_setting("actionbar", "main/offset_y")
     update_actionbar()
