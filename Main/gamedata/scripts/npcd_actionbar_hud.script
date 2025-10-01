@@ -167,10 +167,33 @@ function UINPCDActionBar:InitControls()
 	end
 end
 
+function UINPCDActionBar:SetTestMode(test_mode)
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "UINPCDActionBar:SetTestMode %s", tostring(test_mode))
+	self.test_mode = test_mode
+end
+
 function UINPCDActionBar:Update(force)
-	-- Printer:Trace(LOG.RUN, CAT.UI_ACTION, "UINPCDActionBar:Update")
+	Printer:Debug(LOG.RUN, CAT.UI_ACTION, "UINPCDActionBar:Update")
 	CUIScriptWnd.Update(self)
-	
+    if self.test_mode then
+		-- self:ClearControls()
+		self.dialog:SetWndPos( vector2():set( npcd_actionbar.settings.offset_x or 20, npcd_actionbar.settings.offset_y or 30) )
+		local actionbar_slots = npcd_actionbar.count_slots()
+		for i=1, actionbar_slots.available do
+			-- init NPCD actionbar's slots	
+			self.slot[i]                   = {}
+			self.slot[i].base              = self.xml:InitStatic("action_bar:slot", self.dialog)
+			local x = (i-1)*(self.W + self.offset) * 1
+			self.slot[i].base:SetWndPos( vector2():set( 0+x , 0 ) )
+			self.slot[i].background        = self.xml:InitStatic("action_bar:slot:background", self.slot[i].base)
+			for _,ele in pairs(self.slot[i]) do
+				utils_xml.correct_ratio(ele)
+			end
+			self.slot[i].background:Show(true)
+			self.slot[i].base:Show(true)
+		end
+		return
+    end
 	local tg = time_global()
 	if force then
 		self._tmr = tg - 1

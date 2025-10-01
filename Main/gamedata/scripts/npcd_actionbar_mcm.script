@@ -10,6 +10,15 @@ function on_mcm_load()
 	return op, "npcd"
 end
 
+local function start_ui(self)
+    self:On_Cancel()
+    start()
+end
+
+local function level_present()
+    return level.present()
+end
+
 function get_actionbar_menu()
 	-- printf("/[NPCD][Main] get_actionbar_menu")
 	local actionbar_menu = {}
@@ -20,8 +29,11 @@ function get_actionbar_menu()
         { id = "desc", type = "desc", clr = {200, 200, 255, 200}, text = "ui_mcm_npcd_actionbar_main_desc" },
 		{ id = "max_slots", type = "input", val = 2, def = 8, min = 1, max = npcd_actionbar.MAX_SLOTS},
 		{ id = "show_empty", type = "check", val = 1, def = true },
+		{ id = "divider", type = "line" },
 		{ id = "offset_x", type = "track", val = 2, step = 1, def = 180, max = 1024, min = 0 },
-		{ id = "offset_y", type = "track", val = 2, step = 1, def = 720, max = 768, min = 0 },
+		{ id = "offset_y", type = "track", val = 2, step = 1, def = 720, max = 768, min = 0 },        
+		{ id = "divider", type = "line" },
+		{ id = "adjust_position", type = "button", functor_ui = {start_ui}, precondition = {level_present}},
     }
 
 	-- add main menu to actionbar menu
@@ -96,10 +108,10 @@ function update_mcm_menu()
 	-- npcdu.printlog_table("update_mcm_menu npcd op", op)
 	for i=1, #ui_mcm.options do
 		if ui_mcm.options[i].id == module then
-			printf("> menu %s ID %s", i, ui_mcm.options[i].id)
+			-- printf("> menu %s ID %s", i, ui_mcm.options[i].id)
 			for j=1, #ui_mcm.options[i].gr do
 				if ui_mcm.options[i].gr[j].id == "actionbar" then
-					printf("> submenu %s ID %s", j, ui_mcm.options[i].gr[j].id)
+					-- printf("> submenu %s ID %s", j, ui_mcm.options[i].gr[j].id)
 					ui_mcm.options[i].gr[j] = op
 				end
 			end
@@ -107,4 +119,176 @@ function update_mcm_menu()
 	end
 	ui_mcm.init_opt_coder()
 	-- npcdu.printlog_table("update_mcm_menu", ui_mcm.options)
+end
+
+local commands = {
+    -- { 
+    --     name = "ui_mcm_ui_popup_messages_apm_main_scaling",
+    --     get = function() return npcd_mcm.get_setting("actionbar", "main/scaling") end,
+    --     set = function(val) npcd_mcm.set_setting("actionbar", "main/scaling", val); update_option("scaling", val) end,
+    --     def = 1,
+    --     min = 1,
+    --     max = 4,
+    --     step = 1
+    -- },
+    {
+        name = "ui_mcm_npcd_actionbar_main_offset_x",
+        get = function() return npcd_mcm.get_setting("actionbar", "main/offset_x") end,
+        set = function(val) npcd_mcm.set_setting("actionbar", "main/offset_x", val); npcd_actionbar.settings.offset_x = val end,
+        def = 180,
+        min = 0,
+        max = 1024,
+        step = 1
+    },
+    { 
+        name = "ui_mcm_npcd_actionbar_main_offset_y",
+        get = function() return npcd_mcm.get_setting("actionbar", "main/offset_y") end,
+        set = function(val) npcd_mcm.set_setting("actionbar", "main/offset_y", val); npcd_actionbar.settings.offset_y = val end,
+        def = 720,
+        min = 0,
+        max = 768,
+        step = 1
+    },
+}
+
+-------------------------------------------------------------------
+GUI = nil -- instance, don't touch
+function start()
+    exec_console_cmd("main_menu off")
+
+    if (not GUI) then
+        GUI = UIActionbarControl()
+    end
+
+    if (GUI) and (not GUI:IsShown()) then
+        GUI:ShowDialog(true)
+        Register_UI("UIActionbarControl","npcd_actionbar_mcm")
+        npcd_actionbar_hud.activate_hud()
+		npcd_actionbar_hud.HUD:SetTestMode(true)
+        RemoveDelayDisableControlMode()
+    end
+end
+
+function DelayDisableControlMode()
+    CreateTimeEvent("npcd_actionbar_mcm", "DelayDisableControlMode", 2, function()
+        if npcd_actionbar_hud.HUD then
+            npcd_actionbar_hud.deactivate_hud()
+            npcd_actionbar.update_actionbar()
+        end
+        return true
+    end) 
+end
+
+function RemoveDelayDisableControlMode()
+    RemoveTimeEvent("npcd_actionbar_mcm", "DelayDisableControlMode")
+end
+
+-------------------------------------------------------------------
+class "UIActionbarControl" (CUIScriptWnd)
+
+function UIActionbarControl:__init() super()
+    self:InitControls()
+    RegisterScriptCallback("actor_on_net_destroy", self)
+end
+
+function UIActionbarControl:__finalize()
+    DelayDisableControlMode()
+end
+
+function UIActionbarControl:actor_on_net_destroy()
+    self:Close()
+    DelayDisableControlMode()
+    GUI = nil
+end
+
+function UIActionbarControl:InitControls()
+    self:SetWndRect         (Frect():set(0,0,1024,768))
+    self:SetAutoDelete(true)
+    
+    self.xml = CScriptXmlInit()
+    
+    local xml = self.xml
+    xml:ParseFile           ("ui_options.xml")
+    
+    self.dialog = xml:InitStatic("ctrl_lighting", self)
+    
+    xml:InitFrame("ctrl_lighting:frame", self.dialog)
+    local cap = xml:InitStatic("ctrl_lighting:cap_main",self.dialog)
+    cap:TextControl():SetText("Offsets")
+    self.scroll = xml:InitScrollView("ctrl_lighting:scroll", self.dialog)
+    self.scroll:Clear()
+    
+    self.Track = {}
+    self.Value = {}
+    self.Num = {}
+    for i=1,#commands do
+        local _st = xml:InitStatic("ctrl_lighting:st", nil)
+        
+        local tbl = commands[i]
+        local name = tbl.name
+        local val = tbl.get()
+        local cap = xml:InitStatic("ctrl_lighting:cap", _st)
+        cap:TextControl():SetText( game.translate_string(name) )
+        
+        self.Track[i] = xml:InitTrackBar("ctrl_lighting:track", _st)
+        self.Track[i]:SetStep(tbl.step)
+        self.Track[i]:SetOptFBounds(tbl.min, tbl.max)
+        self.Track[i]:SetFValue(val)
+        self.Value[i] = val
+        self.Num[i] = xml:InitTextWnd("ctrl_lighting:num", _st)
+        self.Num[i]:SetText(val)
+        
+        self.scroll:AddWindow(_st, true)
+        _st:SetAutoDelete(true)
+    end
+end
+
+function UIActionbarControl:Callback_Track(i, val)
+    local cmd = commands[i].set
+    if cmd and val then
+        cmd(val)
+        self.Num[i]:SetText(val)
+    end
+end
+
+function UIActionbarControl:Update()
+    CUIScriptWnd.Update(self)
+    
+    -- Hack to simulate tracing method for TrackBar value changes. TODO: add callback support for CUITrackBar in engine, this is just silly
+    for i,ctrl in pairs(self.Track) do
+        if ctrl:IsCursorOverWindow() then
+            local val = round_idp(ctrl:GetFValue(), precision)
+            if (val ~= self.Value[i]) then
+                self.Value[i] = val
+                self:Callback_Track(i, val)
+                return
+            end
+        end
+    end
+end
+
+function UIActionbarControl:OnKeyboard(dik, keyboard_action)
+    local res = CUIScriptWnd.OnKeyboard(self,dik,keyboard_action)
+    if (res == false) then
+        local bind = dik_to_bind(dik)
+        if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+        
+            if dik == DIK_keys.DIK_ESCAPE then
+                self:Close()
+            end
+
+        end
+    end
+
+    return res
+end
+
+function UIActionbarControl:Close()
+    self:HideDialog()
+    self:Show(false)
+
+    Unregister_UI("UIActionbarControl")
+    DelayDisableControlMode()
+    GUI = nil
+	-- ui_mcm.open_to("npcd/actionbar/main")
 end
