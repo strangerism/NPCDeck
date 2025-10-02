@@ -65,17 +65,46 @@
 	<string id="ui_mcm_st_npcd_feats_stats_cooldown">
 		<text>Cooldown</text>
 	</string>
+	<string id="ui_mcm_st_npcd_feats_stats_cooldown_desc">
+		<text>Interval in seconds for the active feat to be available again for activation</text>
+	</string>	
 	<string id="ui_mcm_st_npcd_feats_stats_life">
 		<text>Life</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feats_stats_life_desc">
+		<text>The duration in seconds of the feat's effect</text>
 	</string>		
 	<string id="ui_mcm_st_npcd_perk_type">
 		<text>Perk type</text>
 	</string>
+	<string id="ui_mcm_st_npcd_perk_type_desc">
+		<text>A perk can be of three types:
+		\n- %c[orange]ARCHETYPE%c[white]: a full fledged class perk with active feats. NPCs have a chance to spawn with it and only with one.
+		\n- %c[orange]MAIN%c[white]: a major perk with one or more feats but no active ones. NPCs can have at most 2 main perks.  
+		\n- %c[orange]SECONDARY%c[white]: a minor perk with a single feat, it cannot be active. NPC always have 2 secondary perks.
+		</text>
+	</string>	
 	<string id="ui_mcm_st_npcd_feat_type">
 		<text>Feat type</text>
 	</string>
+	<string id="ui_mcm_st_npcd_feat_type_desc">
+		<text>A feat can be of several types:
+		\n- %c[orange]ACTIVE%c[white]: an active feat is activated on player command or automatically. It has a cooldown. 
+		\n- %c[orange]PASSIVE%c[white]: a passive feat is in effect only when its conditions applies.  
+		\n- %c[orange]BOON%c[white]: a one-time reward/boon that is given to the npc upon rolling this perk. NPC can have only have 1 boon.
+		\n- %c[orange]TRAIT%c[white]: a feat with both positive and negative effects. NPC can have only have 1 trait.
+		\n- %c[orange]MUTATION%c[white]: a feat that affects another feat, mainly by changing its properties and effects.				
+		</text>
+	</string>	
 	<string id="ui_mcm_st_npcd_feat_mode">
 		<text>Feat mode</text>
+	</string>
+	<string id="ui_mcm_st_npcd_feat_mode_desc">
+		<text>A feat can mode can be of several types:
+		\n- %c[orange]AUTO%c[white]: automatically activated based on the feat's own conditions. 
+		\n- %c[orange]MANUAL%c[white]: manually activated by the player with an input key. The effect is triggered upon activation with a cooldown.
+		\n- %c[orange]MODAL%c[white]: manually activated by the player with an input key. The effect is applied if the modal is on, disabled when it's off.
+		</text>
 	</string>	
 	<string id="ui_mcm_lst_st_npcd_perk_type_archetype">
 		<text>Archetype</text>

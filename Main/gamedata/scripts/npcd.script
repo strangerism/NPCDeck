@@ -60,18 +60,21 @@ SECOND_KEY_DESC[3] = "ui_mcm_lst_npcd_kb_mod_alt"
 
 
 FEAT_SETTING = {
-	ACTIVATION_KEY = "activation_key",
+	TYPE = {
+			ACTIVATION_KEY = "activation_key",
+			STATS = "stats",
+			GENERAL = "general"
+	},
 	KEYBIND = {
 		KEY = "keybind",
 		MODIFIER = "modifier",
 		SECOND_KEY = "second_key"
 	},
 	INDEX = "index",
-	STATS = "stats",
 	STAT = {
 		COOLDOWN = "cooldown",
 		LIFE = "life",
-	}
+	},
 }
 
 INPUT_MANAGER = {
@@ -123,7 +126,7 @@ local function apply_module_perks_settings(module, module_perks)
 					-- updating feat stats from mcm settings
 					for i = 1, #feat.stats do
 						for key, _ in pairs(feat.stats[i]) do
-							local value = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.STATS, key, i)
+							local value = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.TYPE.STATS, key, i)
 							feat.stats[i][key] = value
 							-- Printer:Log(LOG.INFO, CAT.CONF, "updated perk %s feat %s stat %s[%s] to %s", perk.id, feat.id, key, i, value)
 						end
@@ -132,9 +135,9 @@ local function apply_module_perks_settings(module, module_perks)
 				if feat.activation_key then
 					-- updating feat activation input from mcm settings
 					feat.activation_key = {
-						keybind = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.KEY) or feat.activation_key.keybind,
-						modifier = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.MODIFIER) or feat.activation_key.modifier,
-						second_key = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.SECOND_KEY) or feat.activation_key.second_key,
+						keybind = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.TYPE.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.KEY) or feat.activation_key.keybind,
+						modifier = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.TYPE.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.MODIFIER) or feat.activation_key.modifier,
+						second_key = npcd_mcm.get_module_perk_feat_setting(module, perk.id, feat.id, FEAT_SETTING.TYPE.ACTIVATION_KEY, FEAT_SETTING.KEYBIND.SECOND_KEY) or feat.activation_key.second_key,
 					}
 				end
 			end

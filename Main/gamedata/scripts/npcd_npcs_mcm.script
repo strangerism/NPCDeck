@@ -69,7 +69,7 @@ local function get_npcs_menu(menu_type)
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_name", type = "slide", link = "ui_options_slider_player", text = npc_data.name, size = {512,50}, spacing = 5})
                 local npc_id = npc_deck.id
                 local path = "npcs/" .. menu_type .. "/" .. npc_deck.id
-                printf("-[NPCD][MCM] adding npcs %s menu path %s", npc_deck.id, path)
+                -- printf("-[NPCD][MCM] adding npcs %s menu path %s", npc_deck.id, path)
                 -- unfavorite button
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_unfavorite_button", type = "button", functor_ui = {unfavorite, npc_id, path}, precondition = {npcd.get_favorite, npc_id} , hint = "npcd_npcs_unfavorite"})
                 -- info

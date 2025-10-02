@@ -103,7 +103,7 @@
 		<string id="ui_mcm_st_npcd_npcs_attitude_desc">
 		<text>
 		- Attitude of the npc towards the player. It includes static goodwill (from faction and rank relations) and dynamic goodwill (personal or faction based, see below)
-		\n |- %c[d_purple]cannot be increased directly%c[white]
+		\n |- %c[d_cyan]cannot be increased directly%c[white]
 		\n |- when below -999, the npc is %c[red]hostile%c[white]
 		\n |- between 0-999, the npc is %c[gray]neutral%c[white] - you can only hire through squad, chance based (24 hour reset) and only advanced/veteran squads
 		\n |- when above 999, the npc is %c[green]friendly%c[white] - you can recruit through squad
@@ -121,7 +121,7 @@
 		\n |- between 500-999, the npc is %c[blue]respected%c[white] - you can hire individually, only advanced/veteran squads 
 		\n |- between 1000-1499, the npc is %c[green]friendly%c[white] - you can recruit individually, chance based (24 hour reset) from from any squads
 		\n |- between 1500-2000, the npc is %c[orange]trusted%c[white] - you can recruit individually from any squads
-		\n |- %c[d_purple][TIP]%c[white] Raise this if you want to release and recruit an npc from a squad
+		\n |- %c[d_cyan][TIP]%c[white] Raise this if you want to release and recruit an npc from a squad
 		</text>
 	</string>	
 	<!-- <string id="ui_mcm_st_npcd_npcs_goodwill_rank">
@@ -145,7 +145,7 @@
 		\n |- It will affect the overall attidute of the faction's npcs towards the player.
 		\n |- It is the same goodwill that is used to establish a trader stock's supply level.
 		\n |- This will not raise the npcs personal goodwill.
-		\n |- %c[d_purple][TIP]%c[white] Raise this if you want to start recruiting novice squads
+		\n |- %c[d_cyan][TIP]%c[white] Raise this if you want to start recruiting novice squads
 		</text>
 	</string>	
 	<string id="ui_mcm_st_npcd_npcs_goodwill_communities">
