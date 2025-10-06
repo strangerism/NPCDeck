@@ -15,8 +15,8 @@ end
 
 local perks = {}
 
-MAX_SECONDARY_PERKS = 3
-MAX_MAIN_PERKS = 1
+MAX_SECONDARY_PERKS = 2
+MAX_MAIN_PERKS = 2
 
 PERK_TYPE = {
 	ARCHETYPE = "st_npcd_perk_type_archetype",
@@ -35,7 +35,7 @@ FEAT_TYPE = {
 FEAT_MODE = {
 	AUTO = "st_npcd_feat_mode_auto",
 	MANUAL = "st_npcd_feat_mode_manual",
-	MODAL = "st_npcd_feat_mode_modal"
+	MODAL = "st_npcd_feat_mode_modal",
 }
 
 KEYBIND = {
@@ -296,6 +296,30 @@ function get_npc_perks(npc_id)
 	return npcs[npc_id].Perk
 end
 
+function get_squad_npc_with_perk(perk_id)
+	if not perk_id then return end -- cannot continue
+	local clist = npcd_squad.squad_get_clist()
+	if not clist or not (npcdu.tablelength(clist) > 0) then return end
+	local npc_id = nil
+	for _, id in pairs(clist) do
+		-- return the npc_id that has the highest perk rank using perk_id
+		
+		if npcs[id] and npcs[id].Perk[perk_id] then
+			if not npc_id then
+				npc_id = id
+			else
+				-- compare ranks
+				local rank1 = npcdu.get_feat_rank(npc_id)
+				local rank2 = npcdu.get_feat_rank(id)
+				if rank2 > rank1 then
+					npc_id = id
+				end
+			end
+		end
+	end
+	return npc_id
+end
+
 function get_archetype_perk(npc_id)
 	if not npc_id or not npcs[npc_id] then return end
 	for i = 1, #npcs[npc_id].Perk, 1 do
@@ -431,6 +455,7 @@ function get_npc_feats(npc_id, feat_id)
 			if perk.id == npc_perk.id then
 				for _, feat in pairs(perk.feats) do
 					local npc_feat = npcdu.copy(feat)
+					npc_feat["npc_id"] = npc_id
 					npc_feat["perk_module"] = perk.module
 					npc_feat["perk_id"] = perk.id
 					npc_feat["perk_name"] = perk.name
@@ -460,9 +485,8 @@ function add_ability(npc_id, feat)
 
 	-- TODO ability should be rank independent 
 	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- TODO EXP framework can give this otherwise
-	npcs[npc_id].Ability[a_id]["rank"] = rank -- TODO move this out from ability
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1 -- TODO move this out from ability
-	
+
 	npcs[npc_id].Ability[a_id]["timer"] = -1
 end
 
@@ -471,6 +495,18 @@ function update_ability(npc_id, feat)
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s updates ability %s", npc_id, a_id)
 	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework can give this otherwise
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1
+end
+
+function find_npcs_with_ability(feat_id)
+	local npcs_with_ability = {}
+	for npc_id, npc in pairs(npcs) do
+		for _, ability in pairs(npc.Ability) do
+			if ability.id == feat_id then
+				table.insert(npcs_with_ability, npc_id)
+			end
+		end
+	end
+	return npcs_with_ability
 end
 
 function remove_ability(npc_id, feat_id)

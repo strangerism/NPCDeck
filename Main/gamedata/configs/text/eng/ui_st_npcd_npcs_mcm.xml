@@ -84,10 +84,7 @@
 	</string>
 	<string id="ui_mcm_st_npcd_npcs_standings_info">
 		<text>Cannnot show standings for NPC that are not online (in this map)</text>
-	</string>		
-	<string id="ui_mcm_st_npcd_npcs_perk">
-		<text>- [%%c[d_cyan]%s%%c[d_white]] %s</text>
-	</string>	
+	</string>
 	<string id="ui_mcm_st_npcd_npcs_abilities">
 		<text>Abilities</text>
 	</string>	

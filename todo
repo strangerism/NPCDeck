@@ -4,22 +4,23 @@ ideas for archetypes
     * defibrillate   
 - trapper
     * aoe tracking
-    * echolocation: aoe tracking near monsters as long as they are visible. excliding invisible monsters
+    * echolocation: aoe tracking near monsters as long as they are visible. excluding invisible monsters
     * track: tracks nearby smarts to create heatmaps
-    * dersu spirit
+    * dersu spirit: chance to spawn a ghost pseudodog during an encounter  
 - arena master
-    * extra ammo, smuggled gun, join with you
+    * extra ammo, smuggled gun, chance to join with you
 - smuggler
     - enable trade with npc, black market discount 
 - diplomat
     - can talk with everyone, change alliance of 1 random npc in encounters 
     - increase intimidation chance
+    - chance for an enemy to turn friendly during combat for a time
 - radioman
     - can radio anyone (no friendship required)
 - courier
     - can carry stuff for you
 - guide
-    - avoid random encounter, decreses travel cd, decrease travel cost  
+    - avoid random encounter, decreses travel cd, decreases travel cost
 - brawler
     - distract npc with aggro
 - scout
@@ -28,6 +29,7 @@ ideas for archetypes
 
 
 stuff to do
+- 
 - rework squad ranking (min or max npc rank based instead of section)
 - add npc identification widget
 - rework notifications (new profile, npc joined, npc leaves)

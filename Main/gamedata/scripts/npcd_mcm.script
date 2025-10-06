@@ -272,6 +272,6 @@ function get_module_menu(module_deck)
 		-- adding perk menu to module options
 		table.insert(module_options, perk_menu)
 	end
-	npcdu.printlog_table("MCM Module Deck", module_options)
+	-- npcdu.printlog_table("MCM Module Deck", module_options)
 	return module_options
 end

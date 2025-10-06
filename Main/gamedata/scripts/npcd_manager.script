@@ -17,19 +17,38 @@ local ABILITY_STATE = npcd.ABILITY_STATE
 
 --------------- Utilities
 
-local function execute(npc_id, functor)
+local function execute_register(npc_id, register, functor)
 	if not functor then return false end
 	local ex_functor = npcdu.copy(functor)
 	table.insert(ex_functor, npc_id)
+	table.insert(ex_functor, register)
 	Printer:TraceTable("npc executing", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
 	return result
 end
 
-local function npc_can_register(npc_id, feat)
+local function execute_activate(npc_id, feat_id, functor)
+	if not functor then return false end
+	local ex_functor = npcdu.copy(functor)
+	table.insert(ex_functor, npcd.get_npc_feats(npc_id, feat_id))
+	Printer:TraceTable("npc executing", ex_functor)
+	local result = execute_func(unpack(ex_functor))
+	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
+	return result
+end
+
+local function register_feat(npc_id, feat, register)
 	if feat.register_functor then
-		return execute(npc_id, feat.register_functor)
+		return execute_register(npc_id, register, feat.register_functor)
+	else
+		return true
+	end
+end
+
+function register_perk(npc_id, perk, register)
+	if perk.register_functor then
+		return execute_register(npc_id, register, perk.register_functor)
 	else
 		return true
 	end
@@ -308,7 +327,7 @@ function poll(polling_input)
 	-- first poll ability is not on cooldown
 	if actionable_ability(polling_input.npc_id, polling_input.feat_id) then
 		-- execute ability
-		local activated = execute(polling_input.npc_id, polling_input.activation_functor)
+		local activated = execute_activate(polling_input.npc_id, polling_input.feat_id, polling_input.activation_functor)
 		-- activate ability cooldown
 		if activated then
 			activate_ability(polling_input.npc_id, polling_input.feat_id)
@@ -325,7 +344,7 @@ function activate(activation_input)
 	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s",activation_input.npc_id, activation_input.feat_id)
 	if actionable_ability(activation_input.npc_id, activation_input.feat_id) then
 		-- execute ability
-		local activated = execute(activation_input.npc_id, activation_input.activation_functor)
+		local activated = execute_activate(activation_input.npc_id, activation_input.feat_id, activation_input.activation_functor)
 		-- activate ability cooldown
 		if activated then
 			activate_ability(activation_input.npc_id, activation_input.feat_id)
@@ -368,8 +387,8 @@ end
 ---
 
 local function release_npc(npc_id)
-	remove_npc_executions(npc_id)
-	npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
+	-- TODO: is this necessary? can it be done in squad update?
+	-- npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
 	local npc_deck = npcd.get_npc(npc_id)
 	if npc_deck.show_profile then
 		npcd.remove_npc(npc_id)
@@ -411,20 +430,65 @@ local function register_abilities(npc_id)
 	return true
 end
 
-local function unregister_abilities(npc_id)
-    Printer:Debug(LOG.RUN, CAT.CONF,"unregistering npc %s abilities", npc_id)
+local function register_npc_perks(npc_id, register)
+	Printer:Debug(LOG.RUN, CAT.CONF,"npc %s perks %s", npc_id, register and "registration" or "unregistration")
+	local npc_deck = npcd.get_npc(npc_id)
+	if not npc_deck then return false end -- npc died?
+
+	for _, npc_perk in pairs(npc_deck.Perk) do
+		local perk = npcd.get_perk(npc_perk.id)
+		if perk then
+			Printer:Debug(LOG.INFO, CAT.CONF,"npc %s perk %s %s", npc_id, npc_perk.id, register and "register" or "unregister")
+			register_perk(npc_id, perk, register)
+		end
+	end
+	return true
+end
+
+local function unregister_online_feat(npc_id, feat)
+	Printer:Debug(LOG.REMOVE, CAT.CONF,"npc %s feat %s removed", npc_id, feat.id)
+	register_feat(npc_id, feat, false)
+	if feat.type == FEAT_TYPE.ACTIVE then
+		npcd.remove_ability(npc_id, feat.id)
+		if feat.mode == FEAT_MODE.MANUAL then
+			unbind_ability(npc_id, feat)
+		end
+	end
+end
+
+local function register_online_feat(npc_id, feat)
+	Printer:Debug(LOG.RUN, CAT.CONF,"registering npc %s feat %s", npc_id, feat.id)
+	register_feat(npc_id, feat, true)
+	if feat.type == FEAT_TYPE.ACTIVE then
+		if not npcd.ability_registered(npc_id, feat.id) then
+			-- ensure no other npc has this ability registered
+			local npc_with_ability = npcd.find_npcs_with_ability(feat.id)
+			for _, other_npc_id in pairs(npc_with_ability) do
+				unregister_online_feat(other_npc_id, feat)
+			end
+			-- register ability to npc
+			npcd.add_ability(npc_id, feat)
+			bind_ability(npc_id, feat)
+		else
+			-- ability already registered, update it
+			npcd.update_ability(npc_id, feat)
+		end
+	end
+	return true
+end
+
+local function unregister_online_feats(npc_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"unregistering npc %s feats", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
-		Printer:Debug(LOG.INFO, CAT.CONF,"npc %s unregister abilities for perk %s", npc_id, npc_perk.id)
-		local perk = npcd.get_perk(npc_perk.id)
-		if perk and perk.feats then
-			for _, feat in pairs(perk.feats) do
-				if feat.type == FEAT_TYPE.ACTIVE then
-					Printer:Debug(LOG.REMOVE, CAT.CONF,"npc %s removes ability %s", npc_id, feat.id)
-					npcd.remove_ability(npc_id, feat.id)
-					unbind_ability(npc_id, feat)
+		if is_npc_perk_online(npc_id, npc_perk.id) then
+			local perk = npcd.get_perk(npc_perk.id)
+			if perk and perk.feats  then
+				Printer:Debug(LOG.INFO, CAT.CONF,"npc %s unregister feats for perk %s", npc_id, npc_perk.id)
+				for _, feat in pairs(perk.feats) do
+					unregister_online_feat(npc_id, feat)
 				end
 			end
 		end
@@ -441,6 +505,17 @@ end
 -- end)
 
 --- NPC Recruit API
+
+local function unrecruit_npc(npc_id)
+	Printer:Debug(LOG.RUN, CAT.NPC, "unrecruiting npc %s", npc_id)
+	npcd.set_recruited(npc_id, false)
+	local npc_info = npcd.get_npc_info(npc_id)
+	if npc_info then
+		npc_info.last_time_seen = game.get_game_time()
+		npc_info.last_place_seen = dynamic_news_helper.GetPointDescription(db.actor)
+		npcd.set_npc_info(npc_id, npc_info)
+	end
+end
 
 local function recruit_npc(npc_id, clone_id)
 	Printer:Debug(LOG.RUN, CAT.NPC, "recruiting npc %s", npc_id)
@@ -459,6 +534,7 @@ local function recruit_npc(npc_id, clone_id)
 			Printer:Log(LOG.WARN, CAT.NPC, "recruit through clone where only the clone %s exists", clone_id)
 			npcd.set_recruited(clone_id, true)
 		end
+		npc_id = clone_id
 	else
 		-- npc recruited through vanilla squad joining dialog (can be 1 npc or more at the same time)
 		npcd.set_recruited(npc_id, true)
@@ -482,14 +558,17 @@ function squad_on_npc_death(squad,se_npc)
 	Printer:Trace(LOG.RUN, CAT.NPC,"squad_on_npc_death")
 	local npc_id = se_npc.id
 	if npcd.get_npc(npc_id) then
-		Printer:Debug(LOG.WARN, CAT.NPC,"squad_on_npc_death npc %s name %s", npc_id, se_npc:name())
-		release_npc(npc_id)
-		Printer:Debug(LOG.REMOVE, CAT.NPC,"dead npc %s released", npc_id)
-		for id,actor_squad in pairs(axr_companions.companion_squads) do
-			if squad.id == actor_squad.id then
-				SendScriptCallback("npcd_squad_update")
-			end
+		Printer:Debug(LOG.REMOVE, CAT.NPC,"dead npc %s name %s released", npc_id, se_npc:name())
+		if npcd_squad.is_actor_squad(npc_id) then
+			-- npc is part of the actor squad, unrecruit and remove from online deck
+			register_npc_perks(npc_id, false)
+			unrecruit_npc(npc_id)
+			unregister_online_feats(npc_id)
+			remove_npc_executions(npc_id)
+			-- push for a squad and deck update
+			SendScriptCallback("npcd_squad_update")
 		end
+		release_npc(npc_id)
 	end
 end
 
@@ -509,23 +588,95 @@ function npc_on_death(victim, who)
 	end
 end
 
---------------- SQUAD UPDATES (abilities registration)
 
-function npcd_squad_abilities_registration()
-	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_abilities_registration")
+--------------- Actor Online Deck
+---
+
+local online_deck = {
+	Perk = {},
+}
+
+function is_npc_perk_online(npc_id, perk_id)
+	if online_deck.Perk[perk_id] and online_deck.Perk[perk_id].npc_id == npc_id then
+		return true
+	else
+		return false
+	end
+end
+
+function unregister_deck()
+	Printer:Debug(LOG.RUN, CAT.CONF,"unregistering actor deck")
+	for perk_id, perk_info in pairs(online_deck.Perk) do
+		local npc_id = perk_info.npc_id
+		local perk = npcd.get_perk(perk_id)
+		if perk and perk.feats then
+			for _, feat in pairs(perk.feats) do
+				unregister_online_feat(npc_id, feat)
+			end
+		end
+	end
+end
+
+function register_deck()
+	Printer:Debug(LOG.RUN, CAT.NPC,"registering actor deck")
+	for perk_id, perk_info in pairs(online_deck.Perk) do
+		local npc_id = perk_info.npc_id
+		local perk = npcd.get_perk(perk_id)
+		if perk and perk.feats then
+			for _, feat in pairs(perk.feats) do
+				register_online_feat(npc_id, feat)
+			end
+		end
+	end
+end
+
+function build_deck()
+	Printer:Debug(LOG.RUN, CAT.CONF,"updating actor deck")
+	online_deck.Perk = {}
 	local clist = npcd_squad.squad_get_clist()
-	-- re-configure all squad abilities
 	for i=1, #clist do
 		local npc = npcdu.get_npc_obj(clist[i])
 		if npc and npc:alive() then
 			local npc_id = npc:id()
-			register_abilities(npc_id)
+			local npc_deck = npcd.get_npc(npc_id)
+			if npc_deck and npc_deck.Perk then
+				for _, npc_perk in pairs(npc_deck.Perk) do
+					if not online_deck.Perk[npc_perk.id] then
+						Printer:Debug(LOG.INFO, CAT.CONF, "adding perk %s from npc %s", npc_perk.id, npc_id)
+						online_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = npcdu.get_feat_rank(npc_id) }
+					else
+						local rank1 = npcdu.get_feat_rank(npc_id)
+						local rank2 = npcdu.get_feat_rank(online_deck.Perk[npc_perk.id].npc_id)
+						if rank1 > rank2 then
+							Printer:Debug(LOG.INFO, CAT.CONF, "upgrading perk %s from npc %s (rank %s) to npc %s (rank %s)", npc_perk.id, online_deck.Perk[npc_perk.id].npc_id, rank2, npc_id, rank1)
+							online_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = rank1 }
+						else
+							Printer:Debug(LOG.INFO, CAT.CONF, "skipping duplicate perk %s from npc %s", npc_perk.id, npc_id)
+						end
+						-- TODO compare ranks and keep the highest
+					end
+				end
+			end
 		end
 	end
-
-	npcd_actionbar.update_actionbar()
-	return true
+	Printer:LogTable("Actor Deck", online_deck)
 end
+
+local function remove_from_deck(npc_id)
+	Printer:Debug(LOG.RUN, CAT.NPC,"remove_from_deck npc %s", npc_id)
+	local perks_to_remove = {}
+	for perk_id, perk_info in pairs(online_deck.Perk) do
+		if perk_info.npc_id == npc_id then
+			table.insert(perks_to_remove, perk_id)
+		end
+	end
+	for i=1, #perks_to_remove do
+		online_deck.Perk[perks_to_remove[i]] = nil
+	end
+	unregister_online_feats(npc_id)
+end
+
+--------------- SQUAD UPDATES
 
 local current_clist
 local function do_npcd_squad_update()
@@ -538,33 +689,35 @@ local function do_npcd_squad_update()
 	for i=1, #removed_ids do
 		local npc = npcdu.get_npc_obj(removed_ids[i])
 		if npc and npcd.get_npc(npc:id()) then -- check if npc was released during squad_on_npc_death event
-			unregister_abilities(npc:id())
-			npcd.set_recruited(npc:id(), false)
+			unrecruit_npc(npc:id())
+			register_npc_perks(npc:id(), false)
+			unregister_online_feats(npc:id())
+			remove_npc_executions(npc:id())
 		end
 	end
 
 	-- update new squad members 
-	-- TODO 1 this can be removed if we create the npc profile on npc dialog window
 	-- TODO 2 this now is only to cover the case where an entire squad joins
 	-- TODO 3 maybe we should not recruit and register non profiled npc automatically
 	for i=1, #added_ids do
 		local npc = npcdu.get_npc_obj(added_ids[i])
 		if npc and npc:alive() then
 			recruit_npc(npc:id())
+			register_npc_perks(npc:id(), true)
 		end
 	end
 	current_clist = new_clist
-	SendScriptCallback("npcd_post_squad_update")
-	CreateTimeEvent("npcd_manager", "npcd_squad_abilities_registration", 1, npcd_squad_abilities_registration)
+	build_deck()
+	register_deck()
+	npcd_actionbar.update_actionbar()
 	return true
 end
 
 local function npcd_squad_update()
 	Printer:Debug(LOG.RUN, CAT.NPC,"npcd_squad_update")
+	-- absorbs multiple callbacks in quick succession
 	CreateTimeEvent("npcd_manager", "do_npcd_squad_update", 1, do_npcd_squad_update)
 end
-
-
 
 local function resume_squad_state()
 	Printer:Debug(LOG.RUN, CAT.NPC,"resume_squad_state")
@@ -572,13 +725,19 @@ local function resume_squad_state()
 	current_clist = npcd_squad.squad_get_clist()
 	if npcd_squad.squad_available() then
 		Printer:Debug(LOG.RUN, CAT.NPC,"resuming squad state")
-		SendScriptCallback("npcd_post_squad_update")
-		CreateTimeEvent("npcd_manager", "npcd_squad_abilities_re-registration", 1, function ()
-			npcd_squad_abilities_registration()
-			-- restart squad executions
-			restart_squad_executions()
-			return true
-		end)
+		-- register perks for all squad members
+		local clist = npcd_squad.squad_get_clist()
+		for i=1, #clist do
+			local npc = npcdu.get_npc_obj(clist[i])
+			if npc and npc:alive() then
+				register_npc_perks(npc:id(), true)
+			end
+		end
+		-- build and register the deck
+		build_deck()
+		register_deck()
+		-- restart squad executions
+		restart_squad_executions()
 	else
 		Printer:Debug(LOG.WARN, CAT.NPC,"no squad available")
 	end
@@ -716,13 +875,10 @@ function game_play_start()
 	end
 	-- NPCD BOOTING
 	Printer:Log(LOG.START, CAT.EXEC, "NPCD BOOTED")
+	start_npcd_execution()
 	resume_squad_state()
-	CreateTimeEvent("npcd_manager", "start_npcd_execution", 3, function ()
-		start_npcd_execution()
-		SendScriptCallback("npcd_started")
-		RegisterScriptCallback("actor_on_update", actor_on_update)
-		return true
-	end)
+	SendScriptCallback("npcd_started")
+	RegisterScriptCallback("actor_on_update", actor_on_update)
 end
 
 function actor_on_first_update()
