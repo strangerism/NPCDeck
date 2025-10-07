@@ -112,7 +112,8 @@ local function get_npcs_menu(menu_type)
                     for perk_id, _ in pairs(npc_deck.Perk) do
                         local perk = npcd.get_perk(perk_id)
                         if perk then
-                            table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = perk.name, size = {512,50}, spacing = 5, borderless=true, })
+                                                        -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "title", clr = {255,250,150,0}, text = perk.name, })
+                            table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = perk.name, size = {512,50}, spacing = 1, borderless=false, })
                             table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id .. "_desc", type = "desc", text = game.translate_string(perk.description)})
                         end
                     end

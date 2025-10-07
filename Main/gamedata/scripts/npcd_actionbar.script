@@ -114,7 +114,7 @@ function add_npc_abilities_to_actionbar(npc_id)
     local npc_abilities = npcd.get_abilities(npc_id)
     if npc_abilities then
         for id, ability in pairs(npc_abilities) do
-            if ability.mode == npcd.FEAT_MODE.MANUAL then
+            if ability.registered and ability.mode == npcd.FEAT_MODE.MANUAL then
                 add_action_slot(npc_id, ability.id)
             end
         end

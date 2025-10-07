@@ -448,6 +448,22 @@ function create_profile(npc_id)
 	Printer:LogTable(string.format("Create Profile NPC %s", npc_id), npcs[npc_id])
 end
 
+function setup_profile(npc_id)
+	if not npcs[npc_id] and npcs[npc_id].has_profile then return end
+	for _, npc_perk in pairs(npcs[npc_id].Perk) do
+		local perk = get_perk(npc_perk.id)
+		if perk and perk.feats then
+			for _, feat in pairs(perk.feats) do
+				if feat.type == FEAT_TYPE.ACTIVE then
+					if not add_ability(npc_id, feat) then
+						update_ability(npc_id, feat)
+					end
+				end
+			end
+		end
+	end
+end
+
 function get_npc_feats(npc_id, feat_id)
 	local npc_feats_list = {}
 	for _, npc_perk in pairs(npcs[npc_id].Perk) do
@@ -475,6 +491,8 @@ end
 
 function add_ability(npc_id, feat)
 	local a_id = feat.id
+	if not npcs[npc_id] then return false end
+	if npcs[npc_id].Ability[a_id] then return false end -- already has this ability
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s adds ability %s", npc_id, a_id)
     npcs[npc_id].Ability[a_id] = {}
 	npcs[npc_id].Ability[a_id]["id"] = a_id
@@ -482,19 +500,23 @@ function add_ability(npc_id, feat)
 	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud
 	npcs[npc_id].Ability[a_id]["icon_slot"] = feat.icon_slot
 	npcs[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
-
+	npcs[npc_id].Ability[a_id]["registered"] = false
 	-- TODO ability should be rank independent 
 	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- TODO EXP framework can give this otherwise
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1 -- TODO move this out from ability
-
 	npcs[npc_id].Ability[a_id]["timer"] = -1
+
+	return true
 end
 
 function update_ability(npc_id, feat)
 	local a_id = feat.id
+	if not npcs[npc_id] then return false end
+	if not npcs[npc_id].Ability[a_id] then return false end -- does not have
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s updates ability %s", npc_id, a_id)
 	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework can give this otherwise
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1
+	return true
 end
 
 function find_npcs_with_ability(feat_id)
@@ -542,12 +564,22 @@ end
 function ability_registered(npc_id, feat_id)
 	if not npcs[npc_id] then return end
 	
-	return npcs[npc_id].Ability[feat_id] and true or false
+	return npcs[npc_id].Ability[feat_id].registered
 end
 
 function set_ability(npc_id, ability)
     npcs[npc_id].Ability[ability.id] = ability
 end
+
+function set_ability_settings(npc_id, feat_id, settings)
+	if not npcs[npc_id] then return false end
+	if not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	for key, value in pairs(settings) do
+		npcs[npc_id].Ability[feat_id][key] = value
+	end
+	return true
+end
+
 
 -- NPCS STATS
 
