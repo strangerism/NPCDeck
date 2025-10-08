@@ -190,6 +190,7 @@ local function teardown_npcd_execution()
 	-- stopping the npcd sim tasks
 	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
 	RemoveTimeEvent("npcd_manager", "npcs_profiler")
+	RemoveTimeEvent("npcd_manager", "npcs_updater")
 end
 
 function npcs_sweaper()
@@ -476,7 +477,7 @@ local function register_npc_perks(npc_id, register)
 	return true
 end
 
-local function unregister_online_feat(npc_id, feat)
+local function unregister_feat(npc_id, feat)
 	Printer:Debug(LOG.RUN, CAT.CONF,"unregistering npc %s feat %s", npc_id, feat.id)
 	if run_register_feat(npc_id, feat, false) then
 		if feat.type == FEAT_TYPE.ACTIVE then
@@ -490,7 +491,7 @@ local function unregister_online_feat(npc_id, feat)
 	end
 end
 
-local function register_online_feat(npc_id, feat)
+local function register_feat(npc_id, feat)
 	Printer:Debug(LOG.RUN, CAT.CONF,"registering npc %s feat %s", npc_id, feat.id)
 	if run_register_feat(npc_id, feat, true) then
 		-- only active feats are registered as abilities
@@ -505,18 +506,18 @@ local function register_online_feat(npc_id, feat)
 	end
 end
 
-local function unregister_online_feats(npc_id)
+local function unregister_feats(npc_id)
     Printer:Debug(LOG.RUN, CAT.CONF,"unregistering npc %s feats", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 
 	for _, npc_perk in pairs(npc_deck.Perk) do
-		if is_npc_perk_online(npc_id, npc_perk.id) then
+		if is_perk_in_deck(npc_id, npc_perk.id) then
 			local perk = npcd.get_perk(npc_perk.id)
 			if perk and perk.feats  then
 				Printer:Debug(LOG.INFO, CAT.CONF,"npc %s unregister feats for perk %s", npc_id, npc_perk.id)
 				for _, feat in pairs(perk.feats) do
-					unregister_online_feat(npc_id, feat)
+					unregister_feat(npc_id, feat)
 				end
 			end
 		end
@@ -533,7 +534,7 @@ function unregister_perk_feats(npc_id, perk_id)
 	if perk and perk.feats  then
 		Printer:Debug(LOG.INFO, CAT.CONF,"npc %s unregister feats for perk %s", npc_id, perk_id)
 		for _, feat in pairs(perk.feats) do
-			unregister_online_feat(npc_id, feat)
+			unregister_feat(npc_id, feat)
 		end
 		remove_npc_perk_executions(npc_id, perk_id)
 	end
@@ -604,9 +605,9 @@ function squad_on_npc_death(squad,se_npc)
 	if npcd.get_npc(npc_id) then
 		Printer:Debug(LOG.REMOVE, CAT.NPC,"dead npc %s name %s released", npc_id, se_npc:name())
 		if npcd_squad.is_actor_squad(npc_id) then
-			-- npc is part of the actor squad, unrecruit and remove from online deck
+			-- npc is part of the actor squad, unrecruit and remove from player deck
 			unrecruit_npc(npc_id)
-			unregister_online_feats(npc_id)
+			unregister_feats(npc_id)
 			register_npc_perks(npc_id, false)
 			remove_npc_executions(npc_id, true)
 			-- push for a squad and deck update
@@ -633,15 +634,15 @@ function npc_on_death(victim, who)
 end
 
 
---------------- Actor Online Deck
+--------------- Player Deck
 ---
 
-local online_deck = {
+local player_deck = {
 	Perk = {},
 }
 
-function is_npc_perk_online(npc_id, perk_id)
-	if online_deck.Perk[perk_id] and online_deck.Perk[perk_id].npc_id == npc_id then
+function is_perk_in_deck(npc_id, perk_id)
+	if player_deck.Perk[perk_id] and player_deck.Perk[perk_id].npc_id == npc_id then
 		return true
 	else
 		return false
@@ -650,12 +651,12 @@ end
 
 function unregister_deck()
 	Printer:Debug(LOG.RUN, CAT.CONF,"unregistering actor deck")
-	for perk_id, perk_info in pairs(online_deck.Perk) do
+	for perk_id, perk_info in pairs(player_deck.Perk) do
 		local npc_id = perk_info.npc_id
 		local perk = npcd.get_perk(perk_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
-				unregister_online_feat(npc_id, feat)
+				unregister_feat(npc_id, feat)
 			end
 		end
 	end
@@ -663,12 +664,12 @@ end
 
 function register_deck()
 	Printer:Debug(LOG.RUN, CAT.NPC,"registering actor deck")
-	for perk_id, perk_info in pairs(online_deck.Perk) do
+	for perk_id, perk_info in pairs(player_deck.Perk) do
 		local npc_id = perk_info.npc_id
 		local perk = npcd.get_perk(perk_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
-				register_online_feat(npc_id, feat)
+				register_feat(npc_id, feat)
 			end
 		end
 	end
@@ -676,7 +677,7 @@ end
 
 function build_deck()
 	Printer:Debug(LOG.RUN, CAT.CONF,"updating actor deck")
-	online_deck.Perk = {}
+	player_deck.Perk = {}
 	local clist = npcd_squad.squad_get_clist()
 	for i=1, #clist do
 		local npc = npcdu.get_npc_obj(clist[i])
@@ -685,15 +686,15 @@ function build_deck()
 			local npc_deck = npcd.get_npc(npc_id)
 			if npc_deck and npc_deck.Perk then
 				for _, npc_perk in pairs(npc_deck.Perk) do
-					if not online_deck.Perk[npc_perk.id] then
+					if not player_deck.Perk[npc_perk.id] then
 						Printer:Debug(LOG.INFO, CAT.CONF, "adding perk %s from npc %s", npc_perk.id, npc_id)
-						online_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = npcdu.get_feat_rank(npc_id) }
+						player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = npcdu.get_feat_rank(npc_id) }
 					else
 						local rank1 = npcdu.get_feat_rank(npc_id)
-						local rank2 = npcdu.get_feat_rank(online_deck.Perk[npc_perk.id].npc_id)
+						local rank2 = npcdu.get_feat_rank(player_deck.Perk[npc_perk.id].npc_id)
 						if rank1 > rank2 then
-							Printer:Debug(LOG.INFO, CAT.CONF, "upgrading perk %s from npc %s (rank %s) to npc %s (rank %s)", npc_perk.id, online_deck.Perk[npc_perk.id].npc_id, rank2, npc_id, rank1)
-							online_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = rank1 }
+							Printer:Debug(LOG.INFO, CAT.CONF, "upgrading perk %s from npc %s (rank %s) to npc %s (rank %s)", npc_perk.id, player_deck.Perk[npc_perk.id].npc_id, rank2, npc_id, rank1)
+							player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = rank1 }
 						else
 							Printer:Debug(LOG.INFO, CAT.CONF, "skipping duplicate perk %s from npc %s", npc_perk.id, npc_id)
 							unregister_perk_feats(npc_id, npc_perk.id)
@@ -704,21 +705,21 @@ function build_deck()
 			end
 		end
 	end
-	Printer:LogTable("Actor Deck", online_deck)
+	Printer:LogTable("Actor Deck", player_deck)
 end
 
 local function remove_from_deck(npc_id)
 	Printer:Debug(LOG.RUN, CAT.NPC,"remove_from_deck npc %s", npc_id)
 	local perks_to_remove = {}
-	for perk_id, perk_info in pairs(online_deck.Perk) do
+	for perk_id, perk_info in pairs(player_deck.Perk) do
 		if perk_info.npc_id == npc_id then
 			table.insert(perks_to_remove, perk_id)
 		end
 	end
 	for i=1, #perks_to_remove do
-		online_deck.Perk[perks_to_remove[i]] = nil
+		player_deck.Perk[perks_to_remove[i]] = nil
 	end
-	unregister_online_feats(npc_id)
+	unregister_feats(npc_id)
 end
 
 --------------- SQUAD UPDATES
@@ -735,7 +736,7 @@ local function do_npcd_squad_update()
 		local npc = npcdu.get_npc_obj(removed_ids[i])
 		if npc and npcd.get_npc(npc:id()) then -- check if npc was released during squad_on_npc_death event
 			unrecruit_npc(npc:id())
-			unregister_online_feats(npc:id())
+			unregister_feats(npc:id())
 			register_npc_perks(npc:id(), false)
 			remove_npc_executions(npc:id())
 		end
