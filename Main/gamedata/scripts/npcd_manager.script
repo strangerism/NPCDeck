@@ -415,8 +415,6 @@ end
 ---
 
 local function release_npc(npc_id)
-	-- TODO: is this necessary? can it be done in squad update?
-	-- npcd_actionbar.remove_npc_abilities_from_actionbar(npc_id)
 	local npc_deck = npcd.get_npc(npc_id)
 	if npc_deck.show_profile then
 		npcd.remove_npc(npc_id)
@@ -424,38 +422,6 @@ local function release_npc(npc_id)
 		Printer:Log(LOG.RUN, CAT.CONF, "purging npc %s", npc_id)
 		npcd.purge_npc(npc_id)
 	end
-end
-
-local function register_abilities(npc_id)
-	Printer:Debug(LOG.RUN, CAT.CONF,"registering npc %s abilities", npc_id)
-    local npc_deck = npcd.get_npc(npc_id)
-	if not npc_deck then return false end -- npc died?
-
-	Printer:LogTable("Register Abilities - NPC perks:", npc_deck)
-
-	for _, npc_perk in pairs(npc_deck.Perk) do
-		Printer:Debug(LOG.INFO, CAT.CONF,"npc %s registers abilities for perk %s", npc_id, npc_perk.id)
-		local perk = npcd.get_perk(npc_perk.id)
-		if perk and perk.feats then
-			for _, feat in pairs(perk.feats) do
-				if feat.type == FEAT_TYPE.ACTIVE then
-					if npc_can_register(npc_id, feat) then
-						if not npcd.ability_registered(npc_id, feat.id) then
-							npcd.add_ability(npc_id, feat)
-							bind_ability(npc_id, feat)
-						else
-							npcd.update_ability(npc_id, feat)
-						end
-					else
-						npcd.remove_ability(npc_id, feat.id)
-						unbind_ability(npc_id, feat)
-					end
-				end
-			end
-		end
-	end
-	Printer:LogTable("Registered Abilities", npc_deck.Ability)
-	return true
 end
 
 local function register_npc_perks(npc_id, register)
@@ -694,7 +660,7 @@ function build_deck()
 						local rank2 = npcdu.get_feat_rank(player_deck.Perk[npc_perk.id].npc_id)
 						if rank1 > rank2 then
 							Printer:Debug(LOG.INFO, CAT.CONF, "upgrading perk %s from npc %s (rank %s) to npc %s (rank %s)", npc_perk.id, player_deck.Perk[npc_perk.id].npc_id, rank2, npc_id, rank1)
-							player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = rank1 }
+							player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = rank1, type = npc_perk.type }
 						else
 							Printer:Debug(LOG.INFO, CAT.CONF, "skipping duplicate perk %s from npc %s", npc_perk.id, npc_id)
 							unregister_perk_feats(npc_id, npc_perk.id)
@@ -706,6 +672,21 @@ function build_deck()
 		end
 	end
 	Printer:LogTable("Actor Deck", player_deck)
+end
+
+local function get_actionable_abilities_in_deck()
+	local abilities_in_deck = {}
+	for perk_id, perk_info in pairs(player_deck.Perk) do
+		local perk = npcd.get_perk(perk_id)
+		if perk and perk.feats then
+			for _, feat in pairs(perk.feats) do
+				if feat.type == FEAT_TYPE.ACTIVE and feat.mode == FEAT_MODE.MANUAL then
+					table.insert(abilities_in_deck, { id = feat.id, npc_id = perk_info.npc_id })
+				end
+			end
+		end
+	end
+	return abilities_in_deck
 end
 
 local function remove_from_deck(npc_id)
@@ -755,7 +736,7 @@ local function do_npcd_squad_update()
 	current_clist = new_clist
 	build_deck()
 	register_deck()
-	npcd_actionbar.update_actionbar()
+	npcd_actionbar.update_actionbar(get_actionable_abilities_in_deck())
 	return true
 end
 
@@ -889,6 +870,7 @@ function actor_on_first_update()
 end
 
 function on_option_change()
+	npcd_actionbar.update_actionbar(get_actionable_abilities_in_deck())
 end
 
 ---- BOOT

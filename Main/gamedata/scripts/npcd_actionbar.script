@@ -1,5 +1,4 @@
 local npcdu = npcd_utils
-local FEAT_SETTING = NPCD.FEAT_SETTING
 
 MAX_SLOTS = 16
 function get_printer()
@@ -41,7 +40,7 @@ function add_action_slot(npc_id, feat_id, force_index)
     local key = get_actionslot_key(npc_id, feat_id)
     local feat = npcd.get_npc_feats(npc_id, feat_id)
     local index = force_index or npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id) or 0
-    Printer:Debug(LOG.ADD, CAT.CONF,"add action slot %s for npc %s and ability %s", index, npc_id, feat_id)
+    Printer:Debug(LOG.ADD, CAT.CONF,"added action slot %s for npc %s and ability %s", index, npc_id, feat_id)
     local feat_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
     local slot = {
         index = index,
@@ -50,7 +49,7 @@ function add_action_slot(npc_id, feat_id, force_index)
         feat_id = feat_id,
         activation_input = feat_activation_input
     }
-
+    Printer:DebugTable("Actionbar:add action slot", slot)
     -- Add to master slot list
     table.insert(actionbar.slots, slot)
 
@@ -109,18 +108,6 @@ function bind_action_slot(npc_id, feat_id)
     return true
 end
 
-function add_npc_abilities_to_actionbar(npc_id)
-    Printer:Debug(LOG.RUN, CAT.CONF,"adding npc %s abilities to actionbar", npc_id)
-    local npc_abilities = npcd.get_abilities(npc_id)
-    if npc_abilities then
-        for id, ability in pairs(npc_abilities) do
-            if ability.registered and ability.mode == npcd.FEAT_MODE.MANUAL then
-                add_action_slot(npc_id, ability.id)
-            end
-        end
-    end
-end
-
 function bind_actionbar_slots()
     Printer:Debug(LOG.ADD, CAT.CONF, "Binding all actionbar slots")
 
@@ -142,19 +129,6 @@ function bind_actionbar_slots()
     end
 
     Printer:Debug(LOG.INFO, CAT.CONF, "Updated %s actionbar slots", updated_count)
-end
-
-function remove_npc_abilities_from_actionbar(npc_id)
-    Printer:Debug(LOG.REMOVE, CAT.CONF,"remove npc %s abilities to actionbar", npc_id)
-    local npc_abilities = npcd.get_abilities(npc_id)
-    if npc_abilities then
-        for id, ability in pairs(npc_abilities) do
-            Printer:LogTable("Actionbar:remove npc ability", ability)
-            if ability.mode == npcd.FEAT_MODE.MANUAL then
-                remove_action_slot(npc_id, ability.id)
-            end
-        end
-    end
 end
 
 function get_actionbar_slots_list()
@@ -294,31 +268,11 @@ function count_slots()
     }
 end
 
--- function save_actionbar_state()
---     local state = {}
---     for i, slot in ipairs(actionbar.slots) do
---         table.insert(state, {
---             index = slot.index,
---             npc_id = slot.npc_id,
---             feat_id = slot.feat_id
---         })
---     end
---     return state
--- end
-
--- function load_actionbar_state(state)
---     clear_actionbar()
---     for _, slot in ipairs(state) do
---         add_action_slot(slot.index, slot.npc_id, slot.feat_id)
---     end
--- end
-
-function update_actionbar()
+function update_actionbar(ability_list)
     Printer:Debug(LOG.RUN, CAT.UI_ACTION, "updating actionbar")
+    Printer:LogTable("Provided ability list", ability_list)
     -- Get current squad
-    if not npcd_squad.squad_available() and not settings.show_always then
-        Printer:Debug(LOG.INFO, CAT.UI_ACTION, "npcd_actionbar_hud_update but no squad available")
-        -- SendScriptCallback("npcd_actionbar_hud_update")
+    if npcdu.tablelength(ability_list) == 0 and not settings.show_always then
         npcd_actionbar_hud.show(false)
         return
     end
@@ -326,18 +280,11 @@ function update_actionbar()
     -- Reset actionbar
     clear_actionbar()
 
-    -- Build actionbar from squad npcs
-    Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Resetting action bar from squad of %s npcs", npcd_squad.squad_get_size())
+    -- Add abilities from provided list
     local slot_index = 1
-    local clist = npcd_squad.squad_get_clist()
-    for i=1, #clist do
-        local npc = npcdu.get_npc_obj(clist[i])
-        if npc and IsStalker(npc) and npc:alive() then
-            if npcd.get_npc(npc:id()) then
-                add_npc_abilities_to_actionbar(npc:id())
-                slot_index = slot_index + 1
-            end
-        end
+    for _, ability_info in pairs(ability_list) do
+        add_action_slot(ability_info.npc_id, ability_info.id)
+        slot_index = slot_index + 1
     end
     
     -- update action slots mcm menu settings with the new actionbar
@@ -350,7 +297,6 @@ function update_actionbar()
     SendScriptCallback("npcd_actionbar_hud_update")
 
     Printer:Debug(LOG.INFO, CAT.UI_ACTION, "Action bar update complete with %s slots filled", slot_index - 1)
-    -- Printer:LogTable("Reset Actionbar", actionbar.by_index)
 end
 
 -- if AddScriptCallback then
@@ -370,7 +316,6 @@ function on_option_change()
     settings.show_always = npcd_mcm.get_setting("actionbar", "main/show_always")
 	settings.offset_x = npcd_mcm.get_setting("actionbar", "main/offset_x")
 	settings.offset_y = npcd_mcm.get_setting("actionbar", "main/offset_y")
-    update_actionbar()
 end
 
 function on_npcd_started()
