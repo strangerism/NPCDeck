@@ -128,7 +128,7 @@ local function get_npcs_menu(menu_type)
                         table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = npc_feat.name, size = {512,50}, spacing = 5, borderless=true, })
                         -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. feat.perk_id .. "_" .. feat.id, type = "desc", text = feat.name})
                         table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_desc", type = "desc", text = game.translate_string(npc_feat.description)})
-                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_feat_rank"), npcdu.get_feat_rank(npc_deck.id))})
+                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_feat_rank"), npcdu.get_perk_rank(npc_deck.id))})
                         if npc_feat.stats then
                             for key, value in pairs(npc_feat.stats) do
                                 local mcm_prefix = "ui_mcm_"

@@ -309,8 +309,8 @@ function get_squad_npc_with_perk(perk_id)
 				npc_id = id
 			else
 				-- compare ranks
-				local rank1 = npcdu.get_feat_rank(npc_id)
-				local rank2 = npcdu.get_feat_rank(id)
+				local rank1 = npcdu.get_perk_rank(npc_id)
+				local rank2 = npcdu.get_perk_rank(id)
 				if rank2 > rank1 then
 					npc_id = id
 				end
@@ -464,7 +464,17 @@ function setup_profile(npc_id)
 	end
 end
 
+function get_npc_feat_stats(npc_id, perk_id, feat_id)
+	if not npc_id or not npcs[npc_id] or not perk_id or not feat_id then return end
+	if not npcs[npc_id].Perk[perk_id] then return end -- npc does not have this perk
+	local perk = get_perk(perk_id)
+	if not perk or not perk.feats or not perk.feats[feat_id] then return end
+	local rank = npcdu.get_perk_rank(npc_id)
+	return perk.feats[feat_id].stats[rank]
+end
+
 function get_npc_feats(npc_id, feat_id)
+	-- feat_id is optional, if provided returns only that feat
 	local npc_feats_list = {}
 	for _, npc_perk in pairs(npcs[npc_id].Perk) do
 		for _, perk in pairs(perks) do
@@ -475,7 +485,7 @@ function get_npc_feats(npc_id, feat_id)
 					npc_feat["perk_module"] = perk.module
 					npc_feat["perk_id"] = perk.id
 					npc_feat["perk_name"] = perk.name
-					local rank = npcdu.get_feat_rank(npc_id)
+					local rank = npcdu.get_perk_rank(npc_id)
 					npc_feat["stats"] = feat.stats[rank]
 					if feat_id and feat.id == feat_id then
 						return npc_feat
@@ -502,7 +512,7 @@ function add_ability(npc_id, feat)
 	npcs[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
 	npcs[npc_id].Ability[a_id]["registered"] = false
 	-- TODO ability should be rank independent 
-	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- TODO EXP framework can give this otherwise
+	local rank = npcdu.get_perk_rank(npc_id, feat.id) -- TODO EXP framework can give this otherwise
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1 -- TODO move this out from ability
 	npcs[npc_id].Ability[a_id]["timer"] = -1
 
@@ -514,7 +524,7 @@ function update_ability(npc_id, feat)
 	if not npcs[npc_id] then return false end
 	if not npcs[npc_id].Ability[a_id] then return false end -- does not have
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s updates ability %s", npc_id, a_id)
-	local rank = npcdu.get_feat_rank(npc_id, feat.id) -- EXP framework can give this otherwise
+	local rank = npcdu.get_perk_rank(npc_id, feat.id) -- EXP framework can give this otherwise
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1
 	return true
 end

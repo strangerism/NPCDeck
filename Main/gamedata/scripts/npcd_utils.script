@@ -109,9 +109,9 @@ local RANK = {
 	experienced = 2,
 	professional = 2,
 	veteran = 3,
-	expert = 4,
+	expert = 3,
 	master = 4,
-	legend = 5,
+	legend = 4,
 }
 
 local RANK_DESC = {
@@ -123,7 +123,7 @@ local RANK_DESC = {
 }
 
 -- this should come from EXP framework
-function get_feat_rank(npc_id, feat_id)
+function get_perk_rank(npc_id, perk_id)
 	local npc = get_npc_obj(npc_id)
 	local rank = "novice"
 	if npc and npc:alive() then
@@ -133,8 +133,8 @@ function get_feat_rank(npc_id, feat_id)
 	return rank and RANK[rank] or 1
 end
 
-function get_feat_rank_desc(npc_id, feat_id)
-	local rank = get_feat_rank(npc_id, feat_id)
+function get_perk_rank_desc(npc_id, perk_id)
+	local rank = get_perk_rank(npc_id, perk_id)
 	return RANK_DESC[rank]
 end
 

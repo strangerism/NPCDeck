@@ -654,10 +654,10 @@ function build_deck()
 				for _, npc_perk in pairs(npc_deck.Perk) do
 					if not player_deck.Perk[npc_perk.id] then
 						Printer:Debug(LOG.INFO, CAT.CONF, "adding perk %s from npc %s", npc_perk.id, npc_id)
-						player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = npcdu.get_feat_rank(npc_id) }
+						player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = npcdu.get_perk_rank(npc_id) }
 					else
-						local rank1 = npcdu.get_feat_rank(npc_id)
-						local rank2 = npcdu.get_feat_rank(player_deck.Perk[npc_perk.id].npc_id)
+						local rank1 = npcdu.get_perk_rank(npc_id)
+						local rank2 = npcdu.get_perk_rank(player_deck.Perk[npc_perk.id].npc_id)
 						if rank1 > rank2 then
 							Printer:Debug(LOG.INFO, CAT.CONF, "upgrading perk %s from npc %s (rank %s) to npc %s (rank %s)", npc_perk.id, player_deck.Perk[npc_perk.id].npc_id, rank2, npc_id, rank1)
 							player_deck.Perk[npc_perk.id] = { id = npc_perk.id, npc_id = npc_id, rank = rank1, type = npc_perk.type }
