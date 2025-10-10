@@ -138,6 +138,10 @@
 		<text>Manual</text>
 	</string>
 
+	<string id="ui_mcm_lst_st_npcd_feat_mode_custom">
+		<text>Custom</text>
+	</string>
+
 	<string id="ui_mcm_st_npcd_feat_keybind">
 		<text>Activation Key</text>
 	</string>

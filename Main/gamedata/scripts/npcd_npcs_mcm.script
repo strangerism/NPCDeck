@@ -7,6 +7,8 @@ MENU_TYPE = {
     DEAD = "dead",
     FAVORITE = "favorite",
 }
+-- off when not in development
+NPCS_DEBUG = true
 
 local function is_not_friend(npc_id)
     local npc = npcdu.get_npc_obj(npc_id)
@@ -108,7 +110,7 @@ local function get_npcs_menu(menu_type)
                 table.insert(npc_menu.gr, { id = "divider", type = "line" })
                 table.insert(npc_menu.gr, { id = npc_deck.id .. "_perks", type = "title", clr = {200, 180, 4, 219}, text = game.translate_string("ui_mcm_st_npcd_npcs_perks")})
                 -- show perks and abilities only if npc was enquired first
-                if npc_deck.show_profile then
+                if npc_deck.show_profile or NPCS_DEBUG then
                     for perk_id, _ in pairs(npc_deck.Perk) do
                         local perk = npcd.get_perk(perk_id)
                         if perk then

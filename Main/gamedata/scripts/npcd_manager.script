@@ -411,6 +411,42 @@ local function unbind_ability(npc_id, feat)
 
 end
 
+--- Custom timed counters used by perk modules
+--- 
+local custom_timed_buff = {}
+
+local function get_timed_buff_id(npc_id, feat_id)
+	return "timed_buff_" .. tostring(npc_id) .. "_" .. feat_id
+end
+
+local function manage_buff_duration(buff_id, duration)
+	if not custom_timed_buff[buff_id] then
+		Printer:Debug(LOG.ADD, CAT.FEAT,"initializing custom timed buff %s with duration %s", buff_id, duration)
+		custom_timed_buff[buff_id] = { duration = duration }
+	end
+	if custom_timed_buff[buff_id].duration == 0 then
+		Printer:Debug(LOG.STOP, CAT.FEAT,"custom timed buff %s expired", buff_id)
+		custom_timed_buff[buff_id] = nil
+		return true
+	end
+	custom_timed_buff[buff_id].duration = custom_timed_buff[buff_id].duration - 1
+	Printer:Debug(LOG.INFO, CAT.FEAT,"custom timed buff %s duration %s", buff_id, custom_timed_buff[buff_id].duration)
+	-- loop cooldown management event
+	reset_execution(buff_id, 1)
+	return false
+end
+
+function create_timed_buff(npc_id, feat_id, duration)
+	Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s feat %s duration %s", npc_id, feat_id, duration)
+	local buff_id = get_timed_buff_id(npc_id, feat_id)
+	CreateTimeEvent("npcd_manager", buff_id, 0, manage_buff_duration, buff_id, duration)
+end
+
+function is_timed_buff_on(npc_id, feat_id)
+	local buff_id = get_timed_buff_id(npc_id, feat_id)
+	return custom_timed_buff[buff_id] ~= nil
+end
+
 --------------- NPCs
 ---
 
