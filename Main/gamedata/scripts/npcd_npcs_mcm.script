@@ -137,8 +137,8 @@ local function get_npcs_menu(menu_type)
                                 local stat_hint
                                 if key == npcd.FEAT_SETTING.STAT.COOLDOWN then
                                     stat_hint = "st_npcd_feats_stats_cooldown"
-                                elseif key == npcd.FEAT_SETTING.STAT.LIFE then
-                                    stat_hint = "st_npcd_feats_stats_life"
+                                elseif key == npcd.FEAT_SETTING.STAT.DURATION then
+                                    stat_hint = "st_npcd_feats_stats_duration"
                                 else
                                     stat_hint = "npcd_module_" .. npc_feat.perk_module .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_" .. key
                                 end

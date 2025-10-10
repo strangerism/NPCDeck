@@ -74,7 +74,7 @@ FEAT_SETTING = {
 	INDEX = "index",
 	STAT = {
 		COOLDOWN = "cooldown",
-		LIFE = "life",
+		DURATION = "duration",
 	},
 }
 

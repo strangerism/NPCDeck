@@ -257,9 +257,9 @@ function get_module_menu(module_deck)
 							if key == FEAT_SETTING.STAT.COOLDOWN then
 								-- stat_hint = "st_npcd_feats_stats_cooldown"
 								stat_hint = "st_npcd_feats_stats_cooldown"
-							elseif key == FEAT_SETTING.STAT.LIFE then
-								-- stat_hint = "st_npcd_feats_stats_life"
-								stat_hint = "st_npcd_feats_stats_life"
+							elseif key == FEAT_SETTING.STAT.DURATION then
+								-- stat_hint = "st_npcd_feats_stats_duration"
+								stat_hint = "st_npcd_feats_stats_duration"
 							else
 								-- mcm_prefix = "npcd_module_" .. module_deck.module .. "_" .. perk.id .. "_" .. feat.id .. "_"
 								stat_hint = "npcd_module_" .. module_deck.module .. "_" .. perk.id .. "_" .. feat.id .. "_" .. key

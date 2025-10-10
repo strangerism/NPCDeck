@@ -68,10 +68,10 @@
 	<string id="ui_mcm_st_npcd_feats_stats_cooldown_desc">
 		<text>Interval in seconds for the active feat to be available again for activation</text>
 	</string>	
-	<string id="ui_mcm_st_npcd_feats_stats_life">
-		<text>Life</text>
+	<string id="ui_mcm_st_npcd_feats_stats_duration">
+		<text>Duration</text>
 	</string>
-	<string id="ui_mcm_st_npcd_feats_stats_life_desc">
+	<string id="ui_mcm_st_npcd_feats_stats_duration_desc">
 		<text>The duration in seconds of the feat's effect</text>
 	</string>		
 	<string id="ui_mcm_st_npcd_perk_type">
