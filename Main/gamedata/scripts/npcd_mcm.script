@@ -201,6 +201,7 @@ function get_module_menu(module_deck)
 		table.insert(perk_menu.gr, { id = perk.id .. "_name", type = "slide", link = "ui_options_slider_player", text = perk.name, size = {512,50}, spacing = 20 })
 		table.insert(perk_menu.gr, { id = perk.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = perk.description} )
 		add_readonly_field(perk_menu.gr, perk.type, perk.id .. "_type", "st_npcd_perk_type")
+		table.insert(perk_menu.gr, { id = "perk_chance", type = "track", val = 2, min = 1, max = 100, step = 1, def = perk.roll_chance or 100, hint = "st_npcd_perk_chance", })
 		-- add settings
 		if perk.mcm_menu then
 			for _, setting in pairs(perk.mcm_menu) do

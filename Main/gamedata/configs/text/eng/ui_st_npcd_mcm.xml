@@ -83,6 +83,12 @@
 		\n- %c[orange]MAIN%c[white]: a major perk with one or more feats but no active ones. NPCs can have at most 2 main perks.  
 		\n- %c[orange]SECONDARY%c[white]: a minor perk with a single feat, it cannot be active. NPC always have 2 secondary perks.
 		</text>
+	</string>
+	<string id="ui_mcm_st_npcd_perk_chance">
+		<text>Perk chance</text>
+	</string>	
+	<string id="ui_mcm_st_npcd_perk_chance_desc">
+		<text>Chance for an NPC to spawn with this perk</text>
 	</string>	
 	<string id="ui_mcm_st_npcd_feat_type">
 		<text>Feat type</text>
