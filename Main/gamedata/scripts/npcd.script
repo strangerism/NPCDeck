@@ -564,8 +564,8 @@ function add_ability(npc_id, feat)
     npcs[npc_id].Ability[a_id] = {}
 	npcs[npc_id].Ability[a_id]["id"] = a_id
 	npcs[npc_id].Ability[a_id]["mode"] = feat.mode
-	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud
-	npcs[npc_id].Ability[a_id]["icon_slot"] = feat.icon_slot
+	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud or "ui_npcd_hud_default_icon"
+	npcs[npc_id].Ability[a_id]["icon_slot"] = feat.icon_slot or "ui_npcd_hud_default_icon"
 	npcs[npc_id].Ability[a_id]["state"] = ABILITY_STATE.READY
 	npcs[npc_id].Ability[a_id]["registered"] = false
 	-- TODO ability should be rank independent 

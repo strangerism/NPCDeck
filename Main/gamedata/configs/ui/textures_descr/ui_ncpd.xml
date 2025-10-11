@@ -6,4 +6,7 @@
         <texture id = "ui_npcd_hud_slot_ready_small" x="228" y="484" width="38" height="51" />
         <texture id = "ui_npcd_hud_progress" x="6" y="834" width="78" height="55" />  
     </file>
+	<file name="ui\ui_common">
+	    <texture id="ui_npcd_hud_default_icon" x="668" y="856" width="27" height="28" />
+	</file>    
 </w>

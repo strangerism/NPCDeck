@@ -174,7 +174,7 @@ function DelayDisableControlMode()
     CreateTimeEvent("npcd_actionbar_mcm", "DelayDisableControlMode", 2, function()
         if npcd_actionbar_hud.HUD then
             npcd_actionbar_hud.deactivate_hud()
-            npcd_actionbar.update_actionbar()
+            npcd_actionbar_hud.activate_hud()
         end
         return true
     end) 

@@ -431,32 +431,43 @@ local function get_timed_buff_id(npc_id, feat_id)
 	return "timed_buff_" .. tostring(npc_id) .. "_" .. feat_id
 end
 
-local function manage_buff_duration(buff_id, duration)
+local function manage_buff_duration(npc_id, perk_id, feat_id, duration)
+	local buff_id = get_timed_buff_id(npc_id, feat_id)
 	if not custom_timed_buff[buff_id] then
 		Printer:Debug(LOG.ADD, CAT.FEAT,"initializing custom timed buff %s with duration %s", buff_id, duration)
-		custom_timed_buff[buff_id] = { duration = duration }
+		custom_timed_buff[buff_id] = { value = duration, duration = duration }
+		local feat = npcd.get_perk_feat(perk_id, feat_id)
+		actor_status.add_indicator(feat.id, {
+			index = 1,
+			typ = "booster",
+			functor = { "npcd_manager", "get_timed_buff_timer", npc_id, feat_id },
+			icon = feat.icon_hud or "ui_npcd_hud_default_icon",
+			background = "ui\\alticons\\bg1.dds",
+			anim_icon = false,
+			anim_bk = false,
+			anim_period = 5
+		})
 	end
-	if custom_timed_buff[buff_id].duration == 0 then
+	if custom_timed_buff[buff_id].value == 0 then
 		Printer:Debug(LOG.STOP, CAT.FEAT,"custom timed buff %s expired", buff_id)
 		custom_timed_buff[buff_id] = nil
 		return true
 	end
-	custom_timed_buff[buff_id].duration = custom_timed_buff[buff_id].duration - 1
-	Printer:Debug(LOG.INFO, CAT.FEAT,"custom timed buff %s duration %s", buff_id, custom_timed_buff[buff_id].duration)
+	custom_timed_buff[buff_id].value = custom_timed_buff[buff_id].value - 1
+	Printer:Debug(LOG.INFO, CAT.FEAT,"custom timed buff %s duration %s", buff_id, custom_timed_buff[buff_id].value)
 	-- loop cooldown management event
 	reset_execution(buff_id, 1)
 	return false
 end
 
-function create_timed_buff(npc_id, feat_id, duration)
+function create_timed_buff(npc_id, perk_id, feat_id, duration)
 	if duration <= 0 then
 		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot create custom timed buff for npc %s feat %s with invalid duration %s", npc_id, feat_id, duration)
 		return false
 	end
 	if npc_id == db.actor:id() then
 		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for actor, feat %s duration %s", feat_id, duration)
-		local buff_id = get_timed_buff_id(npc_id, feat_id)
-		CreateTimeEvent("npcd_manager", buff_id, 0, manage_buff_duration, buff_id, duration)
+		CreateTimeEvent("npcd_manager", get_timed_buff_id(npc_id, feat_id), 0, manage_buff_duration, npc_id, perk_id, feat_id, duration)
 	else
 		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s feat %s duration %s", npc_id, feat_id, duration)
 		local ability = npcd.get_ability(npc_id, feat_id)
@@ -466,6 +477,24 @@ function create_timed_buff(npc_id, feat_id, duration)
 		end -- ability unregistered?
 		npcd.set_ability_settings(npc_id, feat_id, { cooldown = duration })
 		add_cooldown_execution(npc_id, feat_id)
+	end
+end
+
+function get_timed_buff_timer(npc_id, feat_id)
+	if npc_id == db.actor:id() then
+		local buff_id = get_timed_buff_id(npc_id, feat_id)
+		if custom_timed_buff[buff_id] then
+			return custom_timed_buff[buff_id].value
+		else
+			return nil
+		end
+	else
+		local ability = npcd.get_ability(npc_id, feat_id)
+		if ability and (ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING) then
+			return ability.timer
+		else
+			return 0
+		end
 	end
 end
 
