@@ -254,6 +254,10 @@ end
 
 function purge_npc(npc_id)
 	if not npc_id then return end
+	-- clear npc data
+	clear_npc_data(npc_id)
+	-- clear npc stats
+	clear_npc_stats(npc_id)
 	npcs[npc_id] = nil
 end
 
@@ -348,7 +352,7 @@ local function roll_perk(npc_id, functor)
 	if not functor then return false end
 	local ex_functor = npcdu.copy(functor)
 	table.insert(ex_functor, npc_id)
-	Printer:TraceTable("npc executing", ex_functor)
+	Printer:TraceTable("execute_roll_perk", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
 	return result
@@ -497,7 +501,7 @@ function create_profile(npc_id)
 end
 
 function setup_profile(npc_id)
-	if not npcs[npc_id] and npcs[npc_id].has_profile then return end
+	if not npcs[npc_id] and not npcs[npc_id].has_profile then return end
 	for _, npc_perk in pairs(npcs[npc_id].Perk) do
 		local perk = get_perk(npc_perk.id)
 		if perk and perk.feats then
@@ -506,6 +510,9 @@ function setup_profile(npc_id)
 					if not add_ability(npc_id, feat) then
 						update_ability(npc_id, feat)
 					end
+				end
+				if feat.type == FEAT_TYPE.PASSIVE then
+					-- apply passive effects here
 				end
 			end
 		end
@@ -564,7 +571,7 @@ function add_ability(npc_id, feat)
 	-- TODO ability should be rank independent 
 	local rank = npcdu.get_perk_rank(npc_id, feat.id) -- TODO EXP framework can give this otherwise
 	npcs[npc_id].Ability[a_id]["cooldown"] = feat.stats[rank].cooldown or 1 -- TODO move this out from ability
-	npcs[npc_id].Ability[a_id]["timer"] = -1
+	npcs[npc_id].Ability[a_id]["timer"] = -9999
 
 	return true
 end
@@ -640,7 +647,42 @@ function set_ability_settings(npc_id, feat_id, settings)
 	return true
 end
 
+function reset_ability(npc_id, feat_id)
+	if not npcs[npc_id] then return false end
+	if not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READY
+	npcs[npc_id].Ability[feat_id].timer = -9999
+	return true
+end
 
+function start_ability_cooldown(npc_id, feat_id)
+	if not npcs[npc_id] then return false end
+	if not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.COOLDOWN
+	npcs[npc_id].Ability[feat_id].timer = npcs[npc_id].Ability[feat_id].cooldown
+	return true
+end
+
+function update_ability_cooldown(npc_id, feat_id, delta_time)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_id].state
+	if state ~= ABILITY_STATE.COOLDOWN and state ~= ABILITY_STATE.READING then return false end -- not in cooldown
+
+	if npcs[npc_id].Ability[feat_id].timer <= 0 then
+		npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READY
+		npcs[npc_id].Ability[feat_id].timer = -9999
+	end	
+	if npcs[npc_id].Ability[feat_id].timer <= 5 then
+		npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READING
+	end
+	npcs[npc_id].Ability[feat_id].timer = npcs[npc_id].Ability[feat_id].timer - (delta_time or 1)
+end
+
+function is_ability_on_cooldown(npc_id, feat_id)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_id].state
+	return state == ABILITY_STATE.COOLDOWN or state == ABILITY_STATE.READING
+end
 -- NPCS STATS
 
 NPCD_STATS = {
@@ -668,6 +710,12 @@ end
 
 function get_stat(stat_type, key)
 	return stats[stat_type][key]
+end
+
+function clear_npc_stats(npc_id)
+	if npc_id and stats.Npcs[npc_id] then
+		stats.Npcs[npc_id] = nil
+	end
 end
 
 function set_discovered(perk_id)
@@ -738,6 +786,11 @@ function set_data(new_data)
     data = new_data
 end
 
+function clear_npc_data(id)
+	if id and data[id] then
+		data[id] = nil
+	end
+end
 
 function actor_on_first_update()
     printf("$[NPCD][Main] npcd actor_on_first_update")

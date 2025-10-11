@@ -22,7 +22,7 @@ local function execute_register(npc_id, register, functor)
 	local ex_functor = npcdu.copy(functor)
 	table.insert(ex_functor, npc_id)
 	table.insert(ex_functor, register)
-	Printer:TraceTable("npc executing", ex_functor)
+	Printer:TraceTable("execute_register", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
 	return result
@@ -32,7 +32,7 @@ local function execute_activate(npc_id, feat_id, functor)
 	if not functor then return false end
 	local ex_functor = npcdu.copy(functor)
 	table.insert(ex_functor, npcd.get_npc_feats(npc_id, feat_id))
-	Printer:TraceTable("npc executing", ex_functor)
+	Printer:TraceTable("execute_activate", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
 	return result
@@ -81,13 +81,23 @@ local function remove_execution(id)
 	if not Tasks[id] then return end
 	Printer:Debug(LOG.STOP, CAT.EXEC,"removed execution %s", id)
 	RemoveTimeEvent("npcd_manager", id)
+	if Tasks[id].type == EXECUTION_TYPE.cooldown then
+		npcd.reset_ability(Tasks[id].npc_id, Tasks[id].feat_id)
+	end
 	Tasks[id] = nil
 end
 
 local function add_cooldown_execution(npc_id, feat_id)
 	local ability_cooldown_id = get_ability_cooldown_id(npc_id, feat_id)
-	remove_execution(ability_cooldown_id)
-	Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s creates new ability cooldown manager %s", npc_id, ability_cooldown_id)
+
+	--- CANNOT RESET ABILITY COOLDOWN HERE BECAUSE OF ISSUE WITH ENGINE
+	-- -- if ability is on cooldown or reading, remove the current execution and reset it
+	-- -- workaround for time events not starting swiftly. CreateTimeEvent can be called multiple times before it actually starts and we need to allow this.
+	-- local ability = npcd.get_ability(npc_id, feat_id)
+	-- if ability and (ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING) and Tasks[ability_cooldown_id] then
+	-- 	remove_execution(ability_cooldown_id)
+	-- end
+	Printer:Debug(LOG.ADD, CAT.EXEC,"[%s] npc %s creates new ability cooldown manager %s", time_global(), npc_id, ability_cooldown_id)
 	CreateTimeEvent("npcd_manager", ability_cooldown_id, 0, manage_ability_cooldown, ability_cooldown_id, npc_id, feat_id)
 	Tasks[ability_cooldown_id] = { npc_id = npc_id, feat_id = feat_id, type = EXECUTION_TYPE.cooldown}
 end
@@ -196,12 +206,13 @@ end
 function npcs_sweaper()
 	Printer:Log(LOG.RUN, CAT.CONF,"running npcs sweaper")
 	local npcs_list = npcd.get_npcs_id_list()
+	-- Printer:LogTable("NPCS list", npcs_list)
 	for i = 1, #npcs_list do
 		local npc_id = npcs_list[i]
 		local se_npc = alife_object(npc_id)
 		-- REMOVE DEAD
-		if not se_npc then
-			Printer:Debug(LOG.REMOVE, CAT.CONF,"remove stale npc %s data", npc_id)
+		if not se_npc or not se_npc:alive() or not IsStalker(se_npc) then
+			-- Printer:Debug(LOG.REMOVE, CAT.CONF,"remove stale npc %s data", npc_id)
 			local npc_deck = npcd.get_npc(npc_id)
 			if npc_deck.show_profile then
 				npcd.remove_npc(npc_id)
@@ -212,10 +223,10 @@ function npcs_sweaper()
 		-- PURGE STALE ABILITIES
 		if se_npc and IsStalker(se_npc) and se_npc:alive() then
 			local npc_deck = npcd.get_npc(npc_id)
-			if npc_deck and npc_deck.has_profile then
-				Printer:Debug(LOG.RUN, CAT.CONF,"sweaping npc %s abilities", npc_id)
+			if npc_deck and npc_deck.has_profile and not npcd_squad.is_actor_squad(npc_id) then
+				-- Printer:Trace(LOG.RUN, CAT.CONF,"sweaping npc %s abilities", npc_id)
 				for ability_id, ability in pairs(npc_deck.Ability) do
-					if ability.registered == false and (ability.state ~= ABILITY_STATE.COOLDOWN or ability.timer < 0) then
+					if ability.registered == false and ability.state ~= ABILITY_STATE.COOLDOWN and ability.state ~= ABILITY_STATE.READING then
 						Printer:Debug(LOG.REMOVE, CAT.CONF,"removing unregistered ability %s from npc %s", ability_id, npc_id)
 						npcd.remove_ability(npc_id, ability_id)
 					end
@@ -272,30 +283,29 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then
 		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
+		Tasks[ability_cooldown_id] = nil
 		return true
 	end  -- npc died?
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then
 		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. stopping manage ability cooldown %s", npc_id, feat_id, ability_cooldown_id)
+		Tasks[ability_cooldown_id] = nil
 		return true
 	end -- ability unregistered?
 
     -- setup cooldown transition
 	if npc_ability.state == ABILITY_STATE.READY then
-		Printer:Debug(LOG.START, CAT.FEAT,"npc %s ability %s init cooldown %s", npc_id, feat_id, npc_ability.cooldown)
-		npc_ability.state = ABILITY_STATE.COOLDOWN
-		npc_ability.timer = npc_ability.cooldown
+		Printer:Debug(LOG.START, CAT.FEAT,"[%s] npc %s ability %s init cooldown %s", time_global(), npc_id, feat_id, npc_ability.cooldown)
+		npcd.start_ability_cooldown(npc_id, feat_id)
 	end
 
     -- ability cooldown ended, kill time event
-	if npc_ability.timer <= -5 then
-		npc_ability.timer = -999
-		npc_ability.state = ABILITY_STATE.READY
+	if npc_ability.timer <= 0 then
+		npcd.reset_ability(npc_id, feat_id)
 		Printer:Debug(LOG.STOP, CAT.FEAT,"cooldown completed. ending time event %s", ability_cooldown_id)
+		Tasks[ability_cooldown_id] = nil
 		return true
-	elseif npc_ability.timer == 0 then -- ability cooldown ended is, going to reading up
-		npc_ability.state = ABILITY_STATE.READING
 	end
 
     -- managing cooldown timer
@@ -303,10 +313,7 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 	local cooldown = npc_ability.cooldown
 	local state = npc_ability.state
 	Printer:Debug(LOG.RUN, CAT.FEAT,"npc %s ability %s state %s timer %s/%s", npc_id, feat_id, state, timer, cooldown)
-	npc_ability.timer = npc_ability.timer - 1
-
-    -- updating, necessary ??
-    npcd.set_ability(npc_id, npc_ability)
+	npcd.update_ability_cooldown(npc_id, feat_id)
 
     -- loop cooldown management event
 	reset_execution(ability_cooldown_id, 1)
@@ -315,8 +322,6 @@ end
 
 local function activate_ability(npc_id, feat_id)
 	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s", npc_id, feat_id)
-    local npc_deck = npcd.get_npc(npc_id)
-	if not npc_deck then return false end  -- npc died?
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return false end -- ability unregistered?
@@ -333,32 +338,34 @@ local function activate_ability(npc_id, feat_id)
 end
 
 local function actionable_ability(npc_id, feat_id)
-    local npc_deck = npcd.get_npc(npc_id)
-	if not npc_deck then return false end  -- npc died?
-
-    local npc_ability = npcd.get_ability(npc_id, feat_id)
-	if not npc_ability then return false end -- ability unregistered?
-	if (npc_ability.state == ABILITY_STATE.COOLDOWN) then 
+	if npcd.is_ability_on_cooldown(npc_id, feat_id) then 
 		Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
 		return false
 	else
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_id)
+		Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_id)
 		return true
 	end
 end
 
--- TODO add all cooldown timers to a table by cooldown id
 -- called by NPCD Manager custom time events
 function poll(polling_input)
 	Printer:Debug(LOG.RUN, CAT.ACTIV,"polling npc %s ability %s", polling_input.npc_id, polling_input.feat_id)
 	
-	-- first poll ability is not on cooldown
+	-- first ensure this polling task has sense to exists
+    local npc_deck = npcd.get_npc(polling_input.npc_id)
+	if not npc_deck then
+		Printer:Log(LOG.ERROR, CAT.ACTIV,"npc %s deck not found. stopping poll %s", polling_input.npc_id, polling_input.id)
+		return true 
+	end  -- end this task
+
+	-- second checking ability is actionable
 	if actionable_ability(polling_input.npc_id, polling_input.feat_id) then
 		-- execute ability
 		local activated = execute_activate(polling_input.npc_id, polling_input.feat_id, polling_input.activation_functor)
 		-- activate ability cooldown
 		if activated then
 			activate_ability(polling_input.npc_id, polling_input.feat_id)
+			-- TODO instead of keeping polling with the ability on cooldown, we could remove it and re-add it when cooldown ends
 		end
 	end
 
@@ -370,6 +377,11 @@ end
 -- called by NPCD Input Manager
 function activate(activation_input)
 	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s",activation_input.npc_id, activation_input.feat_id)
+
+	-- first ensure this polling task has sense to exists
+    local npc_deck = npcd.get_npc(activation_input.npc_id)
+	if not npc_deck then return true end  -- end this task
+
 	if actionable_ability(activation_input.npc_id, activation_input.feat_id) then
 		-- execute ability
 		local activated = execute_activate(activation_input.npc_id, activation_input.feat_id, activation_input.activation_functor)
@@ -437,14 +449,33 @@ local function manage_buff_duration(buff_id, duration)
 end
 
 function create_timed_buff(npc_id, feat_id, duration)
-	Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s feat %s duration %s", npc_id, feat_id, duration)
-	local buff_id = get_timed_buff_id(npc_id, feat_id)
-	CreateTimeEvent("npcd_manager", buff_id, 0, manage_buff_duration, buff_id, duration)
+	if duration <= 0 then
+		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot create custom timed buff for npc %s feat %s with invalid duration %s", npc_id, feat_id, duration)
+		return false
+	end
+	if npc_id == db.actor:id() then
+		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for actor, feat %s duration %s", feat_id, duration)
+		local buff_id = get_timed_buff_id(npc_id, feat_id)
+		CreateTimeEvent("npcd_manager", buff_id, 0, manage_buff_duration, buff_id, duration)
+	else
+		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s feat %s duration %s", npc_id, feat_id, duration)
+		local ability = npcd.get_ability(npc_id, feat_id)
+		if not ability then
+			Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. cannot create timed buff", npc_id, feat_id)
+			return false
+		end -- ability unregistered?
+		npcd.set_ability_settings(npc_id, feat_id, { cooldown = duration })
+		add_cooldown_execution(npc_id, feat_id)
+	end
 end
 
 function is_timed_buff_on(npc_id, feat_id)
-	local buff_id = get_timed_buff_id(npc_id, feat_id)
-	return custom_timed_buff[buff_id] ~= nil
+	if npc_id == db.actor:id() then
+		local buff_id = get_timed_buff_id(npc_id, feat_id)
+		return (custom_timed_buff[buff_id] ~= nil)
+	else
+		return npcd.is_ability_on_cooldown(npc_id, feat_id)
+	end
 end
 
 --------------- NPCs
@@ -624,7 +655,7 @@ function npc_on_death(victim, who)
 	if not (victim and who) then
 		return
 	end
-	if who and who:id() == db.actor then
+	if who and who:id() == db.actor:id() then
 		Printer:Debug(LOG.INFO, CAT.NPC, "Enemy %s killed by actor", victim:name())
 		return
 	end
@@ -789,9 +820,8 @@ local function resume_squad_state()
 	if npcd_squad.squad_available() then
 		Printer:Debug(LOG.RUN, CAT.NPC,"resuming squad state")
 		-- register perks for all squad members
-		local clist = npcd_squad.squad_get_clist()
-		for i=1, #clist do
-			local npc = npcdu.get_npc_obj(clist[i])
+		for i=1, #current_clist do
+			local npc = npcdu.get_npc_obj(current_clist[i])
 			if npc and npc:alive() then
 				register_npc_perks(npc:id(), true)
 			end
@@ -799,6 +829,7 @@ local function resume_squad_state()
 		-- build and register the deck
 		build_deck()
 		register_deck()
+		npcd_actionbar.update_actionbar(get_actionable_abilities_in_deck())
 		-- restart squad executions
 		restart_squad_executions()
 	else

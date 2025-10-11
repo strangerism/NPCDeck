@@ -231,6 +231,9 @@ function clone_stalker(npc, stop_inv_duplication, stop_tasks_transfer)
 		transfer_tasks(clone_squad, se_npc)
 	end
 
+	-- clear old data
+	npcd.remove_npc(npc:id())
+
 	return se_clone.id
 end
 

@@ -45,7 +45,7 @@ function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, ind
 	slot_hud.ability = {}
 
 	-- slot background
-	if ability.state == ABILITY_STATE.COOLDOWN then
+	if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING then
 		slot_hud.background:Show(false)
 		slot_hud.background:InitTexture("ui_npcd_hud_slot_cooldown")
 	else
@@ -224,7 +224,7 @@ function UINPCDActionBar:Update(force)
 						if (ability.state ~= slot_hud.state) then
 							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
 						end
-						if ability.state == ABILITY_STATE.COOLDOWN then
+						if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING then
 							local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
 							Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
 							slot_hud.ability.cd:SetProgressPos(bar)
