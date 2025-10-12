@@ -145,6 +145,9 @@ local function resume_npc_ability_execution(npc_id, feat)
 			if feat.mode == FEAT_MODE.MANUAL and (npc_ability.state == ABILITY_STATE.COOLDOWN or npc_ability.state == ABILITY_STATE.READING) then
 				add_cooldown_execution(npc_id, feat.id)
 			end
+			if feat.mode == FEAT_MODE.CUSTOM and (npc_ability.state == ABILITY_STATE.COOLDOWN or npc_ability.state == ABILITY_STATE.READING) then
+				add_cooldown_execution(npc_id, feat.id)
+			end
 			if feat.mode == FEAT_MODE.AUTO then
 				if npc_ability.state ~= ABILITY_STATE.READY then
 					add_cooldown_execution(npc_id, feat.id) -- resume current cooldown if not in READY
@@ -160,7 +163,7 @@ function restart_npc_execution(npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 	if not npcd.has_abilities(npc_id) then return false end -- npc has no abilities
-	Printer:LogTable("Restart Abilities - NPC perks:", npc_deck)
+	Printer:LogTable("Restart Abilities - NPC perks:", npc_deck.Perk)
 	for _, npc_perk in pairs(npc_deck.Perk) do
 		Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts abilities for perk %s", npc_id, npc_perk.id)
 		local perk = npcd.get_perk(npc_perk.id)
