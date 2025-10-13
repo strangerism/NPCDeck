@@ -101,14 +101,14 @@ function update_squad_info()
 	end
 	Printer:Trace(LOG.INFO, CAT.NPC,"squad is resolved peaceful %s", squad_is_peaceful)
 	if not Squad_Info.combat and not squad_is_peaceful then
-		Printer:Debug(LOG.START, CAT.EXEC,"npcd_squad_combat_started")
+		Printer:Debug(LOG.START, CAT.NPC,"npcd_squad_combat_started")
 		Squad_Info.combat = true
 		SendScriptCallback("npcd_squad_combat_started")
 		return
 	end
 
 	if Squad_Info.combat and squad_is_peaceful then
-		Printer:Debug(LOG.STOP, CAT.EXEC,"npcd_squad_combat_ended")
+		Printer:Debug(LOG.STOP, CAT.NPC,"npcd_squad_combat_ended")
 		Squad_Info.combat = false
 		SendScriptCallback("npcd_squad_combat_ended")
 		return

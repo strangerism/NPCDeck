@@ -282,31 +282,31 @@ end
 
 -- called by NPCD Manager custom time events
 function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
-	Printer:Trace(LOG.RUN, CAT.FEAT,"managing npc %s ability cooldown %s", npc_id, feat_id)
+	Printer:Trace(LOG.RUN, CAT.COOLDOWN,"managing npc %s ability cooldown %s", npc_id, feat_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then
-		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
+		Printer:Log(LOG.ERROR, CAT.COOLDOWN,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
 		Tasks[ability_cooldown_id] = nil
 		return true
 	end  -- npc died?
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then
-		Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. stopping manage ability cooldown %s", npc_id, feat_id, ability_cooldown_id)
+		Printer:Log(LOG.ERROR, CAT.COOLDOWN,"npc %s ability %s not found. stopping manage ability cooldown %s", npc_id, feat_id, ability_cooldown_id)
 		Tasks[ability_cooldown_id] = nil
 		return true
 	end -- ability unregistered?
 
     -- setup cooldown transition
 	if npc_ability.state == ABILITY_STATE.READY then
-		Printer:Debug(LOG.START, CAT.FEAT,"[%s] npc %s ability %s init cooldown %s", time_global(), npc_id, feat_id, npc_ability.cooldown)
+		Printer:Debug(LOG.START, CAT.COOLDOWN,"[%s] npc %s ability %s init cooldown %s", time_global(), npc_id, feat_id, npc_ability.cooldown)
 		npcd.start_ability_cooldown(npc_id, feat_id)
 	end
 
     -- ability cooldown ended, kill time event
 	if npc_ability.timer <= 0 then
 		npcd.reset_ability(npc_id, feat_id)
-		Printer:Debug(LOG.STOP, CAT.FEAT,"cooldown completed. ending time event %s", ability_cooldown_id)
+		Printer:Debug(LOG.STOP, CAT.COOLDOWN,"cooldown completed. ending time event %s", ability_cooldown_id)
 		Tasks[ability_cooldown_id] = nil
 		return true
 	end
@@ -315,7 +315,7 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 	local timer = npc_ability.timer
 	local cooldown = npc_ability.cooldown
 	local state = npc_ability.state
-	Printer:Debug(LOG.RUN, CAT.FEAT,"npc %s ability %s state %s timer %s/%s", npc_id, feat_id, state, timer, cooldown)
+	Printer:Debug(LOG.RUN, CAT.COOLDOWN,"npc %s ability %s state %s timer %s/%s", npc_id, feat_id, state, timer, cooldown)
 	npcd.update_ability_cooldown(npc_id, feat_id)
 
     -- loop cooldown management event
@@ -437,7 +437,7 @@ end
 local function manage_buff_duration(npc_id, perk_id, feat_id, duration)
 	local buff_id = get_timed_buff_id(npc_id, feat_id)
 	if not custom_timed_buff[buff_id] then
-		Printer:Debug(LOG.ADD, CAT.FEAT,"initializing custom timed buff %s with duration %s", buff_id, duration)
+		Printer:Debug(LOG.ADD, CAT.COOLDOWN,"initializing custom timed buff %s with duration %s", buff_id, duration)
 		custom_timed_buff[buff_id] = { value = duration, duration = duration }
 		local feat = npcd.get_perk_feat(perk_id, feat_id)
 		actor_status.add_indicator(feat.id, {
@@ -452,12 +452,12 @@ local function manage_buff_duration(npc_id, perk_id, feat_id, duration)
 		})
 	end
 	if custom_timed_buff[buff_id].value == 0 then
-		Printer:Debug(LOG.STOP, CAT.FEAT,"custom timed buff %s expired", buff_id)
+		Printer:Debug(LOG.STOP, CAT.COOLDOWN,"custom timed buff %s expired", buff_id)
 		custom_timed_buff[buff_id] = nil
 		return true
 	end
 	custom_timed_buff[buff_id].value = custom_timed_buff[buff_id].value - 1
-	Printer:Debug(LOG.INFO, CAT.FEAT,"custom timed buff %s duration %s", buff_id, custom_timed_buff[buff_id].value)
+	Printer:Debug(LOG.INFO, CAT.COOLDOWN,"custom timed buff %s duration %s", buff_id, custom_timed_buff[buff_id].value)
 	-- loop cooldown management event
 	reset_execution(buff_id, 1)
 	return false
