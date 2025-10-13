@@ -301,6 +301,13 @@ function get_npc_perks(npc_id)
 	return npcs[npc_id].Perk
 end
 
+function get_perk_rank(npc_id, perk_id)
+	if not npc_id or not perk_id then return end
+	if not npcs[npc_id] or not npcs[npc_id].Perk[perk_id] then return end
+	local rank = npcdu.get_perk_rank(npc_id)
+	return rank
+end
+
 function get_squad_npc_with_perk(perk_id)
 	if not perk_id then return end -- cannot continue
 	local clist = npcd_squad.squad_get_clist()
