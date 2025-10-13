@@ -264,7 +264,7 @@ function get_module_menu(module_deck)
 								-- mcm_prefix = "npcd_module_" .. module_deck.module .. "_" .. perk.id .. "_" .. feat.id .. "_"
 								stat_hint = "npcd_module_" .. module_deck.module .. "_" .. perk.id .. "_" .. feat.id .. "_" .. key
 							end
-							table.insert(perk_menu.gr, {id = feat.id .. "_stats_" .. i .. "_" .. key , type = "input", hint = stat_hint, val = 2, def = value, min = 1, max = 9999})
+							table.insert(perk_menu.gr, {id = feat.id .. "_stats_" .. i .. "_" .. key , type = "input", hint = stat_hint, val = 2, def = value, min = 0.1, max = 9999})
 						end
 					end
 				end
