@@ -84,6 +84,10 @@
 		\n
 		</text>
 	</string>
+    <string id="st_npcd_npc_dialogs_squad_no_room">
+		<text>[%c[d_red]You have no room for this squad. Make space to recruit them.%c[ui_8]]
+		</text>
+	</string>
     <string id="st_npcd_npc_dialogs_squad_recruitable">
 		<text>We are always interested to join you.
 		</text>

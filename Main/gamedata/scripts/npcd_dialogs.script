@@ -148,7 +148,11 @@ function get_dialog_get_squad_info(actor, npc)
 			Printer:Debug(LOG.INFO, CAT.NPC,"rank %s", rank)
 			Printer:Debug(LOG.INFO, CAT.NPC,"size %s", size)
 			local squad_info_dialog = string.format(game.translate_string("st_npcd_npc_dialogs_squad_info"),size, rank, npcd_relations.is_squad_recruitable(actor,npc), npcd_relations.is_squad_hireable(actor,npc))
+			if not dialogs_axr_companion.is_room_in_actor_squad(actor,npc) then
+				squad_info_dialog = squad_info_dialog .. game.translate_string("st_npcd_npc_dialogs_squad_no_room", true)
+			end
 			squad_info_dialog = squad_info_dialog .. "\\n \\n" .. ( npcd_relations.is_squad_hireable(actor,npc) and game.translate_string("st_npcd_npc_dialogs_squad_hireable", true) or game.translate_string("st_npcd_npc_dialogs_squad_recruitable", true) )
+						
 			return squad_info_dialog
 		end
 		
