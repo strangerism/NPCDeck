@@ -76,6 +76,15 @@ function is_actor_squad(npc_id)
 	return false
 end
 
+-- special tasks npc are included here
+function is_npc_companion(npc)
+	return npc:has_info("npcx_is_companion")
+end
+
+function is_npc_ignore_combat(npc)
+	return npc:has_info("npcx_beh_ignore_combat")
+end
+
 --------------- SQUAD MGMT API
 
 function update_squad_info()
