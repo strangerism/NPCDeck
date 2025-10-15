@@ -323,29 +323,45 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 	return false
 end
 
+local function toggle_modal(npc_id, feat_id)
+	if npcd.is_ability_active(npc_id, feat_id) then
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s deactivates modal ability %s", npc_id, feat_id)
+		npcd.deactivate_ability(npc_id, feat_id)
+	else
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates modal ability %s", npc_id, feat_id)
+		npcd.activate_ability(npc_id, feat_id)
+	end
+	return true
+end
+
 local function activate_ability(npc_id, feat_id)
 	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s", npc_id, feat_id)
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return false end -- ability unregistered?
-
-	if (npc_ability.state == ABILITY_STATE.READING) then
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s on READING", npc_id, feat_id)
-		npc_ability.state = ABILITY_STATE.READY
-	else
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s", npc_id, feat_id)
+	if npc_ability.mode == FEAT_MODE.MANUAL then
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s cooldown", npc_id, feat_id)
+		add_cooldown_execution(npc_id, feat_id)
 	end
-
-	add_cooldown_execution(npc_id, feat_id)
+	if npc_ability.mode == FEAT_MODE.MODAL then
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s toggles ability %s modal", npc_id, feat_id)
+		toggle_modal(npc_id, feat_id)
+	end
 	return true
 end
 
 local function actionable_ability(npc_id, feat_id)
-	if npcd.is_ability_on_cooldown(npc_id, feat_id) then 
-		Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
-		return false
-	else
-		Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_id)
+	local npc_ability = npcd.get_ability(npc_id, feat_id)
+	if npc_ability.mode == FEAT_MODE.MANUAL then
+		if npcd.is_ability_on_cooldown(npc_id, feat_id) then 
+			Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
+			return false
+		else
+			Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_id)
+			return true
+		end
+	elseif npc_ability.mode == FEAT_MODE.MODAL then
+		Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can toggle modal ability %s", npc_id, feat_id)
 		return true
 	end
 end
@@ -406,6 +422,7 @@ local function bind_ability(npc_id, feat)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
+		npcd_actionbar.add_action_slot(npc_id, feat.id)
 	end
 
 end
@@ -422,6 +439,7 @@ local function unbind_ability(npc_id, feat)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
+		npcd_actionbar.remove_action_slot(npc_id, feat.id)
 	end
 
 end
@@ -779,7 +797,7 @@ local function get_actionable_abilities_in_deck()
 		local perk = npcd.get_perk(perk_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
-				if feat.type == FEAT_TYPE.ACTIVE and feat.mode == FEAT_MODE.MANUAL then
+				if feat.type == FEAT_TYPE.ACTIVE and (feat.mode == FEAT_MODE.MANUAL or feat.mode == FEAT_MODE.MODAL) then
 					table.insert(abilities_in_deck, { id = feat.id, npc_id = perk_info.npc_id })
 				end
 			end

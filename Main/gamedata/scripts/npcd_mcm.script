@@ -228,7 +228,7 @@ function get_module_menu(module_deck)
 				end
 				-- stats
 				-- keybinds
-				if feat.mode == FEAT_MODE.MANUAL and feat.activation_key then
+				if (feat.mode == FEAT_MODE.MANUAL or feat.mode == FEAT_MODE.MODAL) and feat.activation_key then
 					local keybind_grp = {
 						key_bind = {
 							id = feat.id .. "_" .. FEAT_SETTING.TYPE.ACTIVATION_KEY .. "_" .. FEAT_SETTING.KEYBIND.KEY,

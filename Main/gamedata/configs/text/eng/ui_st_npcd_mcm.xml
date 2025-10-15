@@ -80,7 +80,7 @@
 	<string id="ui_mcm_st_npcd_perk_type_desc">
 		<text>A perk can be of three types:
 		\n- %c[orange]ARCHETYPE%c[white]: a full fledged class perk with active feats. NPCs have a chance to spawn with it and only with one.
-		\n- %c[orange]MAIN%c[white]: a major perk with one or more feats but no active ones. NPCs can have at most 2 main perks.  
+		\n- %c[orange]MAIN%c[white]: a major perk with one or more feats. Might have active feat. NPCs can have at most 2 main perks.  
 		\n- %c[orange]SECONDARY%c[white]: a minor perk with a single feat, it cannot be active. NPC always have 2 secondary perks.
 		</text>
 	</string>
@@ -110,6 +110,7 @@
 		\n- %c[orange]AUTO%c[white]: automatically activated based on the feat's own conditions. 
 		\n- %c[orange]MANUAL%c[white]: manually activated by the player with an input key. The effect is triggered upon activation with a cooldown.
 		\n- %c[orange]MODAL%c[white]: manually activated by the player with an input key. The effect is applied if the modal is on, disabled when it's off.
+		\n- %c[orange]CUSTOM%c[white]: A custom activation mechanism defined by the perk's implementation.
 		</text>
 	</string>	
 	<string id="ui_mcm_lst_st_npcd_perk_type_archetype">
@@ -136,6 +137,10 @@
 
 	<string id="ui_mcm_lst_st_npcd_feat_mode_manual">
 		<text>Manual</text>
+	</string>
+
+	<string id="ui_mcm_lst_st_npcd_feat_mode_modal">
+		<text>Modal</text>
 	</string>
 
 	<string id="ui_mcm_lst_st_npcd_feat_mode_custom">

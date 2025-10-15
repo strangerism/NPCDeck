@@ -7,6 +7,7 @@ ideas for archetypes
     * echolocation: aoe tracking near monsters as long as they are visible. excluding invisible monsters
     * track: tracks nearby smarts to create heatmaps
     * dersu spirit: chance to spawn a ghost pseudodog during an encounter  
+        - https://www.moddb.com/mods/stalker-anomaly/addons/phantoms-01
 - arena master
     * extra ammo, smuggled gun, chance to join with you
 - smuggler
@@ -29,6 +30,8 @@ ideas for archetypes
 
 
 stuff to do
+- add custom NPCD menu, e,g, squad menu in inventory trade window
+- add actor id in npcs by default to manage actor buffs (granted by abilities)
 - add in npcd mcm, a new tab called perks (discovered, favorite, main deck subtabs)
 - add custom npc progression and npcd configuration menu
 - remove READING state from ability. it's only used to determine the ui flashing icon. find another way

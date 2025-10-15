@@ -249,6 +249,31 @@ end
 -- master
 -- legend
 
+-- rating 
+-- novice < 3499, 
+-- trainee < 6499, 
+-- experienced < 8999, 
+-- professional < 11999, 
+-- veteran < 14499, 
+-- expert < 17499, 
+-- master < 26999, 
+-- legend > 27000
+
+function get_rank_icon(npc)
+	local texture = "ui_rank_0"
+	local rank = npc:character_rank()
+	if rank < 3499 		then 	texture = "ui_rank_0"	-- novice
+	elseif rank < 6499		then 	texture = "ui_rank_1"	-- trainee
+	elseif rank < 8999		then 	texture = "ui_rank_2"	-- experienced
+	elseif rank < 11999		then 	texture = "ui_rank_3"	-- professional
+	elseif rank < 14499		then 	texture = "ui_rank_4"	-- veteran
+	elseif rank < 17499		then 	texture = "ui_rank_5"	-- expert
+	elseif rank < 26999		then 	texture = "ui_rank_6"	-- master
+	elseif rank >= 27000		then 	texture = "ui_rank_7"	-- legend
+	end
+	return texture
+end
+
 -- from game_relations.ltx
 
 -- actor must be in the neutral zone with the squad faction attitude to use this api in dialogs

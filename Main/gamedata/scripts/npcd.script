@@ -15,6 +15,8 @@ end
 
 local perks = {}
 
+local categories = {}
+
 MAX_SECONDARY_PERKS = 2
 MAX_MAIN_PERKS = 2
 
@@ -117,6 +119,16 @@ function get_module_perks(module)
 	return module_perks
 end
 
+function add_category(perk_category, desc)
+	if not perk_category then return end
+	if not categories[perk_category] then
+		categories[perk_category] = desc
+		Printer:Log(LOG.ADD, CAT.CONF,"category %s added", perk_category)
+	else
+		Printer:Log(LOG.WARN, CAT.CONF,"category %s already exists", perk_category)
+	end
+end
+
 -- NPCD Modules API
 
 local function apply_module_perks_settings(module, module_perks)
@@ -179,6 +191,7 @@ ABILITY_STATE = {
 	COOLDOWN = "COOLDOWN",
 	READING = "READING",
 	DISABLED = "DISABLED",
+	ACTIVE = "ACTIVE"
 }
 
 -- returns true of a new npc is added
@@ -551,6 +564,7 @@ function get_npc_feats(npc_id, feat_id)
 					npc_feat["perk_name"] = perk.name
 					local rank = npcdu.get_perk_rank(npc_id)
 					npc_feat["stats"] = feat.stats[rank]
+					npc_feat["Ability"] = npcdu.copy(npcs[npc_id].Ability[feat.id])
 					if feat_id and feat.id == feat_id then
 						return npc_feat
 					else
@@ -690,6 +704,29 @@ function is_ability_on_cooldown(npc_id, feat_id)
 	local state = npcs[npc_id].Ability[feat_id].state
 	return state == ABILITY_STATE.COOLDOWN or state == ABILITY_STATE.READING
 end
+
+function is_ability_active(npc_id, feat_id)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_id].state
+	return state == ABILITY_STATE.ACTIVE
+end
+
+function deactivate_ability(npc_id, feat_id)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_id].state
+	if state ~= ABILITY_STATE.ACTIVE then return false end -- not active
+	reset_ability(npc_id, feat_id)
+	return true
+end
+
+function activate_ability(npc_id, feat_id)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_id].state
+	if state ~= ABILITY_STATE.READY then return false end -- not ready
+	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.ACTIVE
+	return true
+end
+
 -- NPCS STATS
 
 NPCD_STATS = {
