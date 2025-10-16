@@ -271,7 +271,7 @@ end
 function update_actionbar(ability_list)
     Printer:Debug(LOG.RUN, CAT.UI_ACTION, "updating actionbar")
     on_option_change()
-    Printer:LogTable("Provided ability list", ability_list)
+    Printer:DebugTable("Updating actionbar with ability list", ability_list)
     -- Get current squad
     if npcdu.tablelength(ability_list) == 0 and not settings.show_always then
         npcd_actionbar_hud.show(false)

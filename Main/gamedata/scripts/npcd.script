@@ -671,7 +671,7 @@ function get_ability(npc_id, feat_id)
 end
 
 function ability_registered(npc_id, feat_id)
-	if not npcs[npc_id] then return end
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return end
 	
 	return npcs[npc_id].Ability[feat_id].registered
 end

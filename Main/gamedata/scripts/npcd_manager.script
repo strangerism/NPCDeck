@@ -142,6 +142,7 @@ local function resume_npc_ability_execution(npc_id, feat)
 		if npcd.ability_registered(npc_id, feat.id) then
 			Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts execution for ability %s", npc_id, feat.id)
 			local npc_ability = npcd.get_ability(npc_id, feat.id)
+			Printer:DebugTable("npc ability data", npc_ability)
 			if feat.mode == FEAT_MODE.MANUAL and npc_ability.state == ABILITY_STATE.COOLDOWN then
 				add_cooldown_execution(npc_id, feat.id)
 			end
@@ -153,6 +154,11 @@ local function resume_npc_ability_execution(npc_id, feat)
 					add_cooldown_execution(npc_id, feat.id) -- resume current cooldown if not in READY
 				end
 				add_poll_execution(npc_id, feat)
+			end
+			if feat.mode == FEAT_MODE.MODAL then
+				if npc_ability.state == ABILITY_STATE.ENABLED then
+					npcd.reset_ability(npc_id, feat.id) -- disable modal ability on restart
+				end
 			end
 		end
 	end
@@ -442,6 +448,7 @@ local function unbind_ability(npc_id, feat)
 
 	if feat.mode == FEAT_MODE.MODAL then
 		npcd_actionbar.remove_action_slot(npc_id, feat.id)
+		npcd.reset_ability(npc_id, feat.id)
 	end
 
 end
