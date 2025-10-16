@@ -384,7 +384,9 @@ function poll(polling_input)
 		-- activate ability cooldown
 		if activated then
 			activate_ability(polling_input.npc_id, polling_input.feat_id)
-			-- TODO instead of keeping polling with the ability on cooldown, we could remove it and re-add it when cooldown ends
+			local ability = npcd.get_ability(polling_input.npc_id, polling_input.feat_id)
+			reset_execution(polling_input.id, ability.cooldown) -- resume polling after cooldown
+			return false
 		end
 	end
 
