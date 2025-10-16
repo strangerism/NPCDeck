@@ -53,27 +53,29 @@ function get_actionbar_menu()
 	for key, action_slot in pairs(actionbar.by_key) do
 		-- npcdu.printlog_table("on_mcm_load action_slot", action_slot)
 		local npc = npcdu.get_npc_obj(action_slot.npc_id)
-    	local feat = npcd.get_npc_feats(action_slot.npc_id, action_slot.feat_id)
-        table.insert(slots_options, { id = action_slot.key .. "_feat", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=false, })
-        table.insert(slots_options, { id = action_slot.key .. "_npc", type = "desc", clr = {200, 180, 4, 219}, text = npc and npc:character_name() or npc_id })
-		table.insert(slots_options, {id = action_slot.key .. "_" .. FEAT_SETTING.INDEX, type = "input", hint = "st_npcd_action_slot_index", val = 2, def = action_slot.index, min = 1, max = npcd_actionbar.settings.max_slots or npcd_actionbar.MAX_SLOTS})
-		-- keybind
-		local keybind_grp = {
-			key_bind = {
-				id = action_slot.key .. "_" .. FEAT_SETTING.KEYBIND.KEY,
-				hint = "st_npcd_feat_keybind",
-				default = feat and feat.activation_key.keybind or DIK_keys.DIK_H,
-			},
-			mode = {
-				id = action_slot.key .. "_" .. FEAT_SETTING.KEYBIND.MODIFIER,
-				default = feat and feat.activation_key.modifier or KEYBIND.MODIFIER.PRESS,
-			},
-			modifier = {
-				id = action_slot.key .. "_" .. FEAT_SETTING.KEYBIND.SECOND_KEY,
-				default = feat and feat.activation_key.second_key or KEYBIND.SECOND_KEY.NONE,
-			}
-		}
-		npcd_mcm.add_keybind(slots_options, keybind_grp)
+    	local feat = npcd.get_npc_feat_data(action_slot.npc_id, action_slot.feat_id)
+        if feat then
+            table.insert(slots_options, { id = action_slot.key .. "_feat", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=false, })
+            table.insert(slots_options, { id = action_slot.key .. "_npc", type = "desc", clr = {200, 180, 4, 219}, text = npc and npc:character_name() or npc_id })
+            table.insert(slots_options, {id = action_slot.key .. "_" .. FEAT_SETTING.INDEX, type = "input", hint = "st_npcd_action_slot_index", val = 2, def = action_slot.index, min = 1, max = npcd_actionbar.settings.max_slots or npcd_actionbar.MAX_SLOTS})
+            -- keybind
+            local keybind_grp = {
+                key_bind = {
+                    id = action_slot.key .. "_" .. FEAT_SETTING.KEYBIND.KEY,
+                    hint = "st_npcd_feat_keybind",
+                    default = feat.activation_key.keybind or DIK_keys.DIK_H,
+                },
+                mode = {
+                    id = action_slot.key .. "_" .. FEAT_SETTING.KEYBIND.MODIFIER,
+                    default = feat.activation_key.modifier or KEYBIND.MODIFIER.PRESS,
+                },
+                modifier = {
+                    id = action_slot.key .. "_" .. FEAT_SETTING.KEYBIND.SECOND_KEY,
+                    default = feat.activation_key.second_key or KEYBIND.SECOND_KEY.NONE,
+                }
+            }
+            npcd_mcm.add_keybind(slots_options, keybind_grp)
+        end
 	end
 
 	-- build slots menu

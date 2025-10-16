@@ -31,7 +31,7 @@ end
 local function execute_activate(npc_id, feat_id, functor)
 	if not functor then return false end
 	local ex_functor = npcdu.copy(functor)
-	table.insert(ex_functor, npcd.get_npc_feats(npc_id, feat_id))
+	table.insert(ex_functor, npcd.get_npc_feat_data(npc_id, feat_id))
 	Printer:TraceTable("execute_activate", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
@@ -339,7 +339,7 @@ local function activate_ability(npc_id, feat_id)
 
     local npc_ability = npcd.get_ability(npc_id, feat_id)
 	if not npc_ability then return false end -- ability unregistered?
-	if npc_ability.mode == FEAT_MODE.MANUAL then
+	if npc_ability.mode == FEAT_MODE.MANUAL or npc_ability.mode == FEAT_MODE.AUTO then
 		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s cooldown", npc_id, feat_id)
 		add_cooldown_execution(npc_id, feat_id)
 	end
@@ -352,7 +352,7 @@ end
 
 local function actionable_ability(npc_id, feat_id)
 	local npc_ability = npcd.get_ability(npc_id, feat_id)
-	if npc_ability.mode == FEAT_MODE.MANUAL then
+	if npc_ability.mode == FEAT_MODE.MANUAL or npc_ability.mode == FEAT_MODE.AUTO then
 		if npcd.is_ability_on_cooldown(npc_id, feat_id) then 
 			Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
 			return false
