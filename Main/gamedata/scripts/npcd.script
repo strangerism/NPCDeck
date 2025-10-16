@@ -189,7 +189,6 @@ local npcs = {}
 ABILITY_STATE = {
 	READY = "READY",
 	COOLDOWN = "COOLDOWN",
-	READING = "READING",
 	DISABLED = "DISABLED",
 	ACTIVE = "ACTIVE"
 }
@@ -709,22 +708,18 @@ end
 function update_ability_cooldown(npc_id, feat_id, delta_time)
 	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
 	local state = npcs[npc_id].Ability[feat_id].state
-	if state ~= ABILITY_STATE.COOLDOWN and state ~= ABILITY_STATE.READING then return false end -- not in cooldown
-
+	if state ~= ABILITY_STATE.COOLDOWN then return false end -- not in cooldown
 	if npcs[npc_id].Ability[feat_id].timer <= 0 then
 		npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READY
 		npcs[npc_id].Ability[feat_id].timer = -9999
 	end	
-	if npcs[npc_id].Ability[feat_id].timer <= 5 then
-		npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READING
-	end
 	npcs[npc_id].Ability[feat_id].timer = npcs[npc_id].Ability[feat_id].timer - (delta_time or 1)
 end
 
 function is_ability_on_cooldown(npc_id, feat_id)
 	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
 	local state = npcs[npc_id].Ability[feat_id].state
-	return state == ABILITY_STATE.COOLDOWN or state == ABILITY_STATE.READING
+	return state == ABILITY_STATE.COOLDOWN
 end
 
 function is_ability_active(npc_id, feat_id)

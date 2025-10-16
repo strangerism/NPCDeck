@@ -19,7 +19,19 @@ local HUD_MODE = {
 	FLASHING = "FLASHING"
 }
 
-function add_ability_to_hud(self, ability, companion_hud, index, mode)
+local function is_ability_readying(ability)
+	return ability.timer > 0 and ability.timer <= 5
+end
+
+local function get_hud_mode(ability)
+	if is_ability_readying(ability) then
+		return HUD_MODE.FLASHING
+	else
+		return HUD_MODE.STATIC
+	end
+end
+
+function add_ability_to_hud(self, ability, companion_hud, index)
 
 	local npc_id = companion_hud.name:GetText()
 	local a_id = ability.id
@@ -37,6 +49,7 @@ function add_ability_to_hud(self, ability, companion_hud, index, mode)
 	local ui_ability = companion_hud.abilities[a_id]
 	-- ability index: stores the position where it is created, in the ability ribbon. If it happens to change it will be re-initialized to the new position   
 	ui_ability.index = index
+	local mode = get_hud_mode(ability)
 	-- ability icon
 	if mode == HUD_MODE.STATIC then
 		Printer:Trace(LOG.INFO, CAT.UI,"Init STATIC npc %s ability %s", npc_id, a_id)
@@ -45,7 +58,7 @@ function add_ability_to_hud(self, ability, companion_hud, index, mode)
 	else
 		Printer:Trace(LOG.INFO, CAT.UI,"Init FLASHING npc %s ability %s", npc_id, a_id)
 		ui_ability.icon = self.npcd_xml:InitStatic("abilities:flashing", companion_hud.base)
-		ui_ability.state = ABILITY_STATE.READING
+		ui_ability.state = "READYING"
 	end
 	ui_ability.icon:InitTexture(ability.icon)
 	ui_ability.icon:SetWndSize(vector2():set(ui_ability.icon:GetWidth() * self.scale, ui_ability.icon:GetHeight() * self.scale ))
@@ -149,7 +162,7 @@ function axr_companions.UICompanionList:Update(force)
 						-- init if it is new or has changed position in the ribbon
 						Printer:Trace(LOG.INFO, CAT.UI,"npc %s ability %s state %s/%s",ele.name:GetText(), a_id, ability.state, ele.abilities[a_id] and ele.abilities[a_id].state or nil)
 						if not ele.abilities[a_id] or ele.abilities[a_id].index ~= index or (ability.state ~= ele.abilities[a_id].state) then
-							add_ability_to_hud(self, ability, ele, index, ability.state == ABILITY_STATE.COOLDOWN and HUD_MODE.STATIC or HUD_MODE.FLASHING)
+							add_ability_to_hud(self, ability, ele, index)
 						end
 						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
 						Printer:Trace(LOG.INFO, CAT.UI,"update CD bar=%s",bar)

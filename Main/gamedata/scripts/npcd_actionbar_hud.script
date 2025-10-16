@@ -18,7 +18,7 @@ local ABILITY_STATE = npcd.ABILITY_STATE
 local SLOT_STATE = {
 	READY = "READY",
 	COOLDOWN = "COOLDOWN",
-	READING = "READING",
+	-- READYING = "READYING",
 	EMPTY = "EMPTY",
 	HIDDEN = "HIDDEN",
 }
@@ -27,6 +27,18 @@ local HUD_MODE = {
 	STATIC = "STATIC",
 	FLASHING = "FLASHING"
 }
+
+local function is_ability_readying(ability)
+	return ability.timer > 0 and ability.timer <= 5
+end
+
+local function get_hud_mode(ability)
+	if is_ability_readying(ability) then
+		return HUD_MODE.FLASHING
+	else
+		return HUD_MODE.STATIC
+	end
+end
 
 function clear_actionbar_slot(slot_hud, state)
 	slot_hud.state = state or SLOT_STATE.EMPTY
@@ -39,27 +51,26 @@ function clear_actionbar_slot(slot_hud, state)
 	end
 end
 
-function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, index, mode)
+function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, index)
 	Printer:Trace(LOG.RUN, CAT.UI_ACTION,"adding ability %s to actionbar slot %s", ability.id, index)
 	clear_actionbar_slot(slot_hud, ability.state)
 	slot_hud.ability = {}
 
 	-- slot background
-	if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING or ability.state == ABILITY_STATE.ACTIVE then
+	if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.ACTIVE then
 		slot_hud.background:Show(false)
 		slot_hud.background:InitTexture("ui_npcd_hud_slot_cooldown")
 	else
 		slot_hud.background:Show(false)
 		slot_hud.background:InitTexture("ui_npcd_hud_slot_ready")
 	end
+	local mode = get_hud_mode(ability)
 	if mode == HUD_MODE.STATIC then
 		Printer:Trace(LOG.INFO, CAT.UI_ACTION,"Init STATIC action slot %s with ability %s", index, ability.id)
 		slot_hud.ability.icon = self.xml:InitStatic("action_bar:slot:static", slot_hud.base)
-		-- slot_hud.state = SLOT_STATE.COOLDOWN
 	else
 		Printer:Trace(LOG.INFO, CAT.UI_ACTION,"Init FLASHING action slot %s with ability %s", index, ability.id)
 		slot_hud.ability.icon = self.xml:InitStatic("action_bar:slot:flashing", slot_hud.base)
-		-- slot_hud.state = SLOT_STATE.READING
 	end
 	slot_hud.ability.icon:InitTexture(ability.icon_slot)
 	slot_hud.ability.icon:SetWndSize(vector2():set(slot_hud.ability.icon:GetWidth() * self.scale, slot_hud.ability.icon:GetHeight() * self.scale ))
@@ -222,9 +233,9 @@ function UINPCDActionBar:Update(force)
 						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
 						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
 						if (ability.state ~= slot_hud.state) then
-							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i, ability.state == ABILITY_STATE.READING and HUD_MODE.FLASHING or HUD_MODE.STATIC)
+							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i)
 						end
-						if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING then
+						if ability.state == ABILITY_STATE.COOLDOWN then
 							local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
 							Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
 							slot_hud.ability.cd:SetProgressPos(bar)

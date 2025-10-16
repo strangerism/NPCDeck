@@ -94,7 +94,7 @@ local function add_cooldown_execution(npc_id, feat_id)
 	-- -- if ability is on cooldown or reading, remove the current execution and reset it
 	-- -- workaround for time events not starting swiftly. CreateTimeEvent can be called multiple times before it actually starts and we need to allow this.
 	-- local ability = npcd.get_ability(npc_id, feat_id)
-	-- if ability and (ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING) and Tasks[ability_cooldown_id] then
+	-- if ability and ability.state == ABILITY_STATE.COOLDOWN and Tasks[ability_cooldown_id] then
 	-- 	remove_execution(ability_cooldown_id)
 	-- end
 	Printer:Debug(LOG.ADD, CAT.EXEC,"[%s] npc %s creates new ability cooldown manager %s", time_global(), npc_id, ability_cooldown_id)
@@ -142,10 +142,10 @@ local function resume_npc_ability_execution(npc_id, feat)
 		if npcd.ability_registered(npc_id, feat.id) then
 			Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts execution for ability %s", npc_id, feat.id)
 			local npc_ability = npcd.get_ability(npc_id, feat.id)
-			if feat.mode == FEAT_MODE.MANUAL and (npc_ability.state == ABILITY_STATE.COOLDOWN or npc_ability.state == ABILITY_STATE.READING) then
+			if feat.mode == FEAT_MODE.MANUAL and npc_ability.state == ABILITY_STATE.COOLDOWN then
 				add_cooldown_execution(npc_id, feat.id)
 			end
-			if feat.mode == FEAT_MODE.CUSTOM and (npc_ability.state == ABILITY_STATE.COOLDOWN or npc_ability.state == ABILITY_STATE.READING) then
+			if feat.mode == FEAT_MODE.CUSTOM and npc_ability.state == ABILITY_STATE.COOLDOWN then
 				add_cooldown_execution(npc_id, feat.id)
 			end
 			if feat.mode == FEAT_MODE.AUTO then
@@ -229,7 +229,7 @@ function npcs_sweaper()
 			if npc_deck and npc_deck.has_profile and not npcd_squad.is_actor_squad(npc_id) then
 				-- Printer:Trace(LOG.RUN, CAT.CONF,"sweaping npc %s abilities", npc_id)
 				for ability_id, ability in pairs(npc_deck.Ability) do
-					if ability.registered == false and ability.state ~= ABILITY_STATE.COOLDOWN and ability.state ~= ABILITY_STATE.READING then
+					if ability.registered == false and ability.state ~= ABILITY_STATE.COOLDOWN then
 						Printer:Debug(LOG.REMOVE, CAT.CONF,"removing unregistered ability %s from npc %s", ability_id, npc_id)
 						npcd.remove_ability(npc_id, ability_id)
 					end
@@ -511,7 +511,7 @@ function get_timed_buff_timer(npc_id, feat_id)
 		end
 	else
 		local ability = npcd.get_ability(npc_id, feat_id)
-		if ability and (ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.READING) then
+		if ability and ability.state == ABILITY_STATE.COOLDOWN then
 			return ability.timer
 		else
 			return 0

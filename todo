@@ -34,7 +34,6 @@ stuff to do
 - add actor id in npcs by default to manage actor buffs (granted by abilities)
 - add in npcd mcm, a new tab called perks (discovered, favorite, main deck subtabs)
 - add custom npc progression and npcd configuration menu
-- remove READING state from ability. it's only used to determine the ui flashing icon. find another way
 - rework squad ranking (min or max npc rank based instead of section)
 - add npc identification widget
 - rework notifications (new profile, npc joined, npc leaves)
