@@ -324,12 +324,12 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 end
 
 local function toggle_modal(npc_id, feat_id)
-	if npcd.is_ability_active(npc_id, feat_id) then
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s deactivates modal ability %s", npc_id, feat_id)
-		npcd.deactivate_ability(npc_id, feat_id)
+	if npcd.is_ability_enabled(npc_id, feat_id) then
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s disables modal ability %s", npc_id, feat_id)
+		npcd.disable_ability(npc_id, feat_id)
 	else
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates modal ability %s", npc_id, feat_id)
-		npcd.activate_ability(npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s enables modal ability %s", npc_id, feat_id)
+		npcd.enable_ability(npc_id, feat_id)
 	end
 	return true
 end

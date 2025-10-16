@@ -57,7 +57,7 @@ function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, ind
 	slot_hud.ability = {}
 
 	-- slot background
-	if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.ACTIVE then
+	if ability.state == ABILITY_STATE.COOLDOWN or ability.state == ABILITY_STATE.ENABLED then
 		slot_hud.background:Show(false)
 		slot_hud.background:InitTexture("ui_npcd_hud_slot_cooldown")
 	else

@@ -190,7 +190,7 @@ ABILITY_STATE = {
 	READY = "READY",
 	COOLDOWN = "COOLDOWN",
 	DISABLED = "DISABLED",
-	ACTIVE = "ACTIVE"
+	ENABLED = "ENABLED"
 }
 
 -- returns true of a new npc is added
@@ -722,25 +722,25 @@ function is_ability_on_cooldown(npc_id, feat_id)
 	return state == ABILITY_STATE.COOLDOWN
 end
 
-function is_ability_active(npc_id, feat_id)
+function is_ability_enabled(npc_id, feat_id)
 	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
 	local state = npcs[npc_id].Ability[feat_id].state
-	return state == ABILITY_STATE.ACTIVE
+	return state == ABILITY_STATE.ENABLED
 end
 
-function deactivate_ability(npc_id, feat_id)
+function disable_ability(npc_id, feat_id)
 	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
 	local state = npcs[npc_id].Ability[feat_id].state
-	if state ~= ABILITY_STATE.ACTIVE then return false end -- not active
+	if state ~= ABILITY_STATE.ENABLED then return false end -- not enabled
 	reset_ability(npc_id, feat_id)
 	return true
 end
 
-function activate_ability(npc_id, feat_id)
+function enable_ability(npc_id, feat_id)
 	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
 	local state = npcs[npc_id].Ability[feat_id].state
 	if state ~= ABILITY_STATE.READY then return false end -- not ready
-	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.ACTIVE
+	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.ENABLED
 	return true
 end
 
