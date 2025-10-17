@@ -167,6 +167,24 @@ function get_npcs_menu()
 	return {}
 end
 
+xml = CScriptXmlInit()
+xml:ParseFile("ui_mcm.xml")
+local wnd,txt
+
+function do_ui_feat_header(anchor, handlers, attrs, flags)
+	-- This function should do any first-time setup for each menu option
+	if not (anchor and handlers and flags) then return end
+	local etype = flags and flags.etype
+	if etype == "slide" then
+		wnd = xml:InitStatic("elements:image",anchor)
+		wnd:SetWndSize(vector2():set(24,28))
+		local pos = wnd:GetWndPos()
+		wnd:SetWndPos(vector2():set(pos.x, pos.y + 28))
+		wnd:InitTexture(attrs.feat_icon or "ui_npcd_hud_default_icon")
+		handlers.txt:SetText(game.translate_string(attrs.feat_name))
+	end
+end
+
 function get_module_menu(module_deck)
 
 	-- Printer:LogTable("MCM Module Deck", module_deck)
@@ -211,10 +229,10 @@ function get_module_menu(module_deck)
 		-- add feats
 		if perk.feats then
 			table.insert(perk_menu.gr, { id = "divider", type = "line" })
-			table.insert(perk_menu.gr, { id = perk.id .. "_feats", type = "title", align="l", clr = {200, 180, 4, 219}, text = "ui_mcm_st_npcd_feats"})
+			table.insert(perk_menu.gr, { id = perk.id .. "_feats", type = "title", align="c", clr = {200, 180, 4, 219}, text = "ui_mcm_st_npcd_feats"})
 			for _, feat in pairs(perk.feats) do
 				-- add feat section
-				table.insert(perk_menu.gr, { id = feat.id .. "_name", type = "slide", link = "ui_options_slider_gameplay_diff", text = feat.name, size = {512,50}, spacing = 5, borderless=true, })
+				table.insert(perk_menu.gr, { id = feat.id .. "_name", type= "slide", ui_hook_functor= {do_ui_feat_header}, feat_icon = feat.icon, feat_name = feat.name})
 				table.insert(perk_menu.gr, { id = feat.id .. "_desc", type = "desc", clr = {200, 200, 255, 200}, text = feat.description} )
 				-- type and mode
 				add_readonly_field(perk_menu.gr, feat.type, feat.id .. "_type", "st_npcd_feat_type")
