@@ -169,7 +169,7 @@ function restart_npc_execution(npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
 	if not npcd.has_abilities(npc_id) then return false end -- npc has no abilities
-	Printer:LogTable("Restart Abilities - NPC perks:", npc_deck.Perk)
+	Printer:DebugTable("Restart Abilities - NPC perks:", npc_deck.Perk)
 	for _, npc_perk in pairs(npc_deck.Perk) do
 		Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts abilities for perk %s", npc_id, npc_perk.id)
 		local perk = npcd.get_perk(npc_perk.id)
@@ -578,7 +578,7 @@ local function unregister_feat(npc_id, feat)
 		end
 		return true
 	else
-		Printer:Debug(LOG.WARN, CAT.CONF,"npc %s cannot unregister feat %s", npc_id, feat.id)
+		Printer:Debug(LOG.ERROR, CAT.CONF,"npc %s cannot unregister feat %s", npc_id, feat.id)
 		return false
 	end
 end
@@ -860,9 +860,11 @@ local function do_npcd_squad_update()
 		end
 	end
 	current_clist = new_clist
+	npcd_squad.update_squad_info()
 	build_deck()
 	register_deck()
 	npcd_actionbar.update_actionbar(get_actionable_abilities_in_deck())
+	SendScriptCallback("npcd_post_squad_update")
 	return true
 end
 
