@@ -191,9 +191,9 @@ function do_ui_perk_header(anchor, handlers, attrs, flags)
 	local etype = flags and flags.etype
 	if etype == "slide" then
 		wnd = xml:InitStatic("elements:image",anchor)
-		wnd:SetWndSize(vector2():set(48,48))
+		wnd:SetWndSize(vector2():set(80,80))
 		local pos = wnd:GetWndPos()
-		wnd:SetWndPos(vector2():set(pos.x, pos.y + 20 ))
+		wnd:SetWndPos(vector2():set(pos.x, pos.y + 10 ))
 		wnd:InitTexture(attrs.icon or "ui_npcd_hud_default_icon")
 		handlers.txt:SetText(game.translate_string(attrs.name))
 	end
