@@ -537,6 +537,37 @@ function is_timed_buff_on(npc_id, feat_id)
 	end
 end
 
+-- modal buffs
+
+function get_modal_buff(perk_id, feat_id)
+	local feat = npcd.get_perk_feat(perk_id, feat_id)
+	return (actor_status.indicators[feat.id] ~= nil) and 1 or 0
+end
+
+function create_modal_buff(npc_id, perk_id, feat_id)
+	Printer:Debug(LOG.INFO, CAT.FEAT,"creating modal buff for npc %s feat %s", npc_id, feat_id)
+	local feat = npcd.get_perk_feat(perk_id, feat_id)
+	if not actor_status.indicators[feat.id] then
+		-- custom_modal_buff [feat.id] = true
+		actor_status.add_indicator(feat.id, {
+			index = 1,
+			typ = "state",
+			functor = { "npcd_manager", "get_modal_buff", perk_id, feat_id },
+			icon = feat.icon_hud or "ui_npcd_hud_default_icon",
+			background = "ui\\alticons\\bg1.dds",
+			anim_icon = false,
+			anim_bk = false,
+			anim_period = 5
+		})
+	end
+end
+
+function remove_modal_buff(npc_id, perk_id, feat_id)
+	Printer:Debug(LOG.INFO, CAT.FEAT,"removing modal buff for npc %s feat %s", npc_id, feat_id)
+	local feat = npcd.get_perk_feat(perk_id, feat_id)
+	actor_status.indicators[feat.id] = nil
+end
+
 --------------- NPCs
 ---
 
