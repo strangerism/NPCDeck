@@ -115,7 +115,7 @@ local function get_npcs_menu(menu_type)
                         local perk = npcd.get_perk(perk_id)
                         if perk then
                                                         -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "title", clr = {255,250,150,0}, text = perk.name, })
-                            table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = perk.name, size = {512,50}, spacing = 1, borderless=false, })
+                            table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id, type = "slide", link = "ui_options_slider_alife", size = {512,50}, ui_hook_functor= {npcd_mcm.do_ui_perk_header}, icon = perk.icon, name = perk.name, borderless=false, })
                             table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. perk.id .. "_desc", type = "desc", text = game.translate_string(perk.description)})
                         end
                     end
@@ -127,7 +127,7 @@ local function get_npcs_menu(menu_type)
                     local npc_feats_list = npcd.get_npc_feats(npc_deck.id)
                     for j = 1, #npc_feats_list do
                         local npc_feat = npc_feats_list[j]
-                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id, type = "slide", link = "ui_options_slider_gameplay_diff", text = npc_feat.name, size = {512,50}, spacing = 5, borderless=true, })
+                        table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id, type = "slide", link = "ui_options_slider_night", size = {512,50}, ui_hook_functor= {npcd_mcm.do_ui_feat_header}, icon = npc_feat.icon, name = npc_feat.name, spacing = 20, borderless=true, })
                         -- table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. feat.perk_id .. "_" .. feat.id, type = "desc", text = feat.name})
                         table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_desc", type = "desc", text = game.translate_string(npc_feat.description)})
                         table.insert(npc_menu.gr, { id = npc_deck.id .. "_" .. npc_feat.perk_id .. "_" .. npc_feat.id .. "_rank", type = "desc", text = string.format(game.translate_string("ui_mcm_st_npcd_npcs_feat_rank"), npcdu.get_perk_rank(npc_deck.id))})
