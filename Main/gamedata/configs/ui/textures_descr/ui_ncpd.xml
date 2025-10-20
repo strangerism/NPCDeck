@@ -9,7 +9,7 @@
 	<file name="ui\ui_common">
 	    <texture id="ui_npcd_hud_default_icon" x="668" y="856" width="27" height="28" />
 	</file>    
-    <file name="ui\ui_ranking">
+    <file name="ui\npcd\ui_ranking">
 		<texture height="123" width="123" y="1548" x="738" id="ui_rank_7"/>
 		<texture height="123" width="123" y="1548" x="615" id="ui_rank_6"/>
 		<texture height="123" width="123" y="1548" x="492" id="ui_rank_5"/>
