@@ -585,6 +585,7 @@ function get_npc_feat_data(npc_id, feat_id)
 			feat_data["id"] = feat_id
 			feat_data["npc_id"] = npc_id
 			feat_data["name"] = perk.feats[feat_id].name
+			feat_data["icon"] = perk.feats[feat_id].icon
 			feat_data["perk_module"] = perk.module
 			feat_data["perk_id"] = perk.id
 			feat_data["perk_name"] = perk.name

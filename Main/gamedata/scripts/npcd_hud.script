@@ -2,6 +2,7 @@
 local npcdu = npcd_utils
 
 function get_printer()
+	printf("npcd_hud get_printer callback")
 	if not Printer then
 		Printer = npcd_logging.get_printer("npcd_hud")
 	end 
