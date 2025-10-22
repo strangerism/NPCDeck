@@ -166,6 +166,13 @@ function UINPCDActionBar:InitControls()
 		-- init NPCD actionbar's slots	
 		self.slot[i]                   = {}
 		self.slot[i].base              = xml:InitStatic("action_bar:slot", self.dialog)
+		self.slot[i].index             = xml:InitTextWnd("action_bar:slot:index", self.slot[i].base)
+		self.slot[i].index:SetText(i)
+		if npcd_actionbar.settings.show_index then
+			self.slot[i].index:Show(true)
+		else
+			self.slot[i].index:Show(false)
+		end
 		local x = (i-1)*(self.W + self.offset) * 1
 		self.slot[i].base:SetWndPos( vector2():set( 0+x , 0 ) )
 		self.slot[i].background        = xml:InitStatic("action_bar:slot:background", self.slot[i].base)
@@ -234,39 +241,38 @@ function UINPCDActionBar:Update(force)
 		if to_show then
 			Printer:Trace(LOG.INFO, CAT.UI_ACTION, "Updating action slot %s", i)
 			local slot_hud = self.slot[i]
-			-- if slot_hud then
-				local action_slot = self.actionbar_slots_list[i]
-				if action_slot then
-					local ability = execute(action_slot.action.state_functor)
-					if ability then
-						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
-						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "slot %s - ability %s state %s/%s",i, ability.id, ability.state, slot_hud.state)
-						if (ability.state ~= slot_hud.state) then
-							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i)
-						end
-						if ability.state == ABILITY_STATE.COOLDOWN then
-							local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
-							Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
-							slot_hud.ability.cd:SetProgressPos(bar)
-						end
-					else
-						Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find action %s state for actionbar slot %s", action_slot.action.key, action_slot.index)
+			-- slot_hud.index:SetText(i)
+			local action_slot = self.actionbar_slots_list[i]
+			if action_slot then
+				local ability = execute(action_slot.action.state_functor)
+				if ability then
+					Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
+					Printer:Trace(LOG.INFO, CAT.UI_ACTION, "slot %s - ability %s state %s/%s",i, ability.id, ability.state, slot_hud.state)
+					if (ability.state ~= slot_hud.state) then
+						add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i)
 					end
-					self.slot[i].background:Show(true)
+					if ability.state == ABILITY_STATE.COOLDOWN then
+						local bar = ( (ability.timer == 0) and 0) or (ability.timer / ability.cooldown )
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"update CD bar=%s",bar)
+						slot_hud.ability.cd:SetProgressPos(bar)
+					end
+				else
+					Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find action %s state for actionbar slot %s", action_slot.action.key, action_slot.index)
+				end
+				self.slot[i].background:Show(true)
+				self.slot[i].base:Show(true)
+			else
+				clear_actionbar_slot(slot_hud)
+				if not npcd_actionbar.settings.show_empty and not self.test_mode then
+					Printer:Trace(LOG.START, CAT.UI_ACTION, " hide empty slots %s", i)
+					self.slot[i].background:Show(false)
 					self.slot[i].base:Show(true)
 				else
-					clear_actionbar_slot(slot_hud)
-					if not npcd_actionbar.settings.show_empty and not self.test_mode then
-						Printer:Trace(LOG.START, CAT.UI_ACTION, " hide empty slots %s", i)
-						self.slot[i].background:Show(false)
-						self.slot[i].base:Show(true)
-					else
-						Printer:Trace(LOG.START, CAT.UI_ACTION, " show empty slots %s", i)
-						self.slot[i].background:Show(true)
-						self.slot[i].base:Show(true)
-					end
+					Printer:Trace(LOG.START, CAT.UI_ACTION, " show empty slots %s", i)
+					self.slot[i].background:Show(true)
+					self.slot[i].base:Show(true)
 				end
-			-- end
+			end
 		else
 			self.slot[i].base:Show(false)
 		end

@@ -30,6 +30,7 @@ function get_actionbar_menu()
 		{ id = "max_slots", type = "input", val = 2, def = 8, min = 1, max = npcd_actionbar.MAX_SLOTS},
 		{ id = "show_empty", type = "check", val = 1, def = true },
         { id = "show_always", type = "check", val = 1, def = false },
+        { id = "show_index", type = "check", val = 1, def = true },
 		{ id = "divider", type = "line" },
 		{ id = "offset_x", type = "input", val = 2, def = 180, max = 1024, min = 0 },
 		{ id = "offset_y", type = "input", val = 2, def = 720, max = 768, min = 0 },

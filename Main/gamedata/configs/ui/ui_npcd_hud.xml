@@ -27,6 +27,9 @@
 			<hotkey_bind x="0" y="66" width="55" height="11" stretch="1">
 				<text complex_mode="1" r="200" g="200" b="200" align="c" vert_align="b" font="arial_14"/>
 			</hotkey_bind>
+			<index x="2" y="5" width="11" height="11" stretch="1">
+				<text complex_mode="1" r="200" g="200" b="200" align="r" vert_align="b" font="arial_14"/>
+			</index>			
 		</slot>
     </action_bar>	
 </w>
