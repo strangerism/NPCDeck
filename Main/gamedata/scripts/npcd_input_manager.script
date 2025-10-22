@@ -17,13 +17,13 @@ class "InputManager"
 
 function InputManager:__init(id, activation_input)
     Printer:Log(LOG.ADD, CAT.KEYBINDS, "adding input manager for %s", id)
-    self.settings = activation_input.activation_key
+    self.settings = activation_input.settings
     self.modes = {
         [0] = { 
             call = "on_key_press",         
             action = function(key) 
                 ui_mcm.simple_press(id, key, function() 
-                    npcd_manager.activate(activation_input)
+                    npcd_manager.activate(activation_input.action)
                 end)
             end 
         },
@@ -31,7 +31,7 @@ function InputManager:__init(id, activation_input)
             call = "on_key_press", 
             action = function(key) 
                 if ui_mcm.double_tap(id, key) then
-                    npcd_manager.activate(activation_input)
+                    npcd_manager.activate(activation_input.action)
                 end 
             end 
         },
@@ -39,7 +39,7 @@ function InputManager:__init(id, activation_input)
             call = "on_key_hold", 
             action = function(key) 
                 if ui_mcm.key_hold(id, key) then
-                    npcd_manager.activate(activation_input)
+                    npcd_manager.activate(activation_input.action)
                 end 
             end 
         }

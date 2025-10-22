@@ -401,20 +401,32 @@ function poll(polling_input)
 	return false
 end
 
+function get_action(npc_id, feat)
+	return {
+		key = feat.uid,
+		activation_functor = feat.activation_functor,
+		state_functor = { "npcd", "get_ability", npc_id, feat.id},
+		attr = { npc_id = npc_id }
+	}
+end
 -- called by NPCD Input Manager
-function activate(activation_input)
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s",activation_input.npc_id, activation_input.feat_id)
+function activate(action)
+	local npc_id = action.attr.npc_id
+	local feat_idx = npcd.get_feat_index(action.key)
+	local feat_id = feat_idx.feat_id
+	local perk_id = feat_idx.perk_id
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s perk %s ability %s", npc_id, perk_id, feat_id)
 
 	-- first ensure this polling task has sense to exists
-    local npc_deck = npcd.get_npc(activation_input.npc_id)
+    local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return true end  -- end this task
 
-	if actionable_ability(activation_input.npc_id, activation_input.feat_id) then
+	if actionable_ability(npc_id, feat_id) then
 		-- execute ability
-		local activated = execute_activate(activation_input.npc_id, activation_input.feat_id, activation_input.activation_functor)
+		local activated = execute_activate(npc_id, feat_id, action.activation_functor)
 		-- activate ability cooldown
 		if activated then
-			activate_ability(activation_input.npc_id, activation_input.feat_id)
+			activate_ability(npc_id, feat_id)
 		end
 	end
 end
@@ -422,7 +434,8 @@ end
 local function bind_ability(npc_id, feat)
 	Printer:Debug(LOG.RUN,CAT.ACTIV, "binding npc %s ability %s", npc_id, feat.id)
 	if feat.mode == FEAT_MODE.MANUAL then
-		npcd_actionbar.add_action_slot(npc_id, feat.id)
+		local action = get_action(npc_id, feat)
+		npcd_actionbar.add_action_slot(action)
 	end
 
 	if feat.mode == FEAT_MODE.AUTO then
@@ -430,7 +443,8 @@ local function bind_ability(npc_id, feat)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
-		npcd_actionbar.add_action_slot(npc_id, feat.id)
+		local action = get_action(npc_id, feat)
+		npcd_actionbar.add_action_slot(action)
 	end
 
 end
@@ -438,7 +452,7 @@ end
 local function unbind_ability(npc_id, feat)
 	Printer:Debug(LOG.RUN,CAT.ACTIV, "unbinding npc %s ability %s", npc_id,  feat.id)
 	if feat.mode == FEAT_MODE.MANUAL then
-		npcd_actionbar.remove_action_slot(npc_id, feat.id)
+		npcd_actionbar.remove_action_slot(feat.uid)
 	end
 
 	if feat.mode == FEAT_MODE.AUTO then
@@ -447,7 +461,7 @@ local function unbind_ability(npc_id, feat)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
-		npcd_actionbar.remove_action_slot(npc_id, feat.id)
+		npcd_actionbar.remove_action_slot(feat.uid)
 		npcd.reset_ability(npc_id, feat.id)
 	end
 
@@ -832,18 +846,19 @@ function build_deck()
 end
 
 local function get_actionable_abilities_in_deck()
-	local abilities_in_deck = {}
+	local action_list = {}
 	for perk_id, perk_info in pairs(player_deck.Perk) do
 		local perk = npcd.get_perk(perk_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE and (feat.mode == FEAT_MODE.MANUAL or feat.mode == FEAT_MODE.MODAL) then
-					table.insert(abilities_in_deck, { id = feat.id, npc_id = perk_info.npc_id })
+					local action = get_action(perk_info.npc_id, feat)
+					table.insert(action_list, action)
 				end
 			end
 		end
 	end
-	return abilities_in_deck
+	return action_list
 end
 
 local function remove_from_deck(npc_id)
@@ -1062,6 +1077,7 @@ function game_play_start()
 	end
 	-- NPCD BOOTING
 	Printer:Log(LOG.START, CAT.EXEC, "NPCD BOOTED")
+	npcd.build_perk_index()
 	start_npcd_execution()
 	resume_squad_state()
 	SendScriptCallback("npcd_started")

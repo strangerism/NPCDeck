@@ -52,8 +52,10 @@ function get_actionbar_menu()
 	-- npcdu.printlog_table("on_mcm_load actionbar.by_key", actionbar.by_key)
 	for key, action_slot in pairs(actionbar.by_key) do
 		-- npcdu.printlog_table("on_mcm_load action_slot", action_slot)
-		local npc = npcdu.get_npc_obj(action_slot.npc_id)
-    	local feat = npcd.get_npc_feat_data(action_slot.npc_id, action_slot.feat_id)
+        local npc_id = action_slot.activation_input.action.attr.npc_id
+        local feat_idx = npcd.get_feat_index(action_slot.key)
+		local npc = npcdu.get_npc_obj(npc_id)
+    	local feat = npcd.get_npc_feat_data(npc_id, feat_idx.feat_id)
         if feat then
             table.insert(slots_options, { id = action_slot.key .. "_feat", type = "slide", link = "ui_options_slider_night", size = {512,50}, ui_hook_functor= {npcd_mcm.do_ui_feat_header}, icon = feat.icon, name = feat.name, spacing = 20, borderless=true, })
             table.insert(slots_options, { id = action_slot.key .. "_npc", type = "desc", clr = {200, 180, 4, 219}, text = npc and npc:character_name() or npc_id })
@@ -86,23 +88,19 @@ function get_actionbar_menu()
 	return actionbar_menu
 end
 
-function get_feat_activation_input(npc_id, feat)
-    local activation_key = {
-        keybind = npcd_mcm.get_setting("actionbar", "slots/" .. npc_id .. "_" .. feat.id .. "_" .. FEAT_SETTING.KEYBIND.KEY),
-        modifier = npcd_mcm.get_setting("actionbar", "slots/" .. npc_id .. "_" .. feat.id .. "_" .. FEAT_SETTING.KEYBIND.MODIFIER),
-        second_key = npcd_mcm.get_setting("actionbar", "slots/" .. npc_id .. "_" .. feat.id .. "_" .. FEAT_SETTING.KEYBIND.SECOND_KEY)
+function get_slot_activation_settings(slot_key)
+    local settings = {
+        keybind = npcd_mcm.get_setting("actionbar", "slots/" .. slot_key .. "_" .. FEAT_SETTING.KEYBIND.KEY),
+        modifier = npcd_mcm.get_setting("actionbar", "slots/" .. slot_key .. "_" .. FEAT_SETTING.KEYBIND.MODIFIER),
+        second_key = npcd_mcm.get_setting("actionbar", "slots/" .. slot_key .. "_" .. FEAT_SETTING.KEYBIND.SECOND_KEY)
 
     }
-    local feat_activation_input = {
-        activation_key = activation_key,
-        activation_functor = feat.activation_functor
-    }
-	-- npcdu.printlog_table("get_feat_activation_input", feat_activation_input)
-    return feat_activation_input
+    -- npcdu.printlog_table("get_slot_activation_settings", activation_key)
+    return settings
 end
 
-function get_feat_index_slot(npc_id, feat_id)
-	return npcd_mcm.get_setting("actionbar", "slots/" .. npc_id .. "_" .. feat_id .. "_" .. FEAT_SETTING.INDEX)
+function get_slot_index(key)
+	return npcd_mcm.get_setting("actionbar", "slots/" .. key .. "_" .. FEAT_SETTING.INDEX)
 end
 
 function update_mcm_menu()

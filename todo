@@ -21,15 +21,16 @@ ideas for archetypes
 - courier
     - can carry stuff for you
 - guide
-    - avoid random encounter, decreses travel cd, decreases travel cost
+    - avoid random *encounter, decreses travel cd, decreases travel cost
+        * need to add random encounter mechanic when fast traveling
 - brawler
     - distract npc with aggro
 - scout
     - scout: leaves squad to go scout random smarts and meet at near friendly base?
     - awareness: aoe mark in (previous visited?) smarts location of all item of interests  
 
-
 stuff to do
+- 
 - add custom NPCD menu, e,g, squad menu in inventory trade window
 - add actor id in npcs by default to manage actor buffs (granted by abilities)
 - add in npcd mcm, a new tab called perks (discovered, favorite, main deck subtabs)

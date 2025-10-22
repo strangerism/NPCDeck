@@ -28,6 +28,15 @@ local HUD_MODE = {
 	FLASHING = "FLASHING"
 }
 
+local function execute(functor)
+	if not functor then return false end
+	local ex_functor = npcdu.copy(functor)
+	Printer:TraceTable("execute actionslot get_state", ex_functor)
+	local result = execute_func(unpack(ex_functor))
+	Printer:TraceTable("with result", result)
+	return result
+end
+
 local function is_ability_readying(ability)
 	return ability.timer > 0 and ability.timer <= 5
 end
@@ -82,7 +91,7 @@ function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, ind
 	slot_hud.ability.hotkey_mode =self. xml:InitTextWnd("action_bar:slot:hotkey_mode", slot_hud.base)
 	slot_hud.ability.hotkey_mode:SetFont(GetFontSmall())
 	local text
-	local second_key = action_slot.activation_input.activation_key.second_key
+	local second_key = action_slot.activation_input.settings.second_key
 	if second_key and second_key ~= 0 then
 		text = game.translate_string(SECOND_KEY_DESC[second_key])
 	end
@@ -90,8 +99,8 @@ function add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, ind
 	slot_hud.ability.hotkey_bind = self.xml:InitTextWnd("action_bar:slot:hotkey_bind", slot_hud.base)
 	slot_hud.ability.hotkey_bind:SetFont(GetFontSmall())
 	text = nil
-	if action_slot.activation_input.activation_key.keybind then
-		text = ui_mcm.display_key(action_slot.activation_input.activation_key.keybind)
+	if action_slot.activation_input.settings.keybind then
+		text = ui_mcm.display_key(action_slot.activation_input.settings.keybind)
 	end		
 	slot_hud.ability.hotkey_bind:SetText(text or "")
 	-- set ratio
@@ -228,10 +237,10 @@ function UINPCDActionBar:Update(force)
 			-- if slot_hud then
 				local action_slot = self.actionbar_slots_list[i]
 				if action_slot then
-					local ability = npcd.get_ability(action_slot.npc_id, action_slot.feat_id)
+					local ability = execute(action_slot.action.state_functor)
 					if ability then
 						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "updating ability %s on action slot %s", ability.id, i)
-						Printer:Trace(LOG.INFO, CAT.UI_ACTION,"slot %s - npc %s ability %s state %s/%s",i, action_slot.npc_id, ability.id, ability.state, slot_hud.state)
+						Printer:Trace(LOG.INFO, CAT.UI_ACTION, "slot %s - ability %s state %s/%s",i, ability.id, ability.state, slot_hud.state)
 						if (ability.state ~= slot_hud.state) then
 							add_ability_to_actionbar_slot(self, ability, action_slot, slot_hud, i)
 						end
@@ -241,7 +250,7 @@ function UINPCDActionBar:Update(force)
 							slot_hud.ability.cd:SetProgressPos(bar)
 						end
 					else
-						Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find npc %s ability %s for actionbar slot %s", action_slot.npc_id, action_slot.feat_id, action_slot.index)
+						Printer:Debug(LOG.ERROR, CAT.UI_ACTION,"cannot find action %s state for actionbar slot %s", action_slot.action.key, action_slot.index)
 					end
 					self.slot[i].background:Show(true)
 					self.slot[i].base:Show(true)

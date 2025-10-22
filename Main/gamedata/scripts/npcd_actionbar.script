@@ -20,34 +20,20 @@ local actionbar = {
 
 function get_actionbar()
     return actionbar
-end 
-
-function get_actionslot_key(npc_id, feat_id)
-    return npc_id .. "_" .. feat_id
 end
 
-function get_actionslot_ids(actionslot_key)
-    local parts = {}
-    for part in string.gmatch(actionslot_key, "[^_]+") do
-        table.insert(parts, part)
-    end
-    local npc_id = parts[1]
-    local feat_id = parts[2]
-    return npc_id, feat_id
-end
+function add_action_slot(action, force_index)
 
-function add_action_slot(npc_id, feat_id, force_index)
-    local key = get_actionslot_key(npc_id, feat_id)
-    local feat = npcd.get_npc_feat_data(npc_id, feat_id)
-    local index = force_index or npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id) or 0
-    Printer:Debug(LOG.ADD, CAT.CONF,"added action slot %s for npc %s and ability %s", index, npc_id, feat_id)
-    local feat_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
+    local index = force_index or npcd_actionbar_mcm.get_slot_index(action.key) or 0
+    Printer:Debug(LOG.ADD, CAT.CONF,"added slot %s for action %s", index, action.key)
     local slot = {
         index = index,
-        key = key,
-        npc_id = npc_id,
-        feat_id = feat_id,
-        activation_input = feat_activation_input
+        key = action.key,
+        action = action,
+        activation_input = {
+            action = action,
+            settings = npcd_actionbar_mcm.get_slot_activation_settings(action.key),
+        }
     }
     Printer:DebugTable("Actionbar:add action slot", slot)
     -- Add to master slot list
@@ -60,26 +46,20 @@ function add_action_slot(npc_id, feat_id, force_index)
     table.insert(actionbar.by_index[index], slot)
 
     -- Add to key map
-    actionbar.by_key[key] = slot
+    actionbar.by_key[slot.key] = slot
 end
 
-function bind_action_slot(npc_id, feat_id)
-    local key = get_actionslot_key(npc_id, feat_id)
-    local slot = actionbar.by_key[key]
-    
+function bind_action_slot(slot_key)
+    local slot = actionbar.by_key[slot_key]
     if not slot then
-        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot bind - no slot found for npc %s and ability %s", npc_id, feat_id)
+        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot bind - no slot found for action %s", slot_key)
         return false
     end
 
-    local feat = npcd.get_npc_feat_data(npc_id, feat_id)
-    local new_index = npcd_actionbar_mcm.get_feat_index_slot(npc_id, feat.id)
-    local new_activation_input = npcd_actionbar_mcm.get_feat_activation_input(npc_id, feat)
-    
     -- Remove from old index map
     if actionbar.by_index[slot.index] then
         for i = 1, #actionbar.by_index[slot.index] do
-            if actionbar.by_index[slot.index][i].key == key then
+            if actionbar.by_index[slot.index][i].key == slot.key then
                 table.remove(actionbar.by_index[slot.index], i)
                 break
             end
@@ -90,8 +70,8 @@ function bind_action_slot(npc_id, feat_id)
     end
 
     -- Update slot properties
-    slot.index = new_index or slot.index
-    slot.activation_input = new_activation_input or slot.activation_input
+    slot.index = npcd_actionbar_mcm.get_slot_index(slot.key) or slot.index
+    slot.activation_input.settings = npcd_actionbar_mcm.get_slot_activation_settings(slot.key) or slot.activation_input.settings
 
     -- Add to new index map
     if not actionbar.by_index[slot.index] then
@@ -100,11 +80,9 @@ function bind_action_slot(npc_id, feat_id)
     table.insert(actionbar.by_index[slot.index], slot)
 
     -- bind action slot to input manager
-    slot.activation_input["npc_id"] = npc_id
-    slot.activation_input["feat_id"] = feat_id
     npcd_input_manager.bind_activation_input(slot.key, slot.activation_input)
 
-    Printer:Debug(LOG.INFO, CAT.CONF, "Updated action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
+    Printer:Debug(LOG.INFO, CAT.CONF, "Updated action slot %s for action %s", slot.index, slot.key)
     return true
 end
 
@@ -115,15 +93,14 @@ function bind_actionbar_slots()
     local slots_to_update = {}
     for _, slot in ipairs(actionbar.slots) do
         table.insert(slots_to_update, {
-            npc_id = slot.npc_id,
-            feat_id = slot.feat_id
+            key = slot.key,
         })
     end
 
     -- Update each slot
     local updated_count = 0
     for _, slot in ipairs(slots_to_update) do
-        if bind_action_slot(slot.npc_id, slot.feat_id) then
+        if bind_action_slot(slot.key) then
             updated_count = updated_count + 1
         end
     end
@@ -175,19 +152,18 @@ function get_actionbar_slots_list()
     return action_slots_list
 end
 
-function remove_action_slot(npc_id, feat_id)
-    Printer:Debug(LOG.RUN, CAT.CONF,"removing npc %s ability %s action slot", npc_id, feat_id)
-    local key = get_actionslot_key(npc_id, feat_id)
-    local slot = actionbar.by_key[key]
+function remove_action_slot(action_id)
+    Printer:Debug(LOG.RUN, CAT.CONF,"removing action slot %s", action_id)
+    local slot = actionbar.by_key[action_id]
     
     if not slot then
-        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot remove - no slot found for npc %s and ability %s", npc_id, feat_id)
+        Printer:Debug(LOG.WARN, CAT.CONF, "Cannot remove - no slot found for action %s", action_id)
         return false
     end
 
     -- Remove from slots array
     for i = 1, #actionbar.slots do
-        if actionbar.slots[i].key == key then
+        if actionbar.slots[i].key == slot.key then
             table.remove(actionbar.slots, i)
             break
         end
@@ -196,7 +172,7 @@ function remove_action_slot(npc_id, feat_id)
     -- Remove from index map
     if actionbar.by_index[slot.index] then
         for i = 1, #actionbar.by_index[slot.index] do
-            if actionbar.by_index[slot.index][i].key == key then
+            if actionbar.by_index[slot.index][i].key == slot.key then
                 table.remove(actionbar.by_index[slot.index], i)
                 break
             end
@@ -208,12 +184,12 @@ function remove_action_slot(npc_id, feat_id)
     end
     
     -- Remove from key map
-    actionbar.by_key[key] = nil
+    actionbar.by_key[slot.key] = nil
 
     -- Remove input binding
-    npcd_input_manager.remove_activation_input(key)
-    
-    Printer:Debug(LOG.INFO, CAT.CONF, "Removed action slot %s for npc %s and ability %s", slot.index, npc_id, feat_id)
+    npcd_input_manager.remove_activation_input(slot.key)
+
+    Printer:Debug(LOG.INFO, CAT.CONF, "Removed action slot %s for action %s", slot.index, slot.key)
     return true
 end
 
@@ -223,18 +199,18 @@ function clear_actionbar()
     actionbar.by_key = {}
 end
 
-function is_valid_slot(index, npc_id, feat_id)
-    if not index or index < 0 or index > 8 then return false end
-    if not npc_id or not feat_id then return false end
+-- not used but it should redone to take validation functor from caller
+-- function is_valid_slot(index, npc_id, feat_id)
+--     if not index or index < 0 or index > 8 then return false end
+--     if not npc_id or not feat_id then return false end
     
-    -- Check if NPC exists and has the ability
-    local ability = npcd.get_ability(npc_id, feat_id)
-    return ability ~= nil
-end
+--     -- Check if NPC exists and has the ability
+--     local ability = npcd.get_ability(npc_id, feat_id)
+--     return ability ~= nil
+-- end
 
-function has_slot(index, npc_id, feat_id)
-    local key = get_actionslot_key(npc_id, feat_id)
-    return actionbar.by_key[key] ~= nil
+function has_slot(action_id)
+    return actionbar.by_key[action_id] ~= nil
 end
 
 function is_slot_available(index)
@@ -245,21 +221,6 @@ function get_slot_by_index(index)
     return actionbar.by_index[index]
 end
 
-function get_slot_by_ability(npc_id, feat_id)
-    local key = get_actionslot_key(npc_id, feat_id)
-    return actionbar.by_key[key]
-end
-
-function get_npc_slots(npc_id)
-    local npc_slots = {}
-    for _, slot in ipairs(actionbar.slots) do
-        if slot.npc_id == npc_id then
-            table.insert(npc_slots, slot)
-        end
-    end
-    return npc_slots
-end
-
 function count_slots()
     return {
         total = #actionbar.slots,
@@ -268,12 +229,12 @@ function count_slots()
     }
 end
 
-function update_actionbar(ability_list)
+function update_actionbar(action_list)
     Printer:Debug(LOG.RUN, CAT.UI_ACTION, "updating actionbar")
     on_option_change()
-    Printer:DebugTable("Updating actionbar with ability list", ability_list)
+    Printer:DebugTable("Updating actionbar with action list", action_list)
     -- Get current squad
-    if npcdu.tablelength(ability_list) == 0 and not settings.show_always then
+    if npcdu.tablelength(action_list) == 0 and not settings.show_always then
         npcd_actionbar_hud.show(false)
         return
     end
@@ -281,10 +242,10 @@ function update_actionbar(ability_list)
     -- Reset actionbar
     clear_actionbar()
 
-    -- Add abilities from provided list
+    -- Add actions from provided list
     local slot_index = 1
-    for _, ability_info in pairs(ability_list) do
-        add_action_slot(ability_info.npc_id, ability_info.id)
+    for _, action in pairs(action_list) do
+        add_action_slot(action)
         slot_index = slot_index + 1
     end
     

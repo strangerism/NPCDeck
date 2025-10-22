@@ -14,8 +14,9 @@ end
 -- PERKS DECK 
 
 local perks = {}
-
 local categories = {}
+local feats_index = {}
+
 
 MAX_SECONDARY_PERKS = 2
 MAX_MAIN_PERKS = 2
@@ -102,13 +103,6 @@ function get_perk_feat(perk_id, feat_id)
 	return perks[perk_id].feats[feat_id]
 end
 
-function get_perk_feat_stat(perk_id, feat_id, stat_name, rank)
-	if not rank or not stat_name then return end
-	local feat = get_perk_feat(perk_id, feat_id)
-	if not feat or not feat.stats and not feat.stats[rank]  then return end
-	return feat.stats[rank][stat_name]
-end
-
 function get_module_perks(module)
 	local module_perks = {}
 	for _, perk in pairs(perks) do
@@ -167,6 +161,11 @@ function add_module_perks(module, module_perks)
 		if not perks[perk.id] then
 			perks[perk.id] = npcdu.copy(perk)
 			perks[perk.id]["module"] = module
+			perks[perk.id]["uid"] = module .. "_" .. perk.id
+			for _, feat in pairs(perks[perk.id].feats) do
+				feat["perk_id"] = perk.id
+				feat["uid"] = module .. "_" .. perk.id .. "_" .. feat.id
+			end
 		else
 			Printer:Log(LOG.ERROR, CAT.CONF, "cannot add module %s perk %s, it already exists from other module %s", module, perk.id, perks[perk.id]["module"])
 		end
@@ -180,6 +179,24 @@ function update_module_perks(module)
 	local module_perks = get_module_perks(module)
 	apply_module_perks_settings(module, module_perks)
 	-- Printer:LogTable("Updated Deck Perks", module_perks)
+end
+
+function build_perk_index()
+	for _, perk in pairs(perks) do
+		if perk.feats then
+			for _, feat in pairs(perk.feats) do
+				feats_index[feat.uid] = {
+					module = perk.module,
+					perk_id = perk.id,
+					feat_id = feat.id
+				}
+			end
+		end
+	end
+end
+
+function get_feat_index(feat_uid)
+	return feats_index[feat_uid]
 end
 
 -- NPCs DECK
