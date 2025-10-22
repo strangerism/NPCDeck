@@ -174,3 +174,9 @@ function compute_diff(newclist, currentclist)
 
 	return added_ids, removed_ids
 end
+
+function is_rifle(weapon)
+	if not weapon then return false end
+	local sec = weapon:section()
+    return sec and SYS_GetParam(0,sec,"kind", "na") == "w_rifle"
+end

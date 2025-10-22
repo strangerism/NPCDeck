@@ -147,6 +147,7 @@ local function resume_npc_ability_execution(npc_id, feat)
 				add_cooldown_execution(npc_id, feat.id)
 			end
 			if feat.mode == FEAT_MODE.CUSTOM and npc_ability.state == ABILITY_STATE.COOLDOWN then
+				-- TODO: do I need this?
 				add_cooldown_execution(npc_id, feat.id)
 			end
 			if feat.mode == FEAT_MODE.AUTO then

@@ -143,6 +143,10 @@
 		<text>Modal</text>
 	</string>
 
+	<string id="ui_mcm_lst_st_npcd_feat_mode_stance">
+		<text>Stance</text>
+	</string>
+
 	<string id="ui_mcm_lst_st_npcd_feat_mode_custom">
 		<text>Custom</text>
 	</string>

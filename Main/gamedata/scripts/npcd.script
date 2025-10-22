@@ -39,6 +39,7 @@ FEAT_MODE = {
 	AUTO = "st_npcd_feat_mode_auto",
 	MANUAL = "st_npcd_feat_mode_manual",
 	MODAL = "st_npcd_feat_mode_modal",
+	STANCE = "st_npcd_feat_mode_stance",
 	CUSTOM = "st_npcd_feat_mode_custom"
 }
 
@@ -536,6 +537,8 @@ function create_profile(npc_id)
 	Printer:LogTable(string.format("Create Profile NPC %s", npc_id), npcs[npc_id])
 end
 
+-- called on perks registration
+-- essentially a spot to setup the npc profile's state
 function setup_profile(npc_id)
 	if not npcs[npc_id] and not npcs[npc_id].has_profile then return end
 	for _, npc_perk in pairs(npcs[npc_id].Perk) do
@@ -543,12 +546,14 @@ function setup_profile(npc_id)
 		if perk and perk.feats then
 			for _, feat in pairs(perk.feats) do
 				if feat.type == FEAT_TYPE.ACTIVE then
+					-- we want to add feat abilities for when they are registered
+					-- they also linger for a moment, to hold the state, for when they are are unregistered
 					if not add_ability(npc_id, feat) then
 						update_ability(npc_id, feat)
 					end
 				end
 				if feat.type == FEAT_TYPE.PASSIVE then
-					-- apply passive effects here
+					-- there not seems to be a reason to instantiate abilities for passive feats
 				end
 			end
 		end
