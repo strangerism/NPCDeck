@@ -81,7 +81,7 @@
 		<text>A perk can be of three types:
 		\n- %c[orange]ARCHETYPE%c[white]: a full fledged class perk with active feats. NPCs have a chance to spawn with it and only with one.
 		\n- %c[orange]MAIN%c[white]: a major perk with one or more feats. Might have active feat. NPCs can have at most 2 main perks.  
-		\n- %c[orange]SECONDARY%c[white]: a minor perk with a single feat, it cannot be active. NPC always have 2 secondary perks.
+		\n- %c[orange]SECONDARY%c[white]: a minor perk with a single feat, that cannot be active. NPC always have 2 secondary perks.
 		</text>
 	</string>
 	<string id="ui_mcm_st_npcd_perk_chance">
@@ -95,8 +95,8 @@
 	</string>
 	<string id="ui_mcm_st_npcd_feat_type_desc">
 		<text>A feat can be of several types:
-		\n- %c[orange]ACTIVE%c[white]: an active feat is activated on player command or automatically. It might have a cooldown. 
-		\n- %c[orange]PASSIVE%c[white]: a passive feat is in effect only when its context applies. For instance opening a stash, buying from an npc, etc. 
+		\n- %c[orange]ACTIVE%c[white]: an active feat is activated on player command or automatically by the npc ai. It might have a cooldown and use the actionbar keybind for the activation. 
+		\n- %c[orange]PASSIVE%c[white]: a passive feat is activated by a context (game events, stances, etc). For instance opening a stash, buying from an npc, aiming with a scope, etc. 
 		\n- %c[orange]BOON%c[white]: a one-time reward/boon that is given to the npc upon rolling this perk. NPC can have only have 1 boon.
 		\n- %c[orange]TRAIT%c[white]: a feat with both positive and negative effects. NPC can have only have 1 trait.
 		\n- %c[orange]MUTATION%c[white]: a feat that affects another feat, mainly by changing its properties and effects.				
@@ -107,9 +107,11 @@
 	</string>
 	<string id="ui_mcm_st_npcd_feat_mode_desc">
 		<text>A feat can mode can be of several types:
-		\n- %c[orange]AUTO%c[white]: automatically activated based on the feat's own conditions. 
-		\n- %c[orange]MANUAL%c[white]: manually activated by the player with an input key. The effect is triggered upon activation with a cooldown.
-		\n- %c[orange]MODAL%c[white]: manually activated by the player with an input key. The effect is applied if the modal is on, disabled when it's off.
+		\n- %c[orange]AUTO%c[white]: automatically activated based by the npc ai as implemented in the feat. The effect is %c[green]applied%c[white] upon activation and it has a cooldown.
+		\n- %c[orange]MANUAL%c[white]: manually activated by the player with an input key. The effect is %c[green]applied%c[white] upon activation and it has a cooldown.
+		\n- %c[orange]MODAL%c[white]: manually activated by the player with an input key. The effect is %c[green]applied%c[white] if the modal is on, disabled when it's off.
+		\n- %c[orange]EVENT%c[white]: activated upon one or more in-game context occurs. The effect is %c[yellow]evaluated%c[white] following activation.
+		\n- %c[orange]STANCE%c[white]: Stance is a special case of Event mode. Activation is available when the player enters a particular stance, and activation happens when one or more contexts occurs. The effect is %c[yellow]evaluated%c[white] only following activation and not stance entering.
 		\n- %c[orange]CUSTOM%c[white]: A custom activation mechanism defined by the perk's implementation.
 		</text>
 	</string>	
@@ -119,7 +121,7 @@
 	<string id="ui_mcm_lst_st_npcd_perk_type_main">
 		<text>Main</text>
 	</string>
-	<string id="opt_str_lst_st_npcd_perk_type_secondary">
+	<string id="ui_mcm_lst_st_npcd_perk_type_secondary">
 		<text>Secondary</text>
 	</string>	
 
@@ -147,6 +149,10 @@
 		<text>Stance</text>
 	</string>
 
+	<string id="ui_mcm_lst_st_npcd_feat_mode_event">
+		<text>Event</text>
+	</string>
+
 	<string id="ui_mcm_lst_st_npcd_feat_mode_custom">
 		<text>Custom</text>
 	</string>
@@ -170,5 +176,9 @@
 	<!--Notifications  -->
 	<string id="ui_mcm_npcd_notification_perk_discovery">
 		<text>You have discovered a new perk: %c[d_cyan]%s.</text>
-	</string>  		
+	</string>  	
+	<!-- Categories	 -->
+     <string id="st_npcd_perk_category_warfare">
+        <text>Warfare</text>
+    </string>   	
 </string_table>

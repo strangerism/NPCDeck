@@ -46,7 +46,7 @@ local function run_register_feat(npc_id, feat, register)
 	end
 end
 
-function run_register_perk(npc_id, perk, register)
+local function run_register_perk(npc_id, perk, register)
 	if perk.register_functor then
 		return execute_register(npc_id, register, perk.register_functor)
 	else
@@ -123,7 +123,7 @@ local function remove_npc_executions(npc_id, force)
 	end
 end
 
-function remove_npc_perk_executions(npc_id, perk_id)
+local function remove_npc_perk_executions(npc_id, perk_id)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"removing npc %s perk %s executions",npc_id, perk_id)
 	local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
@@ -139,15 +139,12 @@ end
 local function resume_npc_ability_execution(npc_id, feat)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"resuming npc %s ability %s execution", npc_id, feat.id)
 	if feat.type == FEAT_TYPE.ACTIVE then
+		-- active feats have state machine
 		if npcd.ability_registered(npc_id, feat.id) then
 			Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts execution for ability %s", npc_id, feat.id)
 			local npc_ability = npcd.get_ability(npc_id, feat.id)
 			Printer:DebugTable("npc ability data", npc_ability)
 			if feat.mode == FEAT_MODE.MANUAL and npc_ability.state == ABILITY_STATE.COOLDOWN then
-				add_cooldown_execution(npc_id, feat.id)
-			end
-			if feat.mode == FEAT_MODE.CUSTOM and npc_ability.state == ABILITY_STATE.COOLDOWN then
-				-- TODO: do I need this?
 				add_cooldown_execution(npc_id, feat.id)
 			end
 			if feat.mode == FEAT_MODE.AUTO then
@@ -161,11 +158,15 @@ local function resume_npc_ability_execution(npc_id, feat)
 					npcd.reset_ability(npc_id, feat.id) -- disable modal ability on restart
 				end
 			end
+			-- TODO: is FEAT_MODE.CUSTOM really supported by active feats?
+			if feat.mode == FEAT_MODE.CUSTOM and npc_ability.state == ABILITY_STATE.COOLDOWN then
+				add_cooldown_execution(npc_id, feat.id)
+			end			
 		end
 	end
 end
 
-function restart_npc_execution(npc_id)
+local function restart_npc_execution(npc_id)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"npc %s restarting abilities execution", npc_id)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return false end -- npc died?
@@ -191,29 +192,7 @@ local function restart_squad_executions()
 	end
 end
 
-local function start_npcd_execution()
-	Printer:Debug(LOG.RUN, CAT.EXEC,"starting npcd execution")
-	-- start the npcd sim tasks
-	CreateTimeEvent("npcd_manager", "npcs_sweaper", 3, npcs_sweaper)
-	CreateTimeEvent("npcd_manager", "npcs_profiler", 5, npcs_profiler)
-	CreateTimeEvent("npcd_manager", "npcs_updater", 10, npcs_updater)
-end
-
-local function teardown_npcd_execution()
-	Printer:Debug(LOG.STOP, CAT.EXEC,"teardown_npcd_execution")
-
-	-- stop current npc Tasks execution
-	for key, value in pairs(Tasks) do
-		RemoveTimeEvent("npcd_manager", key)
-	end
-
-	-- stopping the npcd sim tasks
-	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
-	RemoveTimeEvent("npcd_manager", "npcs_profiler")
-	RemoveTimeEvent("npcd_manager", "npcs_updater")
-end
-
-function npcs_sweaper()
+local function npcs_sweaper()
 	Printer:Log(LOG.RUN, CAT.CONF,"running npcs sweaper")
 	local npcs_list = npcd.get_npcs_id_list()
 	-- Printer:LogTable("NPCS list", npcs_list)
@@ -247,7 +226,7 @@ function npcs_sweaper()
 	ResetTimeEvent("npcd_manager", "npcs_sweaper", 60)
 end
 
-function npcs_profiler()
+local function npcs_profiler()
 	Printer:Log(LOG.RUN, CAT.CONF,"running npcs profiler")
 	local npcs_list = npcd.get_npcs_id_list()
 	-- Printer:LogTable("NPCS list", npcs_list)
@@ -266,7 +245,7 @@ function npcs_profiler()
 end
 
 
-function npcs_updater()
+local function npcs_updater()
 	Printer:Log(LOG.RUN, CAT.CONF,"running npcs updater")
 	local npcs_list = npcd.get_npcs_id_list()
 	-- Printer:LogTable("NPCS list", npcs_list)
@@ -283,6 +262,28 @@ function npcs_updater()
 		end
 	end
 	ResetTimeEvent("npcd_manager", "npcs_updater", 360)
+end
+
+local function start_npcd_execution()
+	Printer:Debug(LOG.RUN, CAT.EXEC,"starting npcd execution")
+	-- start the npcd sim tasks
+	CreateTimeEvent("npcd_manager", "npcs_sweaper", 3, npcs_sweaper)
+	CreateTimeEvent("npcd_manager", "npcs_profiler", 5, npcs_profiler)
+	CreateTimeEvent("npcd_manager", "npcs_updater", 10, npcs_updater)
+end
+
+local function teardown_npcd_execution()
+	Printer:Debug(LOG.STOP, CAT.EXEC,"teardown_npcd_execution")
+
+	-- stop current npc Tasks execution
+	for key, value in pairs(Tasks) do
+		RemoveTimeEvent("npcd_manager", key)
+	end
+
+	-- stopping the npcd sim tasks
+	RemoveTimeEvent("npcd_manager", "npcs_sweaper")
+	RemoveTimeEvent("npcd_manager", "npcs_profiler")
+	RemoveTimeEvent("npcd_manager", "npcs_updater")
 end
 
 --------------- Abilities EXEC
@@ -517,8 +518,9 @@ function create_timed_buff(npc_id, perk_id, feat_id, duration)
 		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s feat %s duration %s", npc_id, feat_id, duration)
 		local ability = npcd.get_ability(npc_id, feat_id)
 		if not ability then
-			Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. cannot create timed buff", npc_id, feat_id)
-			return false
+			-- Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. cannot create timed buff", npc_id, feat_id)
+			local feat = npcd.get_perk_feat(perk_id, feat_id)
+			npcd.add_ability(npc_id, feat)
 		end -- ability unregistered?
 		npcd.set_ability_settings(npc_id, feat_id, { cooldown = duration })
 		add_cooldown_execution(npc_id, feat_id)
@@ -859,7 +861,8 @@ local function unregister_feat(npc_id, feat)
 		return false
 	end
 end
-
+-- TODO: sort out rifleman perk issue where npc cannot register feats
+-- how to manage type and mode
 local function register_feat(npc_id, feat)
 	Printer:Debug(LOG.RUN, CAT.CONF,"registering npc %s feat %s", npc_id, feat.id)
 	if run_register_feat(npc_id, feat, true) then

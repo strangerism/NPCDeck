@@ -43,9 +43,9 @@ FEAT_TYPE = {
 	ACTIVE = "st_npcd_feat_type_active",
 
 	-- passive feats properties
-	--  - are always active
+	--  - activate on contexts (events, stances, etc)
 	--  - no cooldowns
-	--  - no state machine (abilities)
+	--  - no state machine (abilities), only for on demand timed buffs
 	--  - do not show up in action bar
 	PASSIVE = "st_npcd_feat_type_passive",
 
@@ -56,22 +56,27 @@ FEAT_TYPE = {
 }
 
 FEAT_MODE = {
+	-- modes supported by active feats
 	AUTO = "st_npcd_feat_mode_auto",
 	MANUAL = "st_npcd_feat_mode_manual",
 	MODAL = "st_npcd_feat_mode_modal",
+	
+	-- modes supported by passive feats
 	STANCE = "st_npcd_feat_mode_stance",
 	EVENT = "st_npcd_feat_mode_event",
+
+	-- custom mode for special implementations
 	CUSTOM = "st_npcd_feat_mode_custom"
 }
 
 STANCE_TYPE = {
-	NONE = "st_npcd_stance_type_none",
-	CROUCH = "st_npcd_stance_type_crouch",
-	PRONE = "st_npcd_stance_type_prone",
-	RUN = "st_npcd_stance_type_run",
-	WALK = "st_npcd_stance_type_walk",
-	STAND = "st_npcd_stance_type_stand",
-	SCOPED = "st_npcd_stance_type_scoped",
+	-- NONE = "st_npcd_stance_type_none",
+	-- CROUCH = "st_npcd_stance_type_crouch",
+	-- PRONE = "st_npcd_stance_type_prone",
+	-- RUN = "st_npcd_stance_type_run",
+	-- WALK = "st_npcd_stance_type_walk",
+	-- STAND = "st_npcd_stance_type_stand",
+	-- SCOPED = "st_npcd_stance_type_scoped",
 	ADS = "st_npcd_stance_type_ads"
 }
 
@@ -479,17 +484,19 @@ local function get_randomized_perk_list(perk_type, perk_archetype)
 		end
 	end
 	npcdu.shuffle(list)
+	-- Printer:DebugTable("randomized_perk_list", list)
 	return list
 end
+
+local MAX_PERK_ROLL_ATTEMPTS = 10
 
 local function add_archetype_perk(npc_id)
 	-- atm only one archetype can be added
 	local archetype_perk_list = get_randomized_perk_list(PERK_TYPE.ARCHETYPE)
 	local i = 1
 	local attempts = 0
-	local max_attempts = 10
 	-- loop until succesfully rolls the archetype
-	while not roll_npc_perk(npc_id, archetype_perk_list[i].id) and attempts < max_attempts do
+	while not roll_npc_perk(npc_id, archetype_perk_list[i].id) and attempts < MAX_PERK_ROLL_ATTEMPTS do
 		i = i + 1
 		attempts = attempts + 1
 		if i > #archetype_perk_list then
@@ -500,20 +507,21 @@ local function add_archetype_perk(npc_id)
 	end
 end
 
+
 local function add_random_perk(npc_id, perk_type, amount)
 	-- atm only one archetype can be added
 	local perk_list = get_randomized_perk_list(perk_type)
 	local i = 1
 	local attempts = 0
-	local max_attempts = 10
 	local perk_count = 0
 	-- loop until succesfully rolls the amount of perks
-	while perk_count < amount and attempts < max_attempts do
+	while perk_count < amount and attempts < MAX_PERK_ROLL_ATTEMPTS do
 		if roll_npc_perk(npc_id, perk_list[i].id) then
 			-- remove perk from list to avoid duplicates
 			table.remove(perk_list, i)
 			perk_count = perk_count + 1
 			attempts = 0
+			if #perk_list == 0 then break end
 		end
 		i = i + 1
 		attempts = attempts + 1
@@ -527,57 +535,11 @@ end
 function create_profile(npc_id)
 	Printer:Log(LOG.RUN, CAT.CONF,"npc %s create profile", npc_id)
 	-- ARCHETYPE
-
 	add_archetype_perk(npc_id)
-	
-	add_random_perk(npc_id, PERK_TYPE.MAIN, MAX_MAIN_PERKS)
-
-	-- -- atm only one perk can be added, of type archetype
-	-- local archetype_perk_list = get_randomized_perk_list(PERK_TYPE.ARCHETYPE)
-	-- local i = 1
-	-- -- loop until succesfully rolls the archetype
-	-- while not roll_npc_perk(npc_id, archetype_perk_list[i].id) do
-	-- 	i = i + 1
-	-- 	if i > #archetype_perk_list then
-	-- 		break
-	-- 		-- i = 1 
-	-- 		-- shuffle(archetype_perk_list)	
-	-- 	end
-	-- end
-
-	-- -- MAIN PERKS ??
-
-	-- local main_perk_list = get_randomized_perk_list(PERK_TYPE.MAIN)
-	-- local i = 1
-	-- local perk_count = 0
-	-- -- loop until max perks count have been succesfully rolled
-	-- while perk_count < MAX_MAIN_PERKS do
-	-- 	if roll_npc_perk(npc_id, main_perk_list[i].id) then
-	-- 		perk_count = perk_count + 1
-	-- 	end
-	-- 	i = i + 1
-	-- 	if i > #main_perk_list then 
-	-- 		shuffle(main_perk_list)
-	-- 		i = 1
-	-- 	end
-	-- end	
-
-	-- -- SECONDARY PERKS
-	-- -- no perks available atm
-	-- local secondary_perk_list = get_randomized_perk_list(PERK_TYPE.SECONDARY)
-	-- local i = 1
-	-- local perk_count = 0
-	-- -- loop until max perks count have been succesfully rolled
-	-- while perk_count < MAX_SECONDARY_PERKS do
-	-- 	if roll_npc_perk(npc_id, secondary_perk_list[i].id) then
-	-- 		perk_count = perk_count + 1
-	-- 	end
-	-- 	i = i + 1
-	-- 	if i > #secondary_perk_list then 
-	-- 		shuffle(secondary_perk_list)
-	-- 		i = 1
-	-- 	end
-	-- end
+	-- MAIN PERKS
+	add_random_perk(npc_id, PERK_TYPE.MAIN, get_archetype_perk(npc_id) and (MAX_MAIN_PERKS - 1) or MAX_MAIN_PERKS)
+	-- SECONDARY PERKS
+	add_random_perk(npc_id, PERK_TYPE.SECONDARY, MAX_SECONDARY_PERKS)
 
 	npcs[npc_id].has_profile = true
 	Printer:LogTable(string.format("Create Profile NPC %s", npc_id), npcs[npc_id])
@@ -613,9 +575,12 @@ function get_npc_feat_stats(npc_id, perk_id, feat_id)
 	local perk = get_perk(perk_id)
 	if not perk or not perk.feats or not perk.feats[feat_id] then return end
 	local rank = npcdu.get_perk_rank(npc_id)
-	local stats = npcdu.copy(perk.feats[feat_id].stats[rank])
-	stats["rank"] = rank
-	return stats
+	local npc_feat = {
+		uid = perk.feats[feat_id].uid,
+		rank = rank,
+		stats = npcdu.copy(perk.feats[feat_id].stats[rank])
+	}
+	return npc_feat
 end
 
 function get_npc_feats(npc_id, feat_id)
