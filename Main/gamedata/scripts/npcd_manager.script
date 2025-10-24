@@ -622,52 +622,61 @@ local function validate_on_hit(victim, shit, bone_id, flags)
 	return true
 end
 
-function event_npc_on_before_hit(victim, shit, bone_id, flags)
-	Printer:Debug(LOG.INFO, CAT.EXEC,"event_npc_on_before_hit triggered")
-	Printer:DebugTable("- event registry", events_registry["npc_on_before_hit"])
-	if validate_on_hit(victim, shit, bone_id, flags) then
-		-- Execute all registered callbacks for this event
-		for _, event_handler in pairs(events_registry["npc_on_before_hit"] or {}) do
-			local ex_functor = npcdu.copy(event_handler.functor)
-			table.insert(ex_functor, victim)
-			table.insert(ex_functor, shit)
-			table.insert(ex_functor, bone_id)
-			table.insert(ex_functor, flags)
-			shit = execute_func(unpack(ex_functor))
-		end
-	end
-	SendScriptCallback("npcd_npc_on_before_hit")
+local function execute_event_handler_functor(event_handler, ...)
+    local ex_functor = npcdu.copy(event_handler.functor)
+    local args = {...}
+    for i = 1, #args do
+        table.insert(ex_functor, args[i])
+    end
+    execute_func(unpack(ex_functor))
 end
 
-function event_monster_on_before_hit(victim, shit, bone_id, flags)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"starting global event handler for monster_on_before_hit")
-	npcdu.printlog_table("- registered callbacks", events_registry["monster_on_before_hit"])
-	if validate_on_hit(victim, shit, bone_id, flags) then
-		-- Execute all registered callbacks for this event
-		for i, event_handler in pairs(events_registry["monster_on_before_hit"] or {}) do
-			Printer:Debug(LOG.INFO, CAT.EXEC,"processing callback %s for event %s", i, event_handler.id)
-			local ex_functor = npcdu.copy(event_handler.functor)
-			table.insert(ex_functor, victim)
-			table.insert(ex_functor, shit)
-			table.insert(ex_functor, bone_id)
-			table.insert(ex_functor, flags)
-			Printer:Debug(LOG.INFO, CAT.EXEC,"current damage power %s", shit.power)
-			execute_func(unpack(ex_functor))
-			Printer:Debug(LOG.INFO, CAT.EXEC,"updated damage power %s", shit.power)
-		end
-	end
-	SendScriptCallback("npcd_monster_on_before_hit")
-end
+local events_registry = {}
+
+local EVENT_HANDLERS = {
+	["npc_on_before_hit"] = {
+		callback = "npc_on_before_hit",
+		functor =  function(victim, shit, bone_id, flags)
+			Printer:Debug(LOG.RUN, CAT.EXEC,"starting global event handler for monster_on_before_hit")
+			Printer:DebugTable("- registered callbacks", events_registry["npc_on_before_hit"])
+			if validate_on_hit(victim, shit, bone_id, flags) then
+				-- Execute all registered callbacks for this event
+				for i, event_handler in pairs(events_registry["npc_on_before_hit"] or {}) do
+					Printer:Debug(LOG.INFO, CAT.EXEC,"processing callback %s for event %s", i, event_handler.id)
+					local power = shit.power
+					execute_event_handler_functor(event_handler, victim, shit, bone_id, flags)
+					Printer:Debug(LOG.INFO, CAT.EXEC,"updated power %s --> %s", power, shit.power)
+				end
+			end
+			SendScriptCallback("npcd_npc_on_before_hit")
+		end},
+	["monster_on_before_hit"] = {
+		callback = "monster_on_before_hit",
+		functor = function(victim, shit, bone_id, flags)
+			Printer:Debug(LOG.RUN, CAT.EXEC,"starting global event handler for monster_on_before_hit")
+			Printer:DebugTable("- registered callbacks", events_registry["monster_on_before_hit"])
+			if validate_on_hit(victim, shit, bone_id, flags) then
+				-- Execute all registered callbacks for this event
+				for i, event_handler in pairs(events_registry["monster_on_before_hit"] or {}) do
+					Printer:Debug(LOG.INFO, CAT.FEAT,"processing callback %s for event %s", i, event_handler.id)
+					local power = shit.power
+					execute_event_handler_functor(event_handler, victim, shit, bone_id, flags)
+					Printer:Debug(LOG.INFO, CAT.FEAT,"updated power %s --> %s", power, shit.power)
+				end
+			end
+			SendScriptCallback("npcd_monster_on_before_hit")
+		end},
+	}
 
 -- Event Execution
 
-events_registry = {}
-
-function register_feat_callback(feat_uid, event_name, functor)
+local function register_feat_callback(feat_uid, event_name, functor)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"registering feat %s callback for event %s", feat_uid, event_name)
 	if not events_registry[event_name] then
 		events_registry[event_name] = {}
-		manage_event_registration(event_name)
+		if EVENT_HANDLERS[event_name] then
+			RegisterScriptCallback(EVENT_HANDLERS[event_name].callback, EVENT_HANDLERS[event_name].functor)
+		end
 		Printer:Debug(LOG.ADD, CAT.EXEC,"registered event %s", event_name)
 	end
 	local event_handler = { id = feat_uid, functor = functor }
@@ -675,12 +684,12 @@ function register_feat_callback(feat_uid, event_name, functor)
 	Printer:Debug(LOG.ADD, CAT.EXEC,"registered feat %s callback for event %s", feat_uid, event_name)
 end
 
-function register_stance_callback(feat_uid, event_name, functor)
+local function register_stance_callback(feat_uid, event_name, functor)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"registering stance %s callback for event %s", feat_uid, event_name)
 	register_feat_callback(feat_uid .. "_stance", event_name, functor)
 end
 
-function unregister_feat_callbacks(feat_uid)
+local function unregister_feat_callbacks(feat_uid)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"unregistering all callbacks for feat %s", feat_uid)
 	for event_name, event_handlers in pairs(events_registry) do
 		for i = #event_handlers, 1, -1 do
@@ -691,42 +700,24 @@ function unregister_feat_callbacks(feat_uid)
 		end
 		if #events_registry[event_name] == 0 then
 			events_registry[event_name] = nil
-			manage_event_unregistration(event_name)
+			if EVENT_HANDLERS[event_name] then
+				UnregisterScriptCallback(EVENT_HANDLERS[event_name].callback, EVENT_HANDLERS[event_name].functor)
+			end
 			Printer:Debug(LOG.REMOVE, CAT.EXEC,"unregistered event %s", event_name)
 		end
 	end
 end
 
-function unregister_stance_callbacks(feat_uid)
+local function unregister_stance_callbacks(feat_uid)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"unregistering all stance callbacks for feat %s", feat_uid)
 	unregister_feat_callbacks(feat_uid .. "_stance")
-end
-
-function manage_event_registration(event_name)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"registering global handler for event type %s", event_name)
-	if event_name == "npc_on_before_hit" then
-		RegisterScriptCallback(event_name, event_npc_on_before_hit)
-	elseif event_name == "monster_on_before_hit" then
-		RegisterScriptCallback(event_name, event_monster_on_before_hit)
-	end
-
-end
-
-function manage_event_unregistration(event_name)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"unregistering global handler for event type %s", event_name)
-	if event_name == "npc_on_before_hit" then
-		UnregisterScriptCallback(event_name, event_npc_on_before_hit)
-	elseif event_name == "monster_on_before_hit" then
-		UnregisterScriptCallback(event_name, event_monster_on_before_hit)
-	end
-
 end
 
 --- Actor Stance Event
 --- 
 --- 
 
-stance_registry = {}
+local stance_registry = {}
 
 local STANCE_HANDLERS = {
 	["st_npcd_stance_type_ads"] = {
@@ -776,7 +767,7 @@ local STANCE_HANDLERS = {
 	}
 }
 
-function register_feat_stance(feat_uid, stance_type)
+local function register_feat_stance(feat_uid, stance_type)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"registering stance callbacks for feat %s stance %s", feat_uid, stance_type)
 	if not stance_registry[stance_type] then
 		stance_registry[stance_type] = {}
