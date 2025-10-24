@@ -14,12 +14,16 @@ end
 -- PERKS DECK 
 
 local perks = {}
-local categories = {}
+-- local categories = {}
 local feats_index = {}
 
 
 MAX_SECONDARY_PERKS = 2
 MAX_MAIN_PERKS = 2
+
+CATEGORY = {
+	WARFARE = "st_npcd_perk_category_warfare",
+}
 
 PERK_TYPE = {
 	ARCHETYPE = "st_npcd_perk_type_archetype",
@@ -28,8 +32,24 @@ PERK_TYPE = {
 }
 
 FEAT_TYPE = {
+	-- active feats properties
+	--  - are activated by the player or automatically by the npc ai
+	--  - use InputManager or activation polling time events
+	--  - have cooldowns
+	--  - require state machine (abilities)
+	--  - show up in npc hud	
+	--  - show up in action bar
+	--  - have activation keybinds
 	ACTIVE = "st_npcd_feat_type_active",
+
+	-- passive feats properties
+	--  - are always active
+	--  - no cooldowns
+	--  - no state machine (abilities)
+	--  - do not show up in action bar
 	PASSIVE = "st_npcd_feat_type_passive",
+
+	-- other feat types
 	BOON = "st_npcd_feat_type_boon",
 	TRAIT = "st_npcd_feat_type_trait",
 	MUTATION = "st_npcd_feat_type_mutation",
@@ -40,7 +60,24 @@ FEAT_MODE = {
 	MANUAL = "st_npcd_feat_mode_manual",
 	MODAL = "st_npcd_feat_mode_modal",
 	STANCE = "st_npcd_feat_mode_stance",
+	EVENT = "st_npcd_feat_mode_event",
 	CUSTOM = "st_npcd_feat_mode_custom"
+}
+
+STANCE_TYPE = {
+	NONE = "st_npcd_stance_type_none",
+	CROUCH = "st_npcd_stance_type_crouch",
+	PRONE = "st_npcd_stance_type_prone",
+	RUN = "st_npcd_stance_type_run",
+	WALK = "st_npcd_stance_type_walk",
+	STAND = "st_npcd_stance_type_stand",
+	SCOPED = "st_npcd_stance_type_scoped",
+	ADS = "st_npcd_stance_type_ads"
+}
+
+EVENT_TYPE = {
+	NPC_ON_BEFORE_HIT = "npc_on_before_hit",
+	MONSTER_ON_BEFORE_HIT = "monster_on_before_hit",
 }
 
 KEYBIND = {
@@ -104,6 +141,15 @@ function get_perk_feat(perk_id, feat_id)
 	return perks[perk_id].feats[feat_id]
 end
 
+function get_feat_stance(perk_id, feat_id) -- note: feat_id is optional, if not provided, perk_id is feat_uid 
+	if not perk_id or not perks[perk_id].feats then return end -- cannot continue
+	if not feat_id then
+		local index = feats_index[feat_uid]
+		return perks[index.perk_id].feats[index.feat_id].stance
+	end
+	return perks[perk_id].feats[feat_id].stance
+end
+
 function get_module_perks(module)
 	local module_perks = {}
 	for _, perk in pairs(perks) do
@@ -114,15 +160,15 @@ function get_module_perks(module)
 	return module_perks
 end
 
-function add_category(perk_category, desc)
-	if not perk_category then return end
-	if not categories[perk_category] then
-		categories[perk_category] = desc
-		Printer:Log(LOG.ADD, CAT.CONF,"category %s added", perk_category)
-	else
-		Printer:Log(LOG.WARN, CAT.CONF,"category %s already exists", perk_category)
-	end
-end
+-- function add_category(perk_category, desc)
+-- 	if not perk_category then return end
+-- 	if not categories[perk_category] then
+-- 		categories[perk_category] = desc
+-- 		Printer:Log(LOG.ADD, CAT.CONF,"category %s added", perk_category)
+-- 	else
+-- 		Printer:Log(LOG.WARN, CAT.CONF,"category %s already exists", perk_category)
+-- 	end
+-- end
 
 -- NPCD Modules API
 
@@ -484,7 +530,7 @@ function create_profile(npc_id)
 
 	add_archetype_perk(npc_id)
 	
-	add_random_perk(npc_id, PERK_TYPE.MAIN, 1)
+	add_random_perk(npc_id, PERK_TYPE.MAIN, MAX_MAIN_PERKS)
 
 	-- -- atm only one perk can be added, of type archetype
 	-- local archetype_perk_list = get_randomized_perk_list(PERK_TYPE.ARCHETYPE)
@@ -559,7 +605,8 @@ function setup_profile(npc_id)
 		end
 	end
 end
-
+-- TODO: return a new table npc_feat
+-- npc_feat: { feat_uid, rank, stats }
 function get_npc_feat_stats(npc_id, perk_id, feat_id)
 	if not npc_id or not npcs[npc_id] or not perk_id or not feat_id then return end
 	if not npcs[npc_id].Perk[perk_id] then return end -- npc does not have this perk

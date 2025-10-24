@@ -8,6 +8,8 @@ if AddScriptCallback then
 	AddScriptCallback("npcd_hud_squad_update")
     AddScriptCallback("npcd_on_log_update")
     AddScriptCallback("npcd_on_loaded_state")
+    AddScriptCallback("npcd_monster_on_before_hit")
+    AddScriptCallback("npcd_npc_on_before_hit")
 end
 
 function on_game_start()
