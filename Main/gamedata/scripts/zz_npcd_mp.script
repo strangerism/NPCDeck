@@ -5,9 +5,9 @@ function get_printer()
 	LOG = Printer:GetLogTypes()
 	CAT = Printer:GetLogCategories()
 end
-if AddScriptCallback then
+-- if AddScriptCallback then
 	RegisterScriptCallback("npcd_on_log_update", get_printer)
-end
+-- end
 --------------- SQUAD UPDATES
 ---
 -- ADD
