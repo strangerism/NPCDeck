@@ -568,19 +568,15 @@ function setup_profile(npc_id)
 	end
 end
 
-function get_npc_feat(npc_id, feat_uid)
-	if not npc_id or not npcs[npc_id] or not feat_uid then return end
-	local index = feats_index[feat_uid]
-	if not index then return end
-	if not npcs[npc_id].Perk[index.perk_id] then return end -- npc does not have this perk
-	local perk = get_perk(index.perk_id)
-	if not perk or not perk.feats or not perk.feats[index.feat_id] then return end
+function get_npc_feat(npc_id, feat)
+	if not npc_id or not npcs[npc_id] or not feat then return end
 	local rank = npcdu.get_perk_rank(npc_id)
 	local npc_feat = {
-		uid = perk.feats[index.feat_id].uid,
+		uid = feat.uid,
+		feat_id = feat.id,
 		rank = rank,
-		stats = npcdu.copy(perk.feats[index.feat_id].stats[rank]),
-		Ability = npcdu.copy(npcs[npc_id].Ability[index.feat_id])
+		stats = npcdu.copy(feat.stats[rank]),
+		Ability = npcdu.copy(npcs[npc_id].Ability[feat.id])
 	}
 	return npc_feat
 end
@@ -623,6 +619,7 @@ function get_npc_feats(npc_id, feat_id)
 	return npc_feats_list
 end
 
+-- TODO: only for mcm
 function get_npc_feat_data(npc_id, feat_id)
 	if not npc_id or not npcs[npc_id] or not feat_id then return end
 	for _, npc_perk in pairs(npcs[npc_id].Perk) do

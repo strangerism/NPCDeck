@@ -32,10 +32,10 @@ local function execute_register(npc_id, register, functor)
 	return result
 end
 
-local function execute_activate(npc_id, feat_id, functor)
-	if not functor then return false end
-	local ex_functor = npcdu.copy(functor)
-	table.insert(ex_functor, npcd.get_npc_feat_data(npc_id, feat_id))
+local function execute_activate(action_handler)
+	if not action_handler.functor then return false end
+	local ex_functor = npcdu.copy(action_handler.functor)
+	table.insert(ex_functor, action_handler.playload)
 	Printer:TraceTable("execute_activate", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
@@ -58,19 +58,20 @@ local function run_register_perk(npc_id, perk, register)
 	end
 end
 
-local function get_ability_polling_id(npc_id, feat_id)
-	return "ability_polling_" .. tostring(npc_id) .. "_" .. feat_id
+local function get_ability_polling_id(npc_id, feat_uid)
+	return "ability_polling_" .. tostring(npc_id) .. "_" .. feat_uid
 end
 
-local function get_ability_cooldown_id(npc_id, feat_id)
-	return "ability_cooldown_" .. tostring(npc_id) .. "_" .. feat_id
+local function get_ability_cooldown_id(npc_id, feat_uid)
+	return "ability_cooldown_" .. tostring(npc_id) .. "_" .. feat_uid
 end
 
 local function create_polling_input(npc_id, feat)
 	local polling_input = {}
-	polling_input["id"] = get_ability_polling_id(npc_id, feat.id)
+	polling_input["id"] = get_ability_polling_id(npc_id, feat.uid)
 	polling_input["npc_id"] = npc_id
 	polling_input["feat_id"] = feat.id
+	polling_input["perk_id"] = feat.perk_id
 	polling_input["interval"] = feat.activation_polling_interval or 1
 	polling_input["activation_functor"] = feat.activation_functor
 	return polling_input
@@ -392,7 +393,9 @@ function poll(polling_input)
 	-- second checking ability is actionable
 	if actionable_ability(polling_input.npc_id, polling_input.feat_id) then
 		-- execute ability
-		local activated = execute_activate(polling_input.npc_id, polling_input.feat_id, polling_input.activation_functor)
+		local feat = npcd.get_perk_feat(polling_input.perk_id, polling_input.feat_id)
+		local activation_handler = get_activation_handler(polling_input.npc_id, feat)
+		local activated = execute_activate(activation_handler)
 		-- activate ability cooldown
 		if activated then
 			activate_ability(polling_input.npc_id, polling_input.feat_id)
@@ -407,12 +410,22 @@ function poll(polling_input)
 	return false
 end
 
-function get_action(npc_id, feat)
+-- TODO: for actions we don't need to pass around functor since we can read its from feat.
+-- TODO: key and get state functor might be enough
+local function get_action(npc_id, feat)
 	return {
 		key = feat.uid,
 		activation_functor = feat.activation_functor,
 		state_functor = { "npcd", "get_ability", npc_id, feat.id},
 		attr = { npc_id = npc_id }
+	}
+end
+
+function get_activation_handler(npc_id, feat)
+	return {
+		id = feat.uid,
+		functor = feat.activation_functor,
+		playload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat), }
 	}
 end
 -- called by NPCD Input Manager
@@ -429,7 +442,9 @@ function activate(action)
 
 	if actionable_ability(npc_id, feat_id) then
 		-- execute ability
-		local activated = execute_activate(npc_id, feat_id, action.activation_functor)
+		local feat = npcd.get_perk_feat(perk_id, feat_id)
+		local activation_handler = get_activation_handler(npc_id, feat)
+		local activated = execute_activate(activation_handler)
 		-- activate ability cooldown
 		if activated then
 			activate_ability(npc_id, feat_id)
@@ -698,7 +713,7 @@ local function register_feat_activations(npc_id, feat, context)
 		local event_handler = { 
 			id = feat.uid .. (context == ACTIVATION_CONTEXT.STANCE and "_stance" or ""),
 			functor = activation.functor, 
-			playload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat.uid), callback_name = activation.event, callback_args = {} } 
+			playload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat), callback_name = activation.event, callback_args = {} } 
 		}
 		Printer:DebugTable("event handler to register", event_handler)
 		table.insert(events_registry[activation.event], event_handler)
