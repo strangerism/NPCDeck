@@ -567,22 +567,35 @@ function setup_profile(npc_id)
 		end
 	end
 end
--- TODO: return a new table npc_feat
--- npc_feat: { feat_uid, rank, stats }
+
+function get_npc_feat(npc_id, feat_uid)
+	if not npc_id or not npcs[npc_id] or not feat_uid then return end
+	local index = feats_index[feat_uid]
+	if not index then return end
+	if not npcs[npc_id].Perk[index.perk_id] then return end -- npc does not have this perk
+	local perk = get_perk(index.perk_id)
+	if not perk or not perk.feats or not perk.feats[index.feat_id] then return end
+	local rank = npcdu.get_perk_rank(npc_id)
+	local npc_feat = {
+		uid = perk.feats[index.feat_id].uid,
+		rank = rank,
+		stats = npcdu.copy(perk.feats[index.feat_id].stats[rank]),
+		Ability = npcdu.copy(npcs[npc_id].Ability[index.feat_id])
+	}
+	return npc_feat
+end
+
+-- api for npcd modules
 function get_npc_feat_stats(npc_id, perk_id, feat_id)
 	if not npc_id or not npcs[npc_id] or not perk_id or not feat_id then return end
 	if not npcs[npc_id].Perk[perk_id] then return end -- npc does not have this perk
 	local perk = get_perk(perk_id)
 	if not perk or not perk.feats or not perk.feats[feat_id] then return end
 	local rank = npcdu.get_perk_rank(npc_id)
-	local npc_feat = {
-		uid = perk.feats[feat_id].uid,
-		rank = rank,
-		stats = npcdu.copy(perk.feats[feat_id].stats[rank])
-	}
-	return npc_feat
+	return npcdu.copy(perk.feats[feat_id].stats[rank])
 end
 
+-- TODO: used for mcm menu
 function get_npc_feats(npc_id, feat_id)
 	-- feat_id is optional, if provided returns only that feat
 	local npc_feats_list = {}

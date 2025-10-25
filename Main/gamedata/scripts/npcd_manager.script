@@ -15,6 +15,10 @@ local FEAT_TYPE = npcd.FEAT_TYPE
 local FEAT_MODE = npcd.FEAT_MODE
 local ABILITY_STATE = npcd.ABILITY_STATE
 
+local player_deck = {
+	Perk = {},
+}
+
 --------------- Utilities
 
 local function execute_register(npc_id, register, functor)
@@ -627,9 +631,12 @@ end
 local function execute_event_handler_functor(event_handler, ...)
     local ex_functor = npcdu.copy(event_handler.functor)
     local args = {...}
+	event_handler.playload.callback_args = {}
     for i = 1, #args do
-        table.insert(ex_functor, args[i])
+        table.insert(event_handler.playload.callback_args, args[i])
     end
+	table.insert(ex_functor, event_handler.playload)
+	-- Printer:TraceTable("executing event", ex_functor)
     execute_func(unpack(ex_functor))
 end
 
@@ -640,7 +647,7 @@ local EVENT_HANDLERS = {
 		callback = "npc_on_before_hit",
 		functor =  function(victim, shit, bone_id, flags)
 			Printer:Debug(LOG.RUN, CAT.EXEC,"starting global event handler for monster_on_before_hit")
-			Printer:DebugTable("- registered callbacks", events_registry["npc_on_before_hit"])
+			Printer:TraceTable("- registered callbacks", events_registry["npc_on_before_hit"])
 			if validate_on_hit(victim, shit, bone_id, flags) then
 				-- Execute all registered callbacks for this event
 				for i, event_handler in pairs(events_registry["npc_on_before_hit"] or {}) do
@@ -656,7 +663,7 @@ local EVENT_HANDLERS = {
 		callback = "monster_on_before_hit",
 		functor = function(victim, shit, bone_id, flags)
 			Printer:Debug(LOG.RUN, CAT.EXEC,"starting global event handler for monster_on_before_hit")
-			Printer:DebugTable("- registered callbacks", events_registry["monster_on_before_hit"])
+			Printer:TraceTable("- registered callbacks", events_registry["monster_on_before_hit"])
 			if validate_on_hit(victim, shit, bone_id, flags) then
 				-- Execute all registered callbacks for this event
 				for i, event_handler in pairs(events_registry["monster_on_before_hit"] or {}) do
@@ -672,30 +679,38 @@ local EVENT_HANDLERS = {
 
 -- Event Execution
 
-local function register_feat_callback(feat_uid, event_name, functor)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"registering feat %s callback for event %s", feat_uid, event_name)
-	if not events_registry[event_name] then
-		events_registry[event_name] = {}
-		if EVENT_HANDLERS[event_name] then
-			RegisterScriptCallback(EVENT_HANDLERS[event_name].callback, EVENT_HANDLERS[event_name].functor)
+local ACTIVATION_CONTEXT = {
+	STANCE = "stance",
+	FEAT = "feat"
+}
+
+local function register_feat_activations(npc_id, feat, context)
+	local activations = (context == ACTIVATION_CONTEXT.STANCE and feat.stance.activations) or feat.activations
+	for _, activation in pairs(activations or {}) do
+		Printer:Debug(LOG.RUN, CAT.EXEC,"registering feat %s callback %s for event %s", feat.id, feat.uid .. (context == ACTIVATION_CONTEXT.STANCE and "_stance" or ""), activation.event)
+		if not events_registry[activation.event] then
+			events_registry[activation.event] = {}
+			if EVENT_HANDLERS[activation.event] then
+				RegisterScriptCallback(EVENT_HANDLERS[activation.event].callback, EVENT_HANDLERS[activation.event].functor)
+			end
+			Printer:Debug(LOG.ADD, CAT.EXEC,"registered global handler for events %s", activation.event)
 		end
-		Printer:Debug(LOG.ADD, CAT.EXEC,"registered event %s", event_name)
+		local event_handler = { 
+			id = feat.uid .. (context == ACTIVATION_CONTEXT.STANCE and "_stance" or ""),
+			functor = activation.functor, 
+			playload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat.uid), callback_name = activation.event, callback_args = {} } 
+		}
+		Printer:DebugTable("event handler to register", event_handler)
+		table.insert(events_registry[activation.event], event_handler)
+		Printer:Debug(LOG.ADD, CAT.EXEC,"registered feat %s callback %s for event %s", feat.id, event_handler.id, activation.event)
 	end
-	local event_handler = { id = feat_uid, functor = functor }
-	table.insert(events_registry[event_name], event_handler)
-	Printer:Debug(LOG.ADD, CAT.EXEC,"registered feat %s callback for event %s", feat_uid, event_name)
 end
 
-local function register_stance_callback(feat_uid, event_name, functor)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"registering stance %s callback for event %s", feat_uid, event_name)
-	register_feat_callback(feat_uid .. "_stance", event_name, functor)
-end
-
-local function unregister_feat_callbacks(feat_uid)
+local function unregister_feat_callbacks(feat_uid, context)
 	Printer:Debug(LOG.RUN, CAT.EXEC,"unregistering all callbacks for feat %s", feat_uid)
 	for event_name, event_handlers in pairs(events_registry) do
 		for i = #event_handlers, 1, -1 do
-			if event_handlers[i].id == feat_uid then
+			if event_handlers[i].id == feat_uid .. (context == ACTIVATION_CONTEXT.STANCE and "_stance" or "") then
 				table.remove(event_handlers, i)
 				Printer:Debug(LOG.REMOVE, CAT.EXEC,"unregistered feat %s callback for event %s", feat_uid, event_name)
 			end
@@ -705,14 +720,9 @@ local function unregister_feat_callbacks(feat_uid)
 			if EVENT_HANDLERS[event_name] then
 				UnregisterScriptCallback(EVENT_HANDLERS[event_name].callback, EVENT_HANDLERS[event_name].functor)
 			end
-			Printer:Debug(LOG.REMOVE, CAT.EXEC,"unregistered event %s", event_name)
+			Printer:Debug(LOG.REMOVE, CAT.EXEC,"unregistered global handler for events %s", event_name)
 		end
 	end
-end
-
-local function unregister_stance_callbacks(feat_uid)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"unregistering all stance callbacks for feat %s", feat_uid)
-	unregister_feat_callbacks(feat_uid .. "_stance")
 end
 
 --- Actor Stance Event
@@ -741,8 +751,8 @@ local STANCE_HANDLERS = {
 							create_modal_buff(db.actor:id(), feat_idx.perk_id, feat_idx.feat_id)
 						end
 						-- register stance callbacks
-						for _, activation in pairs(feat.stance.activations or {}) do
-							register_stance_callback(feat.uid, activation.event, activation.functor)
+						if player_deck.Perk[feat_idx.perk_id] then
+							register_feat_activations(player_deck.Perk[feat_idx.perk_id].npc_id, feat, ACTIVATION_CONTEXT.STANCE)
 						end
 					end
 				end
@@ -763,7 +773,7 @@ local STANCE_HANDLERS = {
 						remove_modal_buff(db.actor:id(), feat_idx.perk_id, feat_idx.feat_id)
 					end
 					-- unregister stance callbacks
-					unregister_stance_callbacks(stance_handle.id)
+					unregister_feat_callbacks(stance_handle.id, ACTIVATION_CONTEXT.STANCE)
 				end
 		 	end},
 	}
@@ -872,9 +882,7 @@ local function register_feat(npc_id, feat)
 			bind_ability(npc_id, feat)
 		end
 		if feat.type == FEAT_TYPE.PASSIVE then
-			for _, activation in pairs(feat.activations or {}) do
-				register_feat_callback(feat.uid, activation.event, activation.functor)
-			end
+			register_feat_activations(npc_id, feat)
 		end	
 		if feat.mode == FEAT_MODE.STANCE then
 			register_feat_stance(feat.uid, feat.stance.type)
@@ -1014,12 +1022,8 @@ function npc_on_death(victim, who)
 end
 
 
---------------- Player Deck
+--------------- Player Deck MGMT
 ---
-
-local player_deck = {
-	Perk = {},
-}
 
 function is_perk_in_deck(npc_id, perk_id)
 	if player_deck.Perk[perk_id] and player_deck.Perk[perk_id].npc_id == npc_id then
