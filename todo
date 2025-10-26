@@ -1,5 +1,17 @@
 ideas for archetypes
 
+- spotter
+    category: warfare
+    desc: focus on precision/accuracy, playfield awareness, rifles, warfare vs humans
+    archetype: spotter
+        callmark
+        spot
+    perks
+        rifleman
+        deadeye
+        dikec eye
+        trooping
+
 - medic
     * defibrillate   
 - trapper
@@ -27,10 +39,31 @@ ideas for archetypes
     - distract npc with aggro
 - scout
     - scout: leaves squad to go scout random smarts and meet at near friendly base?
-    - awareness: aoe mark in (previous visited?) smarts location of all item of interests  
+    - awareness: aoe mark in (previous visited?) smarts location of all item of interests
+    (specialist, snipers and smg)
+- gunzzler
+    Activate feats when drunk
+    - double dee: double vision double damage (only the player) (passive on drunk status)
+    - halitosis: aoe effect inhebriation, increase damage for anyone close to actor (5 meters) (active)
+- gunman
+    a gunslinging class, focused on feats of 
+    check on your mark perk from exp
+
+- reward based (corrupter)
+ - increase chance of getting stashes from reward
+ - increase money from tasks
+ - trading boons?
+
+ - deep zone (aka deep state)
+    
 
 stuff to do
-- 
+- rename trooping
+- rename dikec eye to dikec stance, steel hand, bulletstare,   
+- spotter combat events are a bit delayed. probably due to npcd_squad.squad_get_combat() not very reliable
+- add perk category to mcm
+- add to mcm menu actor active effects page
+- add way to change ability slot regardless of preceeding slots being filled
 - add custom NPCD menu, e,g, squad menu in inventory trade window
 - add actor id in npcs by default to manage actor buffs (granted by abilities)
 - add in npcd mcm, a new tab called perks (discovered, favorite, main deck subtabs)
@@ -50,8 +83,6 @@ stuff to do
 - add power regen ??? 
 - add activation (seconds) stat to feat
 - add ACTIVATING state to feat
-- add MODAL to feat type
-- add npcd logging to mp patcher script
 - refactor logging boot sequence using the game_play_start event in npcd_manager
 - refactor npcd_actionbar to be standalone and pluggable
 - refactor npcd_logging to be standalone and pluggable
