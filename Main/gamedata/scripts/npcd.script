@@ -620,28 +620,28 @@ function get_npc_feats(npc_id, feat_id)
 end
 
 -- TODO: only for mcm
-function get_npc_feat_data(npc_id, feat_id)
-	if not npc_id or not npcs[npc_id] or not feat_id then return end
-	for _, npc_perk in pairs(npcs[npc_id].Perk) do
-		local perk = get_perk(npc_perk.id)
-		if perk and perk.feats and perk.feats[feat_id] then
-			local feat_data = {}
-			feat_data["id"] = feat_id
-			feat_data["npc_id"] = npc_id
-			feat_data["name"] = perk.feats[feat_id].name
-			feat_data["icon"] = perk.feats[feat_id].icon
-			feat_data["perk_module"] = perk.module
-			feat_data["perk_id"] = perk.id
-			feat_data["perk_name"] = perk.name
-			local rank = npcdu.get_perk_rank(npc_id)
-			feat_data["stats"] = perk.feats[feat_id].stats[rank]
-			feat_data["activation_functor"] = perk.feats[feat_id].activation_functor
-			feat_data["activation_key"] = perk.feats[feat_id].activation_key
-			feat_data["Ability"] = npcdu.copy(npcs[npc_id].Ability[feat_id])
-			return feat_data
-		end
-	end
-end
+-- function get_npc_feat_data(npc_id, feat_id)
+-- 	if not npc_id or not npcs[npc_id] or not feat_id then return end
+-- 	for _, npc_perk in pairs(npcs[npc_id].Perk) do
+-- 		local perk = get_perk(npc_perk.id)
+-- 		if perk and perk.feats and perk.feats[feat_id] then
+-- 			local feat_data = {}
+-- 			feat_data["id"] = feat_id
+-- 			feat_data["npc_id"] = npc_id
+-- 			feat_data["name"] = perk.feats[feat_id].name
+-- 			feat_data["icon"] = perk.feats[feat_id].icon
+-- 			feat_data["perk_module"] = perk.module
+-- 			feat_data["perk_id"] = perk.id
+-- 			feat_data["perk_name"] = perk.name
+-- 			local rank = npcdu.get_perk_rank(npc_id)
+-- 			feat_data["stats"] = perk.feats[feat_id].stats[rank]
+-- 			feat_data["activation_functor"] = perk.feats[feat_id].activation_functor
+-- 			feat_data["activation_key"] = perk.feats[feat_id].activation_key
+-- 			feat_data["Ability"] = npcdu.copy(npcs[npc_id].Ability[feat_id])
+-- 			return feat_data
+-- 		end
+-- 	end
+-- end
 
 function add_ability(npc_id, feat)
 	local a_id = feat.id

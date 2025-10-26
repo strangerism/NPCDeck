@@ -56,7 +56,8 @@ function get_actionbar_menu()
         local npc_id = action_slot.activation_input.action.attr.npc_id
         local feat_idx = npcd.get_feat_index(action_slot.key)
 		local npc = npcdu.get_npc_obj(npc_id)
-    	local feat = npcd.get_npc_feat_data(npc_id, feat_idx.feat_id)
+    	-- local feat = npcd.get_npc_feat_data(npc_id, feat_idx.feat_id)
+        local feat = npcd.get_perk_feat(feat_idx.perk_id, feat_idx.feat_id)
         if feat then
             table.insert(slots_options, { id = action_slot.key .. "_feat", type = "slide", link = "ui_options_slider_night", size = {512,50}, ui_hook_functor= {npcd_mcm.do_ui_feat_header}, icon = feat.icon, name = feat.name, spacing = 20, borderless=true, })
             table.insert(slots_options, { id = action_slot.key .. "_npc", type = "desc", clr = {200, 180, 4, 219}, text = npc and npc:character_name() or npc_id })
