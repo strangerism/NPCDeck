@@ -516,6 +516,22 @@ local function add_random_perk(npc_id, perk_type, amount)
 	local perk_count = 0
 	-- loop until succesfully rolls the amount of perks
 	while perk_count < amount and attempts < MAX_PERK_ROLL_ATTEMPTS do
+		-- check if perk depends on another perk
+		if perk_list[i].depends then
+			for _, depend in ipairs(perk_list[i].depends) do
+				if not has_perk(npc_id, depend) then
+					goto continue_with_other_perk
+				end
+			end
+		end
+		-- check if is a main perk and npc already has an archetype perk with same category
+		if perk_type == PERK_TYPE.MAIN then
+			local archetype_perk = get_archetype_perk(npc_id)
+			if archetype_perk and archetype_perk.category ~= perk_list[i].category then
+				goto continue_with_other_perk
+			end
+		end
+		-- try to roll perk
 		if roll_npc_perk(npc_id, perk_list[i].id) then
 			-- remove perk from list to avoid duplicates
 			table.remove(perk_list, i)
@@ -523,6 +539,7 @@ local function add_random_perk(npc_id, perk_type, amount)
 			attempts = 0
 			if #perk_list == 0 then break end
 		end
+		::continue_with_other_perk::
 		i = i + 1
 		attempts = attempts + 1
 		if i > #perk_list then 

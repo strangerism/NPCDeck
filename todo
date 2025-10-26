@@ -58,6 +58,7 @@ ideas for archetypes
     
 
 stuff to do
+- make perk/feat register callbacks mandatory as driver for enabling perk/feat from mcm
 - modal icon updates on action bar have some delay
 - spotter combat events are a bit delayed. probably due to npcd_squad.squad_get_combat() not very reliable
 - add to mcm menu actor active effects page

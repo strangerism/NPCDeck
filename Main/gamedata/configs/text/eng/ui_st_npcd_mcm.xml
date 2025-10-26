@@ -136,15 +136,17 @@
 	<string id="ui_mcm_lst_st_npcd_perk_category_warfare">
 		<text>Warfare</text>
 	</string>
-	<!-- Perk Mode -->
+	<!-- Feat Type -->
 	<string id="ui_mcm_lst_st_npcd_feat_type_active">
 		<text>Active</text>
 	</string>
-
 	<string id="ui_mcm_lst_st_npcd_feat_type_passive">
 		<text>Passive</text>
-	</string>	
-
+	</string>
+	<string id="ui_mcm_lst_st_npcd_feat_type_mutation">
+		<text>Mutation</text>
+	</string>			
+	<!-- Feat Mode -->
 	<string id="ui_mcm_lst_st_npcd_feat_mode_auto">
 		<text>Auto</text>
 	</string>	
