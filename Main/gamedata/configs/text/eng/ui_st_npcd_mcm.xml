@@ -84,6 +84,13 @@
 		\n- %c[orange]SECONDARY%c[white]: a minor perk with a single feat, that cannot be active. NPC always have 2 secondary perks.
 		</text>
 	</string>
+	<string id="ui_mcm_st_npcd_perk_category">
+		<text>Perk category</text>
+	</string>	
+	<string id="ui_mcm_st_npcd_perk_category_desc">
+		<text>The perk category might detrmine which main perks an NPC can have. 
+		\n Main perks must be of the same category of the archetype perk if an NPC has one.</text>
+	</string>			
 	<string id="ui_mcm_st_npcd_perk_chance">
 		<text>Perk chance</text>
 	</string>	
@@ -115,6 +122,7 @@
 		\n- %c[orange]CUSTOM%c[white]: A custom activation mechanism defined by the perk's implementation.
 		</text>
 	</string>	
+	<!-- Perk Type  -->
 	<string id="ui_mcm_lst_st_npcd_perk_type_archetype">
 		<text>Archetype</text>
 	</string>	
@@ -124,7 +132,11 @@
 	<string id="ui_mcm_lst_st_npcd_perk_type_secondary">
 		<text>Secondary</text>
 	</string>	
-
+	<!-- Perk Category -->
+	<string id="ui_mcm_lst_st_npcd_perk_category_warfare">
+		<text>Warfare</text>
+	</string>
+	<!-- Perk Mode -->
 	<string id="ui_mcm_lst_st_npcd_feat_type_active">
 		<text>Active</text>
 	</string>
@@ -176,9 +188,5 @@
 	<!--Notifications  -->
 	<string id="ui_mcm_npcd_notification_perk_discovery">
 		<text>You have discovered a new perk: %c[d_cyan]%s.</text>
-	</string>  	
-	<!-- Categories	 -->
-     <string id="st_npcd_perk_category_warfare">
-        <text>Warfare</text>
-    </string>   	
+	</string>  	  	
 </string_table>

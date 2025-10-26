@@ -58,10 +58,8 @@ ideas for archetypes
     
 
 stuff to do
-- rename trooping
-- rename dikec eye to dikec stance, steel hand, bulletstare,   
+- modal icon updates on action bar have some delay
 - spotter combat events are a bit delayed. probably due to npcd_squad.squad_get_combat() not very reliable
-- add perk category to mcm
 - add to mcm menu actor active effects page
 - add way to change ability slot regardless of preceeding slots being filled
 - add custom NPCD menu, e,g, squad menu in inventory trade window
