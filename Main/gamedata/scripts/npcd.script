@@ -149,6 +149,7 @@ end
 function get_feat_stance(perk_id, feat_id) -- note: feat_id is optional, if not provided, perk_id is feat_uid 
 	if not perk_id or not perks[perk_id].feats then return end -- cannot continue
 	if not feat_id then
+		local feat_uid = perk_id
 		local index = feats_index[feat_uid]
 		return perks[index.perk_id].feats[index.feat_id].stance
 	end
@@ -158,7 +159,7 @@ end
 function get_module_perks(module)
 	local module_perks = {}
 	for _, perk in pairs(perks) do
-		if perks[perk.id]["module"] == module then
+		if perks[perk.id].module == module then
 			table.insert(module_perks, perk)
 		end
 	end
@@ -593,12 +594,12 @@ function get_npc_feat(npc_id, feat)
 		feat_id = feat.id,
 		rank = rank,
 		stats = npcdu.copy(feat.stats[rank]),
-		Ability = npcdu.copy(npcs[npc_id].Ability[feat.id])
+		Ability = npcdu.copy(npcs[npc_id].Ability[feat.uid])
 	}
 	return npc_feat
 end
 
--- api for npcd modules
+-- api for npcd modules to read their own feat stats from npc profiles
 function get_npc_feat_stats(npc_id, perk_id, feat_id)
 	if not npc_id or not npcs[npc_id] or not perk_id or not feat_id then return end
 	if not npcs[npc_id].Perk[perk_id] then return end -- npc does not have this perk
@@ -661,12 +662,13 @@ end
 -- end
 
 function add_ability(npc_id, feat)
-	local a_id = feat.id
+	local a_id = feat.uid
 	if not npcs[npc_id] then return false end
 	if npcs[npc_id].Ability[a_id] then return false end -- already has this ability
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s adds ability %s", npc_id, a_id)
     npcs[npc_id].Ability[a_id] = {}
 	npcs[npc_id].Ability[a_id]["id"] = a_id
+	npcs[npc_id].Ability[a_id]["feat_id"] = feat.id
 	npcs[npc_id].Ability[a_id]["mode"] = feat.mode
 	npcs[npc_id].Ability[a_id]["icon"] = feat.icon_hud or "ui_npcd_hud_default_icon"
 	npcs[npc_id].Ability[a_id]["icon_slot"] = feat.icon_slot or "ui_npcd_hud_default_icon"
@@ -681,7 +683,7 @@ function add_ability(npc_id, feat)
 end
 
 function update_ability(npc_id, feat)
-	local a_id = feat.id
+	local a_id = feat.uid
 	if not npcs[npc_id] then return false end
 	if not npcs[npc_id].Ability[a_id] then return false end -- does not have
 	Printer:Log(LOG.ADD, CAT.CONF,"npc %s updates ability %s", npc_id, a_id)
@@ -690,23 +692,21 @@ function update_ability(npc_id, feat)
 	return true
 end
 
-function find_npcs_with_ability(feat_id)
+function find_npcs_with_ability(feat_uid)
 	local npcs_with_ability = {}
 	for npc_id, npc in pairs(npcs) do
-		for _, ability in pairs(npc.Ability) do
-			if ability.id == feat_id then
-				table.insert(npcs_with_ability, npc_id)
-			end
+		if npcs[npc_id].Ability[feat_uid] then
+			table.insert(npcs_with_ability, npc_id)
 		end
 	end
 	return npcs_with_ability
 end
 
-function remove_ability(npc_id, feat_id)
+function remove_ability(npc_id, feat_uid)
 	if not npcs[npc_id] then return false end
-	if not npcs[npc_id].Ability[feat_id] then return false end
-	Printer:Log(LOG.REMOVE, CAT.CONF,"npc %s removes ability %s", npc_id, feat_id)
-	npcs[npc_id].Ability[feat_id] = nil
+	if not npcs[npc_id].Ability[feat_uid] then return false end
+	Printer:Log(LOG.REMOVE, CAT.CONF,"npc %s removes ability %s", npc_id, feat_uid)
+	npcs[npc_id].Ability[feat_uid] = nil
 	return true
 end
 
@@ -726,83 +726,91 @@ function clear_abilities(npc_id)
 	npcs[npc_id].Ability = {}
 end
 
-function get_ability(npc_id, feat_id)
+function get_ability(npc_id, feat_uid)
 	if not npcs[npc_id] then return end
 	
-	return npcs[npc_id].Ability[feat_id]
+	return npcs[npc_id].Ability[feat_uid]
 end
 
-function ability_registered(npc_id, feat_id)
-	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return end
+function get_ability_feat(feat_uid)
 	
-	return npcs[npc_id].Ability[feat_id].registered
+	local index = get_feat_index(feat_uid)
+	if not index then return end
+	
+	return get_perk_feat(index.perk_id, index.feat_id)
+end
+
+function ability_registered(npc_id, feat_uid)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_uid] then return end
+	
+	return npcs[npc_id].Ability[feat_uid].registered
 end
 
 function set_ability(npc_id, ability)
     npcs[npc_id].Ability[ability.id] = ability
 end
 
-function set_ability_settings(npc_id, feat_id, settings)
+function set_ability_settings(npc_id, feat_uid, settings)
 	if not npcs[npc_id] then return false end
-	if not npcs[npc_id].Ability[feat_id] then return false end -- does not have
+	if not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
 	for key, value in pairs(settings) do
-		npcs[npc_id].Ability[feat_id][key] = value
+		npcs[npc_id].Ability[feat_uid][key] = value
 	end
 	return true
 end
 
-function reset_ability(npc_id, feat_id)
+function reset_ability(npc_id, feat_uid)
 	if not npcs[npc_id] then return false end
-	if not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READY
-	npcs[npc_id].Ability[feat_id].timer = -9999
+	if not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	npcs[npc_id].Ability[feat_uid].state = ABILITY_STATE.READY
+	npcs[npc_id].Ability[feat_uid].timer = -9999
 	return true
 end
 
-function start_ability_cooldown(npc_id, feat_id)
+function start_ability_cooldown(npc_id, feat_uid)
 	if not npcs[npc_id] then return false end
-	if not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.COOLDOWN
-	npcs[npc_id].Ability[feat_id].timer = npcs[npc_id].Ability[feat_id].cooldown
+	if not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	npcs[npc_id].Ability[feat_uid].state = ABILITY_STATE.COOLDOWN
+	npcs[npc_id].Ability[feat_uid].timer = npcs[npc_id].Ability[feat_uid].cooldown
 	return true
 end
 
-function update_ability_cooldown(npc_id, feat_id, delta_time)
-	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	local state = npcs[npc_id].Ability[feat_id].state
+function update_ability_cooldown(npc_id, feat_uid, delta_time)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_uid].state
 	if state ~= ABILITY_STATE.COOLDOWN then return false end -- not in cooldown
-	if npcs[npc_id].Ability[feat_id].timer <= 0 then
-		npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.READY
-		npcs[npc_id].Ability[feat_id].timer = -9999
+	if npcs[npc_id].Ability[feat_uid].timer <= 0 then
+		npcs[npc_id].Ability[feat_uid].state = ABILITY_STATE.READY
+		npcs[npc_id].Ability[feat_uid].timer = -9999
 	end	
-	npcs[npc_id].Ability[feat_id].timer = npcs[npc_id].Ability[feat_id].timer - (delta_time or 1)
+	npcs[npc_id].Ability[feat_uid].timer = npcs[npc_id].Ability[feat_uid].timer - (delta_time or 1)
 end
 
-function is_ability_on_cooldown(npc_id, feat_id)
-	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	local state = npcs[npc_id].Ability[feat_id].state
+function is_ability_on_cooldown(npc_id, feat_uid)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_uid].state
 	return state == ABILITY_STATE.COOLDOWN
 end
 
-function is_ability_enabled(npc_id, feat_id)
-	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	local state = npcs[npc_id].Ability[feat_id].state
+function is_ability_enabled(npc_id, feat_uid)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_uid].state
 	return state == ABILITY_STATE.ENABLED
 end
 
-function disable_ability(npc_id, feat_id)
-	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	local state = npcs[npc_id].Ability[feat_id].state
+function disable_ability(npc_id, feat_uid)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_uid].state
 	if state ~= ABILITY_STATE.ENABLED then return false end -- not enabled
-	reset_ability(npc_id, feat_id)
+	reset_ability(npc_id, feat_uid)
 	return true
 end
 
-function enable_ability(npc_id, feat_id)
-	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_id] then return false end -- does not have
-	local state = npcs[npc_id].Ability[feat_id].state
+function enable_ability(npc_id, feat_uid)
+	if not npcs[npc_id] or not npcs[npc_id].Ability[feat_uid] then return false end -- does not have
+	local state = npcs[npc_id].Ability[feat_uid].state
 	if state ~= ABILITY_STATE.READY then return false end -- not ready
-	npcs[npc_id].Ability[feat_id].state = ABILITY_STATE.ENABLED
+	npcs[npc_id].Ability[feat_uid].state = ABILITY_STATE.ENABLED
 	return true
 end
 

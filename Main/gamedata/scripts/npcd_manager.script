@@ -35,7 +35,7 @@ end
 local function execute_activate(action_handler)
 	if not action_handler.functor then return false end
 	local ex_functor = npcdu.copy(action_handler.functor)
-	table.insert(ex_functor, action_handler.playload)
+	table.insert(ex_functor, action_handler.payload)
 	Printer:TraceTable("execute_activate", ex_functor)
 	local result = execute_func(unpack(ex_functor))
 	Printer:Trace(LOG.INFO, CAT.EXEC,"with result: %s", result)
@@ -70,8 +70,7 @@ local function create_polling_input(npc_id, feat)
 	local polling_input = {}
 	polling_input["id"] = get_ability_polling_id(npc_id, feat.uid)
 	polling_input["npc_id"] = npc_id
-	polling_input["feat_id"] = feat.id
-	polling_input["perk_id"] = feat.perk_id
+	polling_input["feat_uid"] = feat.uid
 	polling_input["interval"] = feat.activation_polling_interval or 1
 	polling_input["activation_functor"] = feat.activation_functor
 	return polling_input
@@ -87,13 +86,13 @@ local function remove_execution(id)
 	Printer:Debug(LOG.STOP, CAT.EXEC,"removed execution %s", id)
 	RemoveTimeEvent("npcd_manager", id)
 	if Tasks[id].type == EXECUTION_TYPE.cooldown then
-		npcd.reset_ability(Tasks[id].npc_id, Tasks[id].feat_id)
+		npcd.reset_ability(Tasks[id].npc_id, Tasks[id].feat_uid)
 	end
 	Tasks[id] = nil
 end
 
-local function add_cooldown_execution(npc_id, feat_id)
-	local ability_cooldown_id = get_ability_cooldown_id(npc_id, feat_id)
+local function add_cooldown_execution(npc_id, feat_uid)
+	local ability_cooldown_id = get_ability_cooldown_id(npc_id, feat_uid)
 
 	--- CANNOT RESET ABILITY COOLDOWN HERE BECAUSE OF ISSUE WITH ENGINE
 	-- -- if ability is on cooldown or reading, remove the current execution and reset it
@@ -103,15 +102,15 @@ local function add_cooldown_execution(npc_id, feat_id)
 	-- 	remove_execution(ability_cooldown_id)
 	-- end
 	Printer:Debug(LOG.ADD, CAT.EXEC,"[%s] npc %s creates new ability cooldown manager %s", time_global(), npc_id, ability_cooldown_id)
-	CreateTimeEvent("npcd_manager", ability_cooldown_id, 0, manage_ability_cooldown, ability_cooldown_id, npc_id, feat_id)
-	Tasks[ability_cooldown_id] = { npc_id = npc_id, feat_id = feat_id, type = EXECUTION_TYPE.cooldown}
+	CreateTimeEvent("npcd_manager", ability_cooldown_id, 0, manage_ability_cooldown, ability_cooldown_id, npc_id, feat_uid)
+	Tasks[ability_cooldown_id] = { npc_id = npc_id, feat_uid = feat_uid, type = EXECUTION_TYPE.cooldown}
 end
 
 local function add_poll_execution(npc_id, feat)
 	local polling_input = create_polling_input(npc_id, feat)
 	Printer:Debug(LOG.ADD, CAT.EXEC,"npc %s creates new ability poll manager %s", npc_id, polling_input.id)
 	CreateTimeEvent("npcd_manager", polling_input.id, polling_input.interval, poll, polling_input)
-	Tasks[polling_input.id] = { npc_id = npc_id, feat_id = feat.id, type = EXECUTION_TYPE.polling}
+	Tasks[polling_input.id] = { npc_id = npc_id, feat_uid = feat.uid, type = EXECUTION_TYPE.polling}
 end
 
 local function reset_execution(id, delay)
@@ -135,32 +134,32 @@ local function remove_npc_perk_executions(npc_id, perk_id)
 	local perk = npcd.get_perk(perk_id)
 	if not perk or not perk.feats then return false end -- perk not found?
 	for _, feat in pairs(perk.feats) do
-		local ability_polling_id = get_ability_polling_id(npc_id, feat.id)
+		local ability_polling_id = get_ability_polling_id(npc_id, feat.uid)
 		remove_execution(ability_polling_id)
 	end
 	return true
 end
 
 local function resume_npc_ability_execution(npc_id, feat)
-	Printer:Debug(LOG.RUN, CAT.EXEC,"resuming npc %s ability %s execution", npc_id, feat.id)
+	Printer:Debug(LOG.RUN, CAT.EXEC,"resuming npc %s ability %s execution", npc_id, feat.uid)
 	if feat.type == FEAT_TYPE.ACTIVE then
 		-- active feats have state machine
-		if npcd.ability_registered(npc_id, feat.id) then
-			Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts execution for ability %s", npc_id, feat.id)
-			local npc_ability = npcd.get_ability(npc_id, feat.id)
+		if npcd.ability_registered(npc_id, feat.uid) then
+			Printer:Debug(LOG.INFO, CAT.EXEC,"npc %s restarts execution for ability %s", npc_id, feat.uid)
+			local npc_ability = npcd.get_ability(npc_id, feat.uid)
 			Printer:DebugTable("npc ability data", npc_ability)
 			if feat.mode == FEAT_MODE.MANUAL and npc_ability.state == ABILITY_STATE.COOLDOWN then
-				add_cooldown_execution(npc_id, feat.id)
+				add_cooldown_execution(npc_id, feat.uid)
 			end
 			if feat.mode == FEAT_MODE.AUTO then
 				if npc_ability.state ~= ABILITY_STATE.READY then
-					add_cooldown_execution(npc_id, feat.id) -- resume current cooldown if not in READY
+					add_cooldown_execution(npc_id, feat.uid) -- resume current cooldown if not in READY
 				end
 				add_poll_execution(npc_id, feat)
 			end
 			if feat.mode == FEAT_MODE.MODAL then
 				if npc_ability.state == ABILITY_STATE.ENABLED then
-					npcd.reset_ability(npc_id, feat.id) -- disable modal ability on restart
+					npcd.reset_ability(npc_id, feat.uid) -- disable modal ability on restart
 				end
 			end
 			-- TODO: is FEAT_MODE.CUSTOM really supported by active feats?
@@ -294,8 +293,8 @@ end
 --------------- Abilities EXEC
 
 -- called by NPCD Manager custom time events
-function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
-	Printer:Trace(LOG.RUN, CAT.COOLDOWN,"managing npc %s ability cooldown %s", npc_id, feat_id)
+function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_uid)
+	Printer:Trace(LOG.RUN, CAT.COOLDOWN,"managing npc %s ability cooldown %s", npc_id, feat_uid)
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then
 		Printer:Log(LOG.ERROR, CAT.COOLDOWN,"npc %s deck not found. stopping manage ability cooldown %s", npc_id, ability_cooldown_id)
@@ -303,22 +302,22 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 		return true
 	end  -- npc died?
 
-    local npc_ability = npcd.get_ability(npc_id, feat_id)
+    local npc_ability = npcd.get_ability(npc_id, feat_uid)
 	if not npc_ability then
-		Printer:Log(LOG.ERROR, CAT.COOLDOWN,"npc %s ability %s not found. stopping manage ability cooldown %s", npc_id, feat_id, ability_cooldown_id)
+		Printer:Log(LOG.ERROR, CAT.COOLDOWN,"npc %s ability %s not found. stopping manage ability cooldown %s", npc_id, feat_uid, ability_cooldown_id)
 		Tasks[ability_cooldown_id] = nil
 		return true
 	end -- ability unregistered?
 
     -- setup cooldown transition
 	if npc_ability.state == ABILITY_STATE.READY then
-		Printer:Debug(LOG.START, CAT.COOLDOWN,"[%s] npc %s ability %s init cooldown %s", time_global(), npc_id, feat_id, npc_ability.cooldown)
-		npcd.start_ability_cooldown(npc_id, feat_id)
+		Printer:Debug(LOG.START, CAT.COOLDOWN,"[%s] npc %s ability %s init cooldown %s", time_global(), npc_id, feat_uid, npc_ability.cooldown)
+		npcd.start_ability_cooldown(npc_id, feat_uid)
 	end
 
     -- ability cooldown ended, kill time event
 	if npc_ability.timer <= 0 then
-		npcd.reset_ability(npc_id, feat_id)
+		npcd.reset_ability(npc_id, feat_uid)
 		Printer:Debug(LOG.STOP, CAT.COOLDOWN,"cooldown completed. ending time event %s", ability_cooldown_id)
 		Tasks[ability_cooldown_id] = nil
 		return true
@@ -328,60 +327,60 @@ function manage_ability_cooldown(ability_cooldown_id, npc_id, feat_id)
 	local timer = npc_ability.timer
 	local cooldown = npc_ability.cooldown
 	local state = npc_ability.state
-	Printer:Debug(LOG.RUN, CAT.COOLDOWN,"npc %s ability %s state %s timer %s/%s", npc_id, feat_id, state, timer, cooldown)
-	npcd.update_ability_cooldown(npc_id, feat_id)
+	Printer:Debug(LOG.RUN, CAT.COOLDOWN,"npc %s ability %s state %s timer %s/%s", npc_id, feat_uid, state, timer, cooldown)
+	npcd.update_ability_cooldown(npc_id, feat_uid)
 
     -- loop cooldown management event
 	reset_execution(ability_cooldown_id, 1)
 	return false
 end
 
-local function toggle_modal(npc_id, feat_id)
-	if npcd.is_ability_enabled(npc_id, feat_id) then
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s disables modal ability %s", npc_id, feat_id)
-		npcd.disable_ability(npc_id, feat_id)
+local function toggle_modal(npc_id, feat_uid)
+	if npcd.is_ability_enabled(npc_id, feat_uid) then
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s disables modal ability %s", npc_id, feat_uid)
+		npcd.disable_ability(npc_id, feat_uid)
 	else
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s enables modal ability %s", npc_id, feat_id)
-		npcd.enable_ability(npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s enables modal ability %s", npc_id, feat_uid)
+		npcd.enable_ability(npc_id, feat_uid)
 	end
 	return true
 end
 
-local function activate_ability(npc_id, feat_id)
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s", npc_id, feat_id)
+local function activate_ability(npc_id, feat_uid)
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s", npc_id, feat_uid)
 
-    local npc_ability = npcd.get_ability(npc_id, feat_id)
+    local npc_ability = npcd.get_ability(npc_id, feat_uid)
 	if not npc_ability then return false end -- ability unregistered?
 	if npc_ability.mode == FEAT_MODE.MANUAL or npc_ability.mode == FEAT_MODE.AUTO then
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s cooldown", npc_id, feat_id)
-		add_cooldown_execution(npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s activates ability %s cooldown", npc_id, feat_uid)
+		add_cooldown_execution(npc_id, feat_uid)
 	end
 	if npc_ability.mode == FEAT_MODE.MODAL then
-		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s toggles ability %s modal", npc_id, feat_id)
-		toggle_modal(npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.ACTIV,"npc %s toggles ability %s modal", npc_id, feat_uid)
+		toggle_modal(npc_id, feat_uid)
 	end
 	return true
 end
 
-local function actionable_ability(npc_id, feat_id)
-	local npc_ability = npcd.get_ability(npc_id, feat_id)
+local function actionable_ability(npc_id, feat_uid)
+	local npc_ability = npcd.get_ability(npc_id, feat_uid)
 	if npc_ability.mode == FEAT_MODE.MANUAL or npc_ability.mode == FEAT_MODE.AUTO then
-		if npcd.is_ability_on_cooldown(npc_id, feat_id) then 
-			Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_id)
+		if npcd.is_ability_on_cooldown(npc_id, feat_uid) then
+			Printer:Debug(LOG.WARN, CAT.ACTIV,"npc %s cannot activate ability %s that is on cooldown", npc_id, feat_uid)
 			return false
 		else
-			Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_id)
+			Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can activate ability %s", npc_id, feat_uid)
 			return true
 		end
 	elseif npc_ability.mode == FEAT_MODE.MODAL then
-		Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can toggle modal ability %s", npc_id, feat_id)
+		Printer:Trace(LOG.INFO, CAT.ACTIV,"npc %s can toggle modal ability %s", npc_id, feat_uid)
 		return true
 	end
 end
 
 -- called by NPCD Manager custom time events
 function poll(polling_input)
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"polling npc %s ability %s", polling_input.npc_id, polling_input.feat_id)
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"polling npc %s ability %s", polling_input.npc_id, polling_input.feat_uid)
 	
 	-- first ensure this polling task has sense to exists
     local npc_deck = npcd.get_npc(polling_input.npc_id)
@@ -391,15 +390,15 @@ function poll(polling_input)
 	end  -- end this task
 
 	-- second checking ability is actionable
-	if actionable_ability(polling_input.npc_id, polling_input.feat_id) then
+	if actionable_ability(polling_input.npc_id, polling_input.feat_uid) then
 		-- execute ability
-		local feat = npcd.get_perk_feat(polling_input.perk_id, polling_input.feat_id)
+		local feat = npcd.get_ability_feat(polling_input.feat_uid)
 		local activation_handler = get_activation_handler(polling_input.npc_id, feat)
 		local activated = execute_activate(activation_handler)
 		-- activate ability cooldown
 		if activated then
-			activate_ability(polling_input.npc_id, polling_input.feat_id)
-			local ability = npcd.get_ability(polling_input.npc_id, polling_input.feat_id)
+			activate_ability(polling_input.npc_id, polling_input.feat_uid)
+			local ability = npcd.get_ability(polling_input.npc_id, polling_input.feat_uid)
 			reset_execution(polling_input.id, ability.cooldown) -- resume polling after cooldown
 			return false
 		end
@@ -416,7 +415,7 @@ local function get_action(npc_id, feat)
 	return {
 		key = feat.uid,
 		activation_functor = feat.activation_functor,
-		state_functor = { "npcd", "get_ability", npc_id, feat.id},
+		state_functor = { "npcd", "get_ability", npc_id, feat.uid},
 		attr = { npc_id = npc_id }
 	}
 end
@@ -425,35 +424,33 @@ function get_activation_handler(npc_id, feat)
 	return {
 		id = feat.uid,
 		functor = feat.activation_functor,
-		playload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat), }
+		payload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat), }
 	}
 end
 -- called by NPCD Input Manager
 function activate(action)
 	local npc_id = action.attr.npc_id
-	local feat_idx = npcd.get_feat_index(action.key)
-	local feat_id = feat_idx.feat_id
-	local perk_id = feat_idx.perk_id
-	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s perk %s ability %s", npc_id, perk_id, feat_id)
+	local feat_uid = action.key
+	Printer:Debug(LOG.RUN, CAT.ACTIV,"activating npc %s ability %s", npc_id, feat_uid)
 
 	-- first ensure this polling task has sense to exists
     local npc_deck = npcd.get_npc(npc_id)
 	if not npc_deck then return true end  -- end this task
 
-	if actionable_ability(npc_id, feat_id) then
+	if actionable_ability(npc_id, feat_uid) then
 		-- execute ability
-		local feat = npcd.get_perk_feat(perk_id, feat_id)
+		local feat = npcd.get_ability_feat(feat_uid)
 		local activation_handler = get_activation_handler(npc_id, feat)
 		local activated = execute_activate(activation_handler)
 		-- activate ability cooldown
 		if activated then
-			activate_ability(npc_id, feat_id)
+			activate_ability(npc_id, feat_uid)
 		end
 	end
 end
 
 local function bind_ability(npc_id, feat)
-	Printer:Debug(LOG.RUN,CAT.ACTIV, "binding npc %s ability %s", npc_id, feat.id)
+	Printer:Debug(LOG.RUN,CAT.ACTIV, "binding npc %s ability %s", npc_id, feat.uid)
 	if feat.mode == FEAT_MODE.MANUAL then
 		local action = get_action(npc_id, feat)
 		npcd_actionbar.add_action_slot(action)
@@ -471,19 +468,19 @@ local function bind_ability(npc_id, feat)
 end
 
 local function unbind_ability(npc_id, feat)
-	Printer:Debug(LOG.RUN,CAT.ACTIV, "unbinding npc %s ability %s", npc_id,  feat.id)
+	Printer:Debug(LOG.RUN,CAT.ACTIV, "unbinding npc %s ability %s", npc_id,  feat.uid)
 	if feat.mode == FEAT_MODE.MANUAL then
 		npcd_actionbar.remove_action_slot(feat.uid)
 	end
 
 	if feat.mode == FEAT_MODE.AUTO then
-		local ability_polling_id = get_ability_polling_id(npc_id, feat.id)
+		local ability_polling_id = get_ability_polling_id(npc_id, feat.uid)
 		remove_execution(ability_polling_id)
 	end
 
 	if feat.mode == FEAT_MODE.MODAL then
 		npcd_actionbar.remove_action_slot(feat.uid)
-		npcd.reset_ability(npc_id, feat.id)
+		npcd.reset_ability(npc_id, feat.uid)
 	end
 
 end
@@ -492,20 +489,20 @@ end
 --- 
 local custom_timed_buff = {}
 
-local function get_timed_buff_id(npc_id, feat_id)
-	return "timed_buff_" .. tostring(npc_id) .. "_" .. feat_id
+local function get_timed_buff_id(npc_id, feat_uid)
+	return "timed_buff_" .. tostring(npc_id) .. "_" .. feat_uid
 end
 
-local function manage_buff_duration(npc_id, perk_id, feat_id, duration)
-	local buff_id = get_timed_buff_id(npc_id, feat_id)
+local function manage_buff_duration(npc_id, feat_uid, duration)
+	local buff_id = get_timed_buff_id(npc_id, feat_uid)
 	if not custom_timed_buff[buff_id] then
 		Printer:Debug(LOG.ADD, CAT.COOLDOWN,"initializing custom timed buff %s with duration %s", buff_id, duration)
-		custom_timed_buff[buff_id] = { value = duration, duration = duration }
-		local feat = npcd.get_perk_feat(perk_id, feat_id)
-		actor_status.add_indicator(feat.id, {
+		custom_timed_buff[buff_id] = { npc_id = npc_id, feat_uid = feat_uid, value = duration, duration = duration }
+		local feat = npcd.get_ability_feat(feat_uid)
+		actor_status.add_indicator(feat.uid, {
 			index = 1,
 			typ = "booster",
-			functor = { "npcd_manager", "get_timed_buff_timer", npc_id, feat_id },
+			functor = { "npcd_manager", "get_timed_buff_timer", npc_id, feat.uid },
 			icon = feat.icon_hud or "ui_npcd_hud_default_icon",
 			background = "ui\\alticons\\bg1.dds",
 			anim_icon = false,
@@ -524,38 +521,44 @@ local function manage_buff_duration(npc_id, perk_id, feat_id, duration)
 	reset_execution(buff_id, 1)
 	return false
 end
-
+-- part of modules api
 function create_timed_buff(npc_id, perk_id, feat_id, duration)
 	if duration <= 0 then
 		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot create custom timed buff for npc %s feat %s with invalid duration %s", npc_id, feat_id, duration)
 		return false
 	end
+	local feat = npcd.get_perk_feat(perk_id, feat_id)
+	if not feat then
+		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot create custom timed buff for npc %s unknown feat %s", npc_id, feat_id)
+		return false
+	end
 	if npc_id == db.actor:id() then
-		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for actor, feat %s duration %s", feat_id, duration)
-		CreateTimeEvent("npcd_manager", get_timed_buff_id(npc_id, feat_id), 0, manage_buff_duration, npc_id, perk_id, feat_id, duration)
+		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for actor, ability %s duration %s", feat.uid, duration)
+		local buff_id = get_timed_buff_id(npc_id, feat.uid)
+		CreateTimeEvent("npcd_manager", buff_id, 0, manage_buff_duration, npc_id, feat.uid, duration)
+		return buff_id
 	else
-		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s feat %s duration %s", npc_id, feat_id, duration)
-		local ability = npcd.get_ability(npc_id, feat_id)
+		Printer:Debug(LOG.INFO, CAT.FEAT,"creating custom timed buff for npc %s ability %s duration %s", npc_id, feat.uid, duration)
+		local ability = npcd.get_ability(npc_id, feat.uid)
 		if not ability then
 			-- Printer:Log(LOG.ERROR, CAT.FEAT,"npc %s ability %s not found. cannot create timed buff", npc_id, feat_id)
-			local feat = npcd.get_perk_feat(perk_id, feat_id)
 			npcd.add_ability(npc_id, feat)
 		end -- ability unregistered?
-		npcd.set_ability_settings(npc_id, feat_id, { cooldown = duration })
-		add_cooldown_execution(npc_id, feat_id)
+		npcd.set_ability_settings(npc_id, feat.uid, { cooldown = duration })
+		add_cooldown_execution(npc_id, feat.uid)
 	end
 end
 
-function get_timed_buff_timer(npc_id, feat_id)
+function get_timed_buff_timer(npc_id, feat_uid)
 	if npc_id == db.actor:id() then
-		local buff_id = get_timed_buff_id(npc_id, feat_id)
+		local buff_id = get_timed_buff_id(npc_id, feat_uid)
 		if custom_timed_buff[buff_id] then
 			return custom_timed_buff[buff_id].value
 		else
 			return nil
 		end
 	else
-		local ability = npcd.get_ability(npc_id, feat_id)
+		local ability = npcd.get_ability(npc_id, feat_uid)
 		if ability and ability.state == ABILITY_STATE.COOLDOWN then
 			return ability.timer
 		else
@@ -564,31 +567,39 @@ function get_timed_buff_timer(npc_id, feat_id)
 	end
 end
 
-function is_timed_buff_on(npc_id, feat_id)
+function is_timed_buff_on(npc_id, perk_id, feat_id)
+	local feat = npcd.get_perk_feat(perk_id, feat_id)
+	if not feat then
+		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot check custom timed buff for npc %s unknown feat %s", npc_id, feat_id)
+		return false
+	end
 	if npc_id == db.actor:id() then
-		local buff_id = get_timed_buff_id(npc_id, feat_id)
+		local buff_id = get_timed_buff_id(npc_id, feat.uid)
 		return (custom_timed_buff[buff_id] ~= nil)
 	else
-		return npcd.is_ability_on_cooldown(npc_id, feat_id)
+		return npcd.is_ability_on_cooldown(npc_id, feat.uid)
 	end
 end
 
 -- modal buffs
 
-function get_modal_buff(perk_id, feat_id)
-	local feat = npcd.get_perk_feat(perk_id, feat_id)
-	return (actor_status.indicators[feat.id] ~= nil) and 1 or 0
+function get_modal_buff(feat_uid)
+	return (actor_status.indicators[feat_uid] ~= nil) and 1 or 0
 end
 
 function create_modal_buff(npc_id, perk_id, feat_id)
-	Printer:Debug(LOG.INFO, CAT.FEAT,"creating modal buff for npc %s feat %s", npc_id, feat_id)
 	local feat = npcd.get_perk_feat(perk_id, feat_id)
-	if not actor_status.indicators[feat.id] then
+	if not feat then
+		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot create modal buff for perk %s unknown feat %s", npc_id, feat_id)
+		return false
+	end
+	if not actor_status.indicators[feat.uid] then
+		Printer:Debug(LOG.INFO, CAT.FEAT,"creating modal buff for npc %s ability %s", npc_id, feat.uid)
 		-- custom_modal_buff [feat.id] = true
-		actor_status.add_indicator(feat.id, {
+		actor_status.add_indicator(feat.uid, {
 			index = 1,
 			typ = "state",
-			functor = { "npcd_manager", "get_modal_buff", perk_id, feat_id },
+			functor = { "npcd_manager", "get_modal_buff", feat.uid },
 			icon = feat.icon_hud or "ui_npcd_hud_default_icon",
 			background = "ui\\alticons\\bg1.dds",
 			anim_icon = false,
@@ -601,7 +612,7 @@ end
 function remove_modal_buff(npc_id, perk_id, feat_id)
 	Printer:Debug(LOG.INFO, CAT.FEAT,"removing modal buff for npc %s feat %s", npc_id, feat_id)
 	local feat = npcd.get_perk_feat(perk_id, feat_id)
-	actor_status.indicators[feat.id] = nil
+	actor_status.indicators[feat.uid] = nil
 end
 
 -- event validation functions
@@ -646,11 +657,11 @@ end
 local function execute_event_handler_functor(event_handler, ...)
     local ex_functor = npcdu.copy(event_handler.functor)
     local args = {...}
-	event_handler.playload.callback_args = {}
+	event_handler.payload.callback_args = {}
     for i = 1, #args do
-        table.insert(event_handler.playload.callback_args, args[i])
+        table.insert(event_handler.payload.callback_args, args[i])
     end
-	table.insert(ex_functor, event_handler.playload)
+	table.insert(ex_functor, event_handler.payload)
 	-- Printer:TraceTable("executing event", ex_functor)
     execute_func(unpack(ex_functor))
 end
@@ -713,9 +724,9 @@ local function register_feat_activations(npc_id, feat, context)
 		local event_handler = { 
 			id = feat.uid .. (context == ACTIVATION_CONTEXT.STANCE and "_stance" or ""),
 			functor = activation.functor, 
-			playload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat), callback_name = activation.event, callback_args = {} } 
+			payload = { npc_id = npc_id, npc_feat = npcd.get_npc_feat(npc_id, feat), callback_name = activation.event, callback_args = {} } 
 		}
-		Printer:DebugTable("event handler to register", event_handler)
+		Printer:TraceTable("event handler to register", event_handler)
 		table.insert(events_registry[activation.event], event_handler)
 		Printer:Debug(LOG.ADD, CAT.EXEC,"registered feat %s callback %s for event %s", feat.id, event_handler.id, activation.event)
 	end
@@ -871,7 +882,7 @@ local function unregister_feat(npc_id, feat)
 	Printer:Debug(LOG.RUN, CAT.CONF,"unregistering npc %s feat %s", npc_id, feat.id)
 	if run_register_feat(npc_id, feat, false) then
 		if feat.type == FEAT_TYPE.ACTIVE then
-			npcd.set_ability_settings(npc_id, feat.id, { registered = false })
+			npcd.set_ability_settings(npc_id, feat.uid, { registered = false })
 			unbind_ability(npc_id, feat)
 		end
 		if feat.type == FEAT_TYPE.PASSIVE then
@@ -893,7 +904,7 @@ local function register_feat(npc_id, feat)
 	if run_register_feat(npc_id, feat, true) then
 		-- only active feats are registered as abilities
 		if feat.type == FEAT_TYPE.ACTIVE then
-			npcd.set_ability_settings(npc_id, feat.id, { registered = true })
+			npcd.set_ability_settings(npc_id, feat.uid, { registered = true })
 			bind_ability(npc_id, feat)
 		end
 		if feat.type == FEAT_TYPE.PASSIVE then
@@ -1048,6 +1059,15 @@ function is_perk_in_deck(npc_id, perk_id)
 	end
 end
 
+function update_actor_deck()
+	Printer:Debug(LOG.RUN, CAT.CONF,"updating actor deck")
+	unregister_deck()
+	build_deck()
+	register_deck()
+	local abilities = get_actionable_abilities_in_deck()
+	npcd_actionbar.update_actionbar(abilities)
+end
+
 function unregister_deck()
 	Printer:Debug(LOG.RUN, CAT.CONF,"unregistering actor deck")
 	for perk_id, perk_info in pairs(player_deck.Perk) do
@@ -1075,7 +1095,7 @@ function register_deck()
 end
 
 function build_deck()
-	Printer:Debug(LOG.RUN, CAT.CONF,"updating actor deck")
+	Printer:Debug(LOG.RUN, CAT.CONF,"building actor deck")
 	player_deck.Perk = {}
 	local clist = npcd_squad.squad_get_clist()
 	for i=1, #clist do
@@ -1107,7 +1127,7 @@ function build_deck()
 	Printer:LogTable("Actor Deck", player_deck)
 end
 
-local function get_actionable_abilities_in_deck()
+function get_actionable_abilities_in_deck()
 	local action_list = {}
 	for perk_id, perk_info in pairs(player_deck.Perk) do
 		local perk = npcd.get_perk(perk_id)
@@ -1169,9 +1189,7 @@ local function do_npcd_squad_update()
 	end
 	current_clist = new_clist
 	npcd_squad.update_squad_info()
-	build_deck()
-	register_deck()
-	npcd_actionbar.update_actionbar(get_actionable_abilities_in_deck())
+	update_actor_deck()
 	SendScriptCallback("npcd_post_squad_update")
 	return true
 end
@@ -1196,9 +1214,7 @@ local function resume_squad_state()
 			end
 		end
 		-- build and register the deck
-		build_deck()
-		register_deck()
-		npcd_actionbar.update_actionbar(get_actionable_abilities_in_deck())
+		update_actor_deck()
 		-- restart squad executions
 		restart_squad_executions()
 	else
