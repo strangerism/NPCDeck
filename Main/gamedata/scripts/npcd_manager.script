@@ -583,24 +583,23 @@ end
 
 -- modal buffs
 
-function get_modal_buff(feat_uid)
+function get_status_indicator(feat_uid)
 	return (actor_status.indicators[feat_uid] ~= nil) and 1 or 0
 end
 
-function create_modal_buff(npc_id, perk_id, feat_id)
+function add_stance_indicator(perk_id, feat_id)
 	local feat = npcd.get_perk_feat(perk_id, feat_id)
 	if not feat then
-		Printer:Log(LOG.ERROR, CAT.FEAT,"cannot create modal buff for perk %s unknown feat %s", npc_id, feat_id)
+		Printer:Log(LOG.WARN, CAT.FEAT,"cannot create stance indicator for unknown ability %s", feat_id)
 		return false
 	end
 	if not actor_status.indicators[feat.uid] then
-		Printer:Debug(LOG.INFO, CAT.FEAT,"creating modal buff for npc %s ability %s", npc_id, feat.uid)
-		-- custom_modal_buff [feat.id] = true
+		Printer:Debug(LOG.INFO, CAT.FEAT,"creating stance indicator for ability %s", feat.uid)
 		actor_status.add_indicator(feat.uid, {
 			index = 1,
 			typ = "state",
-			functor = { "npcd_manager", "get_modal_buff", feat.uid },
-			icon = feat.icon_hud or "ui_npcd_hud_default_icon",
+			functor = { "npcd_manager", "get_status_indicator", feat.uid },
+			icon = feat.stance.icon_hud or feat.icon_hud or "ui_npcd_hud_default_icon",
 			background = "ui\\alticons\\bg1.dds",
 			anim_icon = false,
 			anim_bk = false,
@@ -609,9 +608,13 @@ function create_modal_buff(npc_id, perk_id, feat_id)
 	end
 end
 
-function remove_modal_buff(npc_id, perk_id, feat_id)
-	Printer:Debug(LOG.INFO, CAT.FEAT,"removing modal buff for npc %s feat %s", npc_id, feat_id)
+function remove_stance_indicator(perk_id, feat_id)
 	local feat = npcd.get_perk_feat(perk_id, feat_id)
+	if not feat then
+		Printer:Log(LOG.WARN, CAT.FEAT,"cannot remove stance indicator for unknown ability %s", feat_id)
+		return false
+	end
+	Printer:Debug(LOG.INFO, CAT.FEAT,"removing stance indicator for ability %s", feat.uid)
 	actor_status.indicators[feat.uid] = nil
 end
 
@@ -774,7 +777,7 @@ local STANCE_HANDLERS = {
 						execute_func(unpack(ex_functor))
 						-- show icon
 						if feat.stance.show_icon then
-							create_modal_buff(db.actor:id(), feat_idx.perk_id, feat_idx.feat_id)
+							add_stance_indicator(feat_idx.perk_id, feat_idx.feat_id)
 						end
 						-- register stance callbacks
 						if player_deck.Perk[feat_idx.perk_id] then
@@ -796,7 +799,7 @@ local STANCE_HANDLERS = {
 					execute_func(unpack(ex_functor))
 					-- remove icon
 					if feat.stance.show_icon then
-						remove_modal_buff(db.actor:id(), feat_idx.perk_id, feat_idx.feat_id)
+						remove_stance_indicator(feat_idx.perk_id, feat_idx.feat_id)
 					end
 					-- unregister stance callbacks
 					unregister_feat_callbacks(stance_handle.id, ACTIVATION_CONTEXT.STANCE)
